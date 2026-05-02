@@ -18,8 +18,7 @@ defmodule FrontendExWeb.BlockController do
   end
 
   defp show_block(conn, id) do
-    skin = FrontendExWeb.Skin.current()
-    # parse_block_and_preview_txs/4 needs the explorer URL for its own
+    # parse_block_and_preview_txs/3 needs the explorer URL for its own
     # templating; binding it once here avoids a second helper call.
     explorer_url = explorer_url()
 
@@ -45,7 +44,7 @@ defmodule FrontendExWeb.BlockController do
       {coin_price, gas_price} = derive_coin_gas(stats_json)
 
       {block, txs_preview} =
-        parse_block_and_preview_txs(block_json, txs_json, skin, explorer_url)
+        parse_block_and_preview_txs(block_json, txs_json, explorer_url)
 
       base_assigns =
         base_assigns(%{
@@ -55,26 +54,14 @@ defmodule FrontendExWeb.BlockController do
           gas_price: gas_price
         })
 
-      case skin do
-        :classic ->
-          styles = BlockHTML.classic_show_styles(base_assigns)
+      styles = BlockHTML.classic_show_styles(base_assigns)
 
-          render(conn, :classic_show_content, %{
-            base_assigns
-            | page_title: "Block ##{block.height} | Sepolia",
-              nav_blocks: "active",
-              styles: styles
-          })
-
-        :s53627 ->
-          topbar = BlockHTML.s53627_topbar(base_assigns)
-
-          render(conn, :s53627_show_content, %{
-            base_assigns
-            | page_title: "Block #{block.height} | Explorer",
-              topbar: topbar
-          })
-      end
+      render(conn, :classic_show_content, %{
+        base_assigns
+        | page_title: "Block ##{block.height} | Sepolia",
+          nav_blocks: "active",
+          styles: styles
+      })
     end
   end
 
@@ -89,8 +76,6 @@ defmodule FrontendExWeb.BlockController do
   end
 
   defp txs_block(conn, id) do
-    skin = FrontendExWeb.Skin.current()
-
     stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
     block_task = Task.async(fn -> Client.get_json_cached("/api/v2/blocks/#{id}", :public) end)
 
@@ -125,30 +110,18 @@ defmodule FrontendExWeb.BlockController do
           gas_price: gas_price
         })
 
-      case skin do
-        :classic ->
-          styles = BlockHTML.classic_txs_styles(base_assigns)
+      styles = BlockHTML.classic_txs_styles(base_assigns)
 
-          render(conn, :classic_txs_content, %{
-            base_assigns
-            | page_title: "Block ##{block_height} Transactions | Sepolia",
-              nav_blocks: "active",
-              styles: styles
-          })
-
-        :s53627 ->
-          topbar = BlockHTML.s53627_topbar(base_assigns)
-
-          render(conn, :s53627_txs_content, %{
-            base_assigns
-            | page_title: "Block #{block_height} Transactions | Explorer",
-              topbar: topbar
-          })
-      end
+      render(conn, :classic_txs_content, %{
+        base_assigns
+        | page_title: "Block ##{block_height} Transactions | Sepolia",
+          nav_blocks: "active",
+          styles: styles
+      })
     end
   end
 
-  defp parse_block_and_preview_txs(block_json, txs_json, skin, explorer_url)
+  defp parse_block_and_preview_txs(block_json, txs_json, explorer_url)
        when is_map(block_json) and (is_map(txs_json) or is_nil(txs_json)) do
     height = parse_height(block_json)
     ts_raw = to_string(block_json["timestamp"] || "")
@@ -194,7 +167,7 @@ defmodule FrontendExWeb.BlockController do
     display_block = %{
       height: height,
       timestamp_relative: Format.format_relative_time(ts_raw),
-      timestamp_readable: format_timestamp_readable(ts_raw, skin),
+      timestamp_readable: Format.format_readable_date_classic_plus_utc(ts_raw),
       tx_count: parse_tx_count(block_json),
       internal_transactions_count: internal_transactions_count,
       miner: miner,
@@ -417,8 +390,4 @@ defmodule FrontendExWeb.BlockController do
 
   defp format_optional_size(_), do: nil
 
-  defp format_timestamp_readable(timestamp, :classic),
-    do: Format.format_readable_date_classic_plus_utc(timestamp)
-
-  defp format_timestamp_readable(timestamp, _skin), do: Format.format_readable_date(timestamp)
 end

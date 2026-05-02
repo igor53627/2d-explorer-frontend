@@ -3,6 +3,6 @@ defmodule FrontendExWeb.HomeControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Sepolia explorer"
+    assert html_response(conn, 200) =~ "Sepolia Testnet Explorer"
   end
 end

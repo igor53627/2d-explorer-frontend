@@ -5,14 +5,11 @@ defmodule FrontendExWeb.BlocksController do
 
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
-  alias FrontendExWeb.BlockHTML
   alias FrontendExWeb.BlocksHTML
 
   @blocks_limit 50
 
   def index(conn, _params) do
-    skin = FrontendExWeb.Skin.current()
-
     stats_path = "/api/v2/stats"
     blocks_path = "/api/v2/blocks?limit=#{@blocks_limit}"
 
@@ -36,26 +33,14 @@ defmodule FrontendExWeb.BlocksController do
         gas_price: gas_price
       })
 
-    case skin do
-      :classic ->
-        styles = BlocksHTML.classic_styles(base_assigns)
+    styles = BlocksHTML.classic_styles(base_assigns)
 
-        render(conn, :classic_content, %{
-          base_assigns
-          | page_title: "Blocks | Sepolia",
-            nav_blocks: "active",
-            styles: styles
-        })
-
-      :s53627 ->
-        topbar = BlockHTML.s53627_topbar(base_assigns)
-
-        render(conn, :s53627_content, %{
-          base_assigns
-          | page_title: "Blocks | Explorer",
-            topbar: topbar
-        })
-    end
+    render(conn, :classic_content, %{
+      base_assigns
+      | page_title: "Blocks | Sepolia",
+        nav_blocks: "active",
+        styles: styles
+    })
   end
 
   defp parse_blocks(nil), do: []

@@ -3,7 +3,6 @@ defmodule FrontendExWeb.TxController do
 
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
-  alias FrontendExWeb.BlockHTML
   alias FrontendExWeb.TxHTML
 
   @task_timeout_ms 10_000
@@ -18,8 +17,6 @@ defmodule FrontendExWeb.TxController do
       |> put_resp_content_type("text/plain")
       |> send_resp(404, "Transaction not found")
     else
-      skin = FrontendExWeb.Skin.current()
-
       base_url = Application.get_env(:frontend_ex, :base_url, "https://fast.53627.org")
 
       stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
@@ -63,7 +60,7 @@ defmodule FrontendExWeb.TxController do
           address_flags(display_tx)
 
         {fee_eth, timestamp_relative, timestamp_readable, method_id} =
-          derive_tx_display_fields(display_tx, skin)
+          derive_tx_display_fields(display_tx)
 
         {gas_display, gas_percentage} = gas_fields(display_tx.gas_used, display_tx.gas_limit)
 
@@ -114,29 +111,15 @@ defmodule FrontendExWeb.TxController do
             gas_price: gas_price
           })
 
-        case skin do
-          :classic ->
-            head_meta = TxHTML.classic_head_meta(base_assigns)
-            styles = TxHTML.classic_styles(base_assigns)
+        head_meta = TxHTML.classic_head_meta(base_assigns)
+        styles = TxHTML.classic_styles(base_assigns)
 
-            render(conn, :classic_content, %{
-              base_assigns
-              | page_title: "Transaction #{display_tx.hash} | Sepolia",
-                head_meta: head_meta,
-                styles: styles
-            })
-
-          :s53627 ->
-            head_meta = TxHTML.s53627_head_meta(base_assigns)
-            topbar = BlockHTML.s53627_topbar(base_assigns)
-
-            render(conn, :s53627_content, %{
-              base_assigns
-              | page_title: "Transaction #{display_tx.hash} | Explorer",
-                head_meta: head_meta,
-                topbar: topbar
-            })
-        end
+        render(conn, :classic_content, %{
+          base_assigns
+          | page_title: "Transaction #{display_tx.hash} | Sepolia",
+            head_meta: head_meta,
+            styles: styles
+        })
       end
     end
   end
@@ -144,30 +127,20 @@ defmodule FrontendExWeb.TxController do
   def logs(conn, %{"hash" => hash}) when is_binary(hash) do
     hash = String.trim(hash)
 
-    cond do
-      not valid_tx_hash?(hash) ->
-        send_tx_not_found(conn)
-
-      FrontendExWeb.Skin.current() != :classic ->
-        redirect_to_overview(conn, hash)
-
-      true ->
-        render_logs_tab(conn, hash)
+    if valid_tx_hash?(hash) do
+      render_logs_tab(conn, hash)
+    else
+      send_tx_not_found(conn)
     end
   end
 
   def state(conn, %{"hash" => hash}) when is_binary(hash) do
     hash = String.trim(hash)
 
-    cond do
-      not valid_tx_hash?(hash) ->
-        send_tx_not_found(conn)
-
-      FrontendExWeb.Skin.current() != :classic ->
-        redirect_to_overview(conn, hash)
-
-      true ->
-        render_state_tab(conn, hash)
+    if valid_tx_hash?(hash) do
+      render_state_tab(conn, hash)
+    else
+      send_tx_not_found(conn)
     end
   end
 
@@ -354,16 +327,6 @@ defmodule FrontendExWeb.TxController do
         {:error, _} ->
           send_tx_not_found(conn)
       end
-    end
-  end
-
-  defp redirect_to_overview(conn, hash) when is_binary(hash) do
-    hash = String.trim(hash)
-
-    if valid_tx_hash?(hash) do
-      redirect(conn, to: "/tx/#{hash}")
-    else
-      send_tx_not_found(conn)
     end
   end
 
@@ -839,7 +802,7 @@ defmodule FrontendExWeb.TxController do
   defp truthy?(true), do: true
   defp truthy?(_), do: false
 
-  defp derive_tx_display_fields(%{} = tx, skin) do
+  defp derive_tx_display_fields(%{} = tx) do
     fee_eth =
       case tx.fee do
         %{value: v} when is_binary(v) -> Format.format_wei_to_eth_exact(v)
@@ -850,15 +813,8 @@ defmodule FrontendExWeb.TxController do
 
     timestamp_readable =
       case tx.timestamp do
-        ts when is_binary(ts) ->
-          if skin == :classic do
-            Format.format_readable_date_classic(ts)
-          else
-            Format.format_readable_date(ts)
-          end
-
-        _ ->
-          nil
+        ts when is_binary(ts) -> Format.format_readable_date_classic(ts)
+        _ -> nil
       end
 
     method_id =

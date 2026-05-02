@@ -1,25 +1,21 @@
 defmodule FrontendExWeb.Skin do
-  @moduledoc false
+  @moduledoc """
+  Skin selection for the 2d fork.
 
-  @type t :: :classic | :s53627
+  Upstream `frontend-ex` shipped two skins (`classic` and `53627`) and
+  used `FF_SKIN` to pick at runtime. The 2d fork supports only the
+  classic skin — keeping a second template set doubles the maintenance
+  cost on every change, and the 2d explorer is committed to the classic
+  visual idiom by product decision (TASK-13.3).
 
-  # `Application.get_env/3` is an ETS lookup (sub-microsecond). Caching the
-  # resolved value in `:persistent_term` was considered but the test suite
-  # mutates `:ff_skin` at runtime (see export_data_parity_test.exs) and a
-  # cache would silently serve the pre-mutation value. The per-request cost
-  # is a handful of microseconds — not a real hot-path concern for this SSR
-  # app — so read-through is the right trade-off.
+  This module is preserved only as the single source of truth for
+  callers that branch on the current skin; all callers now receive a
+  constant. Future cleanup can inline `:classic` at call sites and
+  delete this module.
+  """
+
+  @type t :: :classic
+
   @spec current() :: t()
-  def current do
-    case normalize(Application.get_env(:frontend_ex, :ff_skin, "53627")) do
-      "classic" -> :classic
-      "skin-classic" -> :classic
-      "53627" -> :s53627
-      "skin-53627" -> :s53627
-      _ -> :s53627
-    end
-  end
-
-  defp normalize(v) when is_binary(v), do: String.trim(v)
-  defp normalize(v), do: v |> to_string() |> String.trim()
+  def current, do: :classic
 end

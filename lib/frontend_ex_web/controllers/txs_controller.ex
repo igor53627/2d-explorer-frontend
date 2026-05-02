@@ -4,15 +4,12 @@ defmodule FrontendExWeb.TxsController do
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Blockscout.Cursor
   alias FrontendEx.Format
-  alias FrontendExWeb.BlockHTML
   alias FrontendExWeb.TxsHTML
 
   @page_size_options [10, 25, 50, 100]
   @default_page_size 50
 
   def index(conn, params) when is_map(params) do
-    skin = FrontendExWeb.Skin.current()
-
     page_size = normalize_page_size(params)
 
     cursor_query = cursor_query_from_params(params)
@@ -68,26 +65,14 @@ defmodule FrontendExWeb.TxsController do
         total_transactions_display: total_transactions_display
       })
 
-    case skin do
-      :classic ->
-        styles = TxsHTML.classic_styles(base_assigns)
+    styles = TxsHTML.classic_styles(base_assigns)
 
-        render(conn, :classic_content, %{
-          base_assigns
-          | page_title: "Transactions | Sepolia",
-            nav_txs: "active",
-            styles: styles
-        })
-
-      :s53627 ->
-        topbar = BlockHTML.s53627_topbar(base_assigns)
-
-        render(conn, :s53627_content, %{
-          base_assigns
-          | page_title: "Transactions | Explorer",
-            topbar: topbar
-        })
-    end
+    render(conn, :classic_content, %{
+      base_assigns
+      | page_title: "Transactions | Sepolia",
+        nav_txs: "active",
+        styles: styles
+    })
   end
 
   defp normalize_page_size(params),

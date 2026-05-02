@@ -9,8 +9,6 @@ defmodule FrontendExWeb.HomeController do
   @txs_limit 6
 
   def index(conn, _params) do
-    skin = FrontendExWeb.Skin.current()
-
     explorer_url = explorer_url()
     api_url = Application.get_env(:frontend_ex, :blockscout_api_url, explorer_url)
     ws_url = ws_url(explorer_url)
@@ -58,30 +56,16 @@ defmodule FrontendExWeb.HomeController do
         gas_fast: gas_fast
       })
 
-    case skin do
-      :classic ->
-        styles = HomeHTML.classic_styles(base_assigns)
-        scripts = HomeHTML.classic_scripts(base_assigns)
+    styles = HomeHTML.classic_styles(base_assigns)
+    scripts = HomeHTML.classic_scripts(base_assigns)
 
-        render(conn, :classic_content, %{
-          base_assigns
-          | page_title: "Sepolia Testnet Explorer",
-            nav_home: "active",
-            styles: styles,
-            scripts: scripts
-        })
-
-      :s53627 ->
-        topbar = HomeHTML.s53627_topbar(base_assigns)
-        scripts = HomeHTML.s53627_scripts(base_assigns)
-
-        render(conn, :s53627_content, %{
-          base_assigns
-          | page_title: "Sepolia explorer",
-            topbar: topbar,
-            scripts: scripts
-        })
-    end
+    render(conn, :classic_content, %{
+      base_assigns
+      | page_title: "Sepolia Testnet Explorer",
+        nav_home: "active",
+        styles: styles,
+        scripts: scripts
+    })
   end
 
   defp parse_stats(nil), do: nil

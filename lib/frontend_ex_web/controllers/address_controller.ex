@@ -4,7 +4,6 @@ defmodule FrontendExWeb.AddressController do
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
   alias FrontendExWeb.AddressHTML
-  alias FrontendExWeb.BlockHTML
 
   @txs_preview_limit 25
   @token_holdings_preview_limit 10
@@ -22,8 +21,6 @@ defmodule FrontendExWeb.AddressController do
   end
 
   defp show_valid(conn, address, params) do
-    skin = FrontendExWeb.Skin.current()
-
     cursor_query =
       case Map.get(params, "cursor") do
         v when is_binary(v) -> String.trim(v)
@@ -98,25 +95,13 @@ defmodule FrontendExWeb.AddressController do
           gas_price: gas_price
         })
 
-      case skin do
-        :classic ->
-          styles = AddressHTML.classic_styles(base_assigns)
+      styles = AddressHTML.classic_styles(base_assigns)
 
-          render(conn, :classic_content, %{
-            base_assigns
-            | page_title: "Address #{address_info.hash} | Sepolia",
-              styles: styles
-          })
-
-        :s53627 ->
-          topbar = BlockHTML.s53627_topbar(base_assigns)
-
-          render(conn, :s53627_content, %{
-            base_assigns
-            | page_title: "Address #{address_info.hash} | Explorer",
-              topbar: topbar
-          })
-      end
+      render(conn, :classic_content, %{
+        base_assigns
+        | page_title: "Address #{address_info.hash} | Sepolia",
+          styles: styles
+      })
     end
   end
 
