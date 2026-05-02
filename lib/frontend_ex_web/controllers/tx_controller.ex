@@ -141,21 +141,6 @@ defmodule FrontendExWeb.TxController do
     end
   end
 
-  def internal(conn, %{"hash" => hash}) when is_binary(hash) do
-    hash = String.trim(hash)
-
-    cond do
-      not valid_tx_hash?(hash) ->
-        send_tx_not_found(conn)
-
-      FrontendExWeb.Skin.current() != :classic ->
-        redirect_to_overview(conn, hash)
-
-      true ->
-        render_internal_tab(conn, hash, conn.params)
-    end
-  end
-
   def logs(conn, %{"hash" => hash}) when is_binary(hash) do
     hash = String.trim(hash)
 
@@ -467,71 +452,6 @@ defmodule FrontendExWeb.TxController do
     })
   end
 
-  defp render_internal_tab(conn, hash, params) when is_binary(hash) and is_map(params) do
-    show_advanced = parse_advanced(params)
-
-    stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
-
-    internal_task =
-      Task.async(fn ->
-        Client.get_json_cached(
-          "/api/v2/transactions/#{hash}/internal-transactions",
-          :public,
-          @immutable_ttl_ms
-        )
-      end)
-
-    logs_task =
-      Task.async(fn ->
-        Client.get_json_cached("/api/v2/transactions/#{hash}/logs", :public, @immutable_ttl_ms)
-      end)
-
-    [stats_json, internal_json, logs_json] =
-      await_ok_many([stats_task, internal_task, logs_task], @task_timeout_ms)
-
-    {coin_price, gas_price} = derive_coin_gas(stats_json)
-
-    internal_txns = parse_internal_txns(internal_json)
-
-    zero_value_count =
-      Enum.count(internal_txns, fn itx ->
-        zero_wei?(Map.get(itx, "value"))
-      end)
-
-    internal_txns =
-      if show_advanced do
-        internal_txns
-      else
-        Enum.reject(internal_txns, fn itx ->
-          zero_wei?(Map.get(itx, "value"))
-        end)
-      end
-
-    logs_count = parse_logs_count(logs_json)
-
-    base_assigns =
-      base_assigns(%{
-        base_url: Application.get_env(:frontend_ex, :base_url, "https://fast.53627.org"),
-        tx_hash: hash,
-        internal_txns: internal_txns,
-        logs_count: logs_count,
-        show_advanced: show_advanced,
-        zero_value_count: zero_value_count,
-        coin_price: coin_price,
-        gas_price: gas_price
-      })
-
-    styles = TxHTML.classic_internal_styles(base_assigns)
-    scripts = TxHTML.classic_internal_scripts(base_assigns)
-
-    render(conn, :classic_internal_content, %{
-      base_assigns
-      | page_title: "Transaction #{hash} Internal Txns | Sepolia",
-        styles: styles,
-        scripts: scripts
-    })
-  end
-
   defp parse_coin_price_float(%{"coin_price" => v}) when is_binary(v) do
     case Float.parse(String.trim(v)) do
       {f, ""} -> f
@@ -607,31 +527,6 @@ defmodule FrontendExWeb.TxController do
   end
 
   defp maybe_put_to_name(tx, _to_name), do: tx
-
-  defp parse_advanced(%{"advanced" => v}) do
-    case v do
-      true -> true
-      "true" -> true
-      "TRUE" -> true
-      "1" -> true
-      _ -> false
-    end
-  end
-
-  defp parse_advanced(_), do: false
-
-  defp zero_wei?(nil), do: true
-
-  defp zero_wei?(v) when is_binary(v) do
-    raw =
-      v
-      |> String.trim()
-      |> String.trim_leading("0")
-
-    raw == "" or raw == "0"
-  end
-
-  defp zero_wei?(_), do: false
 
   defp parse_tx_logs(%{"items" => items}) when is_list(items) do
     Enum.map(items, &parse_tx_log/1)
@@ -777,8 +672,6 @@ defmodule FrontendExWeb.TxController do
   defp parse_state_changes(%{"items" => items}) when is_list(items), do: items
   defp parse_state_changes(_), do: []
 
-  defp parse_internal_txns(%{"items" => items}) when is_list(items), do: items
-  defp parse_internal_txns(_), do: []
 
   defp await_ok_many(tasks, timeout_ms)
        when is_list(tasks) and is_integer(timeout_ms) and timeout_ms >= 0 do

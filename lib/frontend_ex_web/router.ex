@@ -38,14 +38,8 @@ defmodule FrontendExWeb.Router do
     plug FrontendExWeb.Plugs.TrimTrailingNewline
   end
 
-  # CSV exports: parity routes, but allow `Accept: text/csv`.
-  pipeline :fast_csv do
-    plug :accepts, ["html", "csv"]
-    plug FrontendExWeb.Plugs.FastLayout
-    plug :put_layout, false
-    plug :put_secure_browser_headers
-    plug FrontendExWeb.Plugs.TrimTrailingNewline
-  end
+  # 2d-fork: removed `:fast_csv` pipeline — its only consumer was the
+  # NFT-CSV export, which 2d does not surface.
 
   # Standalone HTML documents (no root layout). Used for share cards that are
   # full HTML pages and should not be wrapped by the skin layout.
@@ -85,12 +79,11 @@ defmodule FrontendExWeb.Router do
     live_dashboard "/_dashboard", metrics: FrontendExWeb.Telemetry
   end
 
-  scope "/", FrontendExWeb do
-    pipe_through :fast_csv
-
-    get "/nft-latest-mints.csv", NftController, :latest_mints_csv
-  end
-
+  # 2d-fork: removed routes (no ERC-20 / NFT / internal-tx in 2d):
+  #   /nft-latest-mints.csv, /tokens, /nft-transfers, /nft-latest-mints,
+  #   /tx/:hash/internal, /address/:address/{tokens,token-transfers,internal},
+  #   /token/:address[/holders], /exportData
+  # The 2d backend at `/api/v2/*` returns 404 for these (TASK-13.2).
   scope "/", FrontendExWeb do
     pipe_through :fast_browser
 
@@ -98,22 +91,12 @@ defmodule FrontendExWeb.Router do
     get "/search", SearchController, :index
     get "/blocks", BlocksController, :index
     get "/txs", TxsController, :index
-    get "/tokens", TokensController, :index
-    get "/nft-transfers", NftController, :transfers
-    get "/nft-latest-mints", NftController, :latest_mints
     get "/block/:id", BlockController, :show
     get "/block/:id/txs", BlockController, :txs
     get "/tx/:hash", TxController, :show
-    get "/tx/:hash/internal", TxController, :internal
     get "/tx/:hash/logs", TxController, :logs
     get "/tx/:hash/state", TxController, :state
     get "/address/:address", AddressController, :show
-    get "/address/:address/tokens", AddressTabsController, :tokens
-    get "/address/:address/token-transfers", AddressTabsController, :token_transfers
-    get "/address/:address/internal", AddressTabsController, :internal
-    get "/token/:address", TokenController, :show
-    get "/token/:address/holders", TokenController, :holders
-    get "/exportData", ExportDataController, :index
   end
 
   scope "/", FrontendExWeb do

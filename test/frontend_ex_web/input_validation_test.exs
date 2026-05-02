@@ -18,17 +18,7 @@ defmodule FrontendExWeb.InputValidationTest do
     end
   end
 
-  describe "TokenController input validation" do
-    test "returns 404 for invalid token address", %{conn: conn} do
-      conn = get(conn, "/token/not-valid")
-      assert response(conn, 404) =~ "Token not found"
-    end
-
-    test "returns 404 for invalid token holders address", %{conn: conn} do
-      conn = get(conn, "/token/not-valid/holders")
-      assert response(conn, 404) =~ "Token not found"
-    end
-  end
+  # 2d-fork: TokenController removed (no ERC-20 surface in 2d).
 
   describe "BlockController input validation" do
     test "returns 404 for non-numeric non-hash block id", %{conn: conn} do

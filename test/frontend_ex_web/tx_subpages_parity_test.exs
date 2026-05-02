@@ -9,7 +9,6 @@ defmodule FrontendExWeb.TxSubpagesParityTest do
 
   @golden_logs_path Path.expand("../golden/tx_logs.classic.rust.html", __DIR__)
   @golden_state_path Path.expand("../golden/tx_state.classic.rust.html", __DIR__)
-  @golden_internal_path Path.expand("../golden/tx_internal.classic.rust.html", __DIR__)
   @golden_card_path Path.expand("../golden/tx_card.53627.rust.html", __DIR__)
   @golden_og_svg_path Path.expand("../golden/tx_og_image.rust.svg", __DIR__)
 
@@ -54,23 +53,7 @@ defmodule FrontendExWeb.TxSubpagesParityTest do
     Golden.assert_golden!(@golden_state_path, body)
   end
 
-  test "classic /tx/:hash/internal matches Rust HTML byte-for-byte" do
-    restore =
-      put_env(%{
-        ff_skin: "classic",
-        blockscout_url: @explorer_url,
-        blockscout_api_url: @fixture_api_url,
-        blockscout_ws_url: nil,
-        base_url: @base_url,
-        clock_utc_now: @frozen_now
-      })
-
-    on_exit(restore)
-
-    body = html_response(get(build_conn(), "/tx/#{@success_hash}/internal"), 200)
-
-    Golden.assert_golden!(@golden_internal_path, body)
-  end
+  # 2d-fork: /tx/:hash/internal removed (2d has no nested EVM call frames).
 
   test "tx share card /tx/:hash/card matches Rust HTML byte-for-byte" do
     restore =
