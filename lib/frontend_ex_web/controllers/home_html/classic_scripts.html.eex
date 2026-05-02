@@ -85,7 +85,7 @@ function formatNativeAmount(baseUnits) {
 
 function createBlockRow(block) {
     const height = block.height || block.block_number;
-    const txCount = block.tx_count || block.transaction_count || 0;
+    const txCount = block.tx_count ?? block.transaction_count ?? block.transactions_count ?? 0;
     const miner = block.miner?.hash || '';
     const timestamp = block.timestamp;
     
@@ -167,7 +167,12 @@ function createTxRow(tx) {
                     blocksList.removeChild(blocksList.lastChild);
                 }
                 
-                const txCount = payload.block.tx_count || payload.block.transactions_count || 0;
+                // 2d's WS payload uses transaction_count (singular); upstream
+                // Blockscout uses tx_count / transactions_count. Mirror the
+                // server-side parser fix (see HomeController.display_block/1)
+                // so the realtime banner and total-txs counter don't get
+                // stuck at 0 against a 2d backend.
+                const txCount = payload.block.tx_count ?? payload.block.transaction_count ?? payload.block.transactions_count ?? 0;
                 pendingTxCount += txCount;
                 
                 const banner = document.getElementById('new-txs-banner');
