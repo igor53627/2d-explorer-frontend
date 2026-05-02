@@ -161,4 +161,17 @@ defmodule FrontendExWeb.UsdcRenderTest do
     refute body =~ ~r/\bGwei\b/i,
            "tx-detail page must not surface Gwei labels — gas prices are USDC base units"
   end
+
+  test "GET /tx/:hash/card surfaces stats-derived USDC ticker",
+       %{conn: conn} do
+    body =
+      conn
+      |> get("/tx/0xcafe000000000000000000000000000000000000000000000000000000000000/card")
+      |> html_response(200)
+
+    assert body =~ "USDC",
+           "expected /tx/:hash/card share-card to render the stats-derived ticker"
+
+    refute body =~ ~r/\bETH\b/
+  end
 end
