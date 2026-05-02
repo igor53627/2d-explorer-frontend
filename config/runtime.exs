@@ -78,8 +78,10 @@ if config_env() != :test do
   config :frontend_ex, FrontendExWeb.Endpoint, http: [ip: ip, port: port]
 end
 
+# Default points at a local 2d dev backend. Override via BLOCKSCOUT_API_URL
+# env in any non-default deployment (staging/prod/CI).
 blockscout_api_url =
-  System.get_env("BLOCKSCOUT_API_URL", "https://sepolia.53627.org")
+  System.get_env("BLOCKSCOUT_API_URL", "http://localhost:4000")
   |> String.trim()
   |> String.trim_trailing("/")
 

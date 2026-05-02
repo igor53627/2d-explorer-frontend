@@ -158,12 +158,12 @@
         </div>
         <div class="detail-value">
             <%= if @block.block_reward_eth do %>
-                <span><%= @block.block_reward_eth %> ETH</span>
+                <span><%= @block.block_reward_eth %> <%= @native_coin.symbol %></span>
                 <%= if @block.block_reward_breakdown do %>
                     <span class="text-muted">(<%= @block.block_reward_breakdown %>)</span>
                 <% end %>
             <% else %>
-                <span>0 ETH</span>
+                <span>0 <%= @native_coin.symbol %></span>
             <% end %>
         </div>
     </div>
@@ -251,7 +251,7 @@
             <span class="burnt-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4 0 7-3 7-7 0-5-5-8-5-12 0 3-2 4-3 6-1-2-3-3-3-6C6 7 5 10 5 13c0 5 3 9 7 9z"/></svg>
             </span>
-            <span><%= @block.burnt_fees_eth %> ETH</span>
+            <span><%= @block.burnt_fees_eth %> <%= @native_coin.symbol %></span>
         </div>
     </div>
     <% end %>

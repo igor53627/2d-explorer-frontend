@@ -265,7 +265,7 @@ defmodule FrontendExWeb.TxsController do
 
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_wei_to_eth(v)
+        v when is_binary(v) -> Format.format_native_amount(v)
         _ -> nil
       end
 
@@ -283,7 +283,7 @@ defmodule FrontendExWeb.TxsController do
         _ -> "-"
       end
 
-    value = Format.format_wei_to_eth(value_raw) <> " ETH"
+    value = Format.format_native_amount(value_raw) <> " " <> default_native_coin().symbol
 
     %{
       hash: hash,

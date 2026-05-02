@@ -212,11 +212,11 @@ defmodule FrontendExWeb.HomeController do
         _ -> nil
       end
 
-    value = Format.format_wei_to_eth(to_string(tx["value"] || "0"))
+    value = Format.format_native_amount(to_string(tx["value"] || "0"))
 
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_wei_to_eth(v)
+        v when is_binary(v) -> Format.format_native_amount(v)
         _ -> "0"
       end
 

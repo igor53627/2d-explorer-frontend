@@ -5,21 +5,31 @@ defmodule FrontendEx.Format do
 
   import Bitwise
 
-  @wei_per_eth 1_000_000_000_000_000_000
-  @wei_lt_0_000001_eth 1_000_000_000_000
-  @wei_lt_0_001_eth 1_000_000_000_000_000
-  @wei_per_gwei 1_000_000_000
+  # The 2d native coin (USDC) has 6 decimals — i.e. 1 USDC = 1_000_000
+  # base units. Upstream `frontend-ex` was hardcoded to 18-decimal ETH;
+  # the helpers below operate on the 6-decimal native unit instead.
+  # Templates that need to display the symbol render it from the
+  # API-driven `@native_coin.symbol` assign (passed through
+  # `base_assigns`); never hardcode "ETH" or "USDC".
+  @base_units_per_native 1_000_000
+  @half_native div(@base_units_per_native, 2)
 
-  @spec format_wei_to_eth(binary()) :: binary()
-  def format_wei_to_eth(wei_str) when is_binary(wei_str) do
-    wei_str = String.trim(wei_str)
+  # Format a native-coin amount (USDC base units) as a rounded display
+  # string. The threshold buckets mirror the original wei→ETH function
+  # so very small amounts surface more decimal places.
+  @spec format_native_amount(binary()) :: binary()
+  def format_native_amount(amount_str) when is_binary(amount_str) do
+    amount_str = String.trim(amount_str)
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when wei > 0 ->
+    case Integer.parse(amount_str) do
+      {n, ""} when n > 0 ->
         cond do
-          wei < @wei_lt_0_000001_eth -> format_eth_rounded(wei, 8)
-          wei < @wei_lt_0_001_eth -> format_eth_rounded(wei, 6)
-          true -> format_eth_rounded(wei, 4)
+          # < 0.000001 native (sub-base-unit if decimals > 6 — for USDC
+          # this branch is unreachable since base unit IS 10^-6, but
+          # keeping the same shape makes future decimals changes easier)
+          n < div(@base_units_per_native, 1_000_000) -> format_native_rounded(n, 8)
+          n < div(@base_units_per_native, 1_000) -> format_native_rounded(n, 6)
+          true -> format_native_rounded(n, 4)
         end
 
       {0, ""} ->
@@ -30,25 +40,26 @@ defmodule FrontendEx.Format do
     end
   end
 
-  @spec format_wei_to_eth_exact(binary()) :: binary()
-  def format_wei_to_eth_exact(wei_str) when is_binary(wei_str) do
-    wei_str = String.trim(wei_str)
+  # Exact decimal representation — no rounding.
+  @spec format_native_amount_exact(binary()) :: binary()
+  def format_native_amount_exact(amount_str) when is_binary(amount_str) do
+    amount_str = String.trim(amount_str)
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when is_integer(wei) and wei >= 0 ->
-        eth_int = div(wei, @wei_per_eth)
-        eth_frac = rem(wei, @wei_per_eth)
+    case Integer.parse(amount_str) do
+      {n, ""} when is_integer(n) and n >= 0 ->
+        whole = div(n, @base_units_per_native)
+        frac = rem(n, @base_units_per_native)
 
-        if eth_frac == 0 do
-          Integer.to_string(eth_int)
+        if frac == 0 do
+          Integer.to_string(whole)
         else
-          frac =
-            eth_frac
+          frac_str =
+            frac
             |> Integer.to_string()
-            |> String.pad_leading(18, "0")
+            |> String.pad_leading(decimals(), "0")
             |> String.trim_trailing("0")
 
-          "#{eth_int}.#{frac}"
+          "#{whole}.#{frac_str}"
         end
 
       _ ->
@@ -56,54 +67,27 @@ defmodule FrontendEx.Format do
     end
   end
 
-  @spec format_wei_to_gwei(binary()) :: binary()
-  def format_wei_to_gwei(wei_str) when is_binary(wei_str) do
-    wei_str = String.trim(wei_str)
-
-    case Integer.parse(wei_str) do
-      {wei, ""} when is_integer(wei) and wei >= 0 ->
-        if wei == 0 do
-          "0"
-        else
-          gwei_int = div(wei, @wei_per_gwei)
-          gwei_frac = rem(wei, @wei_per_gwei)
-
-          if gwei_frac == 0 do
-            Integer.to_string(gwei_int)
-          else
-            frac =
-              gwei_frac
-              |> Integer.to_string()
-              |> String.pad_leading(9, "0")
-              |> String.trim_trailing("0")
-
-            if frac == "" do
-              Integer.to_string(gwei_int)
-            else
-              "#{gwei_int}.#{frac}"
-            end
-          end
-        end
-
-      _ ->
-        "0"
-    end
+  defp decimals do
+    # Compile-time constant: log10(@base_units_per_native).
+    # Keeping it as a function rather than another @attribute avoids
+    # the temptation of two separate sources of truth.
+    6
   end
 
-  defp format_eth_rounded(wei, decimals) when is_integer(wei) and wei >= 0 and decimals >= 0 do
-    pow10 = Integer.pow(10, decimals)
+  defp format_native_rounded(amount, dp) when is_integer(amount) and amount >= 0 and dp >= 0 do
+    pow10 = Integer.pow(10, dp)
 
-    # Round half-up to the requested number of decimals.
-    numerator = wei * pow10
-    scaled = div(numerator + div(@wei_per_eth, 2), @wei_per_eth)
+    # Round half-up to the requested decimal places.
+    numerator = amount * pow10
+    scaled = div(numerator + @half_native, @base_units_per_native)
 
     int_part = div(scaled, pow10)
     frac_part = rem(scaled, pow10)
 
-    if decimals == 0 do
+    if dp == 0 do
       Integer.to_string(int_part)
     else
-      frac = frac_part |> Integer.to_string() |> String.pad_leading(decimals, "0")
+      frac = frac_part |> Integer.to_string() |> String.pad_leading(dp, "0")
       "#{int_part}.#{frac}"
     end
   end

@@ -29,11 +29,11 @@
     <div class="card address-summary-card">
         <div class="address-summary-title">Overview</div>
         <div class="address-summary-row">
-            <div class="address-summary-label">ETH Balance</div>
+            <div class="address-summary-label"><%= @native_coin.symbol %> Balance</div>
             <div class="address-summary-value"><%= @balance_display %></div>
         </div>
         <div class="address-summary-row">
-            <div class="address-summary-label">ETH Value</div>
+            <div class="address-summary-label"><%= @native_coin.symbol %> Value</div>
             <div class="address-summary-value"><%= @balance_usd_display || "N/A" %></div>
         </div>
         <div class="address-summary-row">

@@ -66,25 +66,25 @@ defmodule FrontendExWeb.TxController do
 
         gas_price_eth =
           if display_tx.gas_price,
-            do: Format.format_wei_to_eth_exact(display_tx.gas_price),
+            do: Format.format_native_amount_exact(display_tx.gas_price),
             else: nil
 
         gas_price_gwei =
-          if display_tx.gas_price, do: Format.format_wei_to_gwei(display_tx.gas_price), else: nil
+          if display_tx.gas_price, do: Format.format_native_amount(display_tx.gas_price), else: nil
 
         base_fee_gwei =
           if display_tx.base_fee_per_gas,
-            do: Format.format_wei_to_gwei(display_tx.base_fee_per_gas),
+            do: Format.format_native_amount(display_tx.base_fee_per_gas),
             else: nil
 
         max_fee_gwei =
           if display_tx.max_fee_per_gas,
-            do: Format.format_wei_to_gwei(display_tx.max_fee_per_gas),
+            do: Format.format_native_amount(display_tx.max_fee_per_gas),
             else: nil
 
         max_priority_fee_gwei =
           if display_tx.max_priority_fee_per_gas,
-            do: Format.format_wei_to_gwei(display_tx.max_priority_fee_per_gas),
+            do: Format.format_native_amount(display_tx.max_priority_fee_per_gas),
             else: nil
 
         base_assigns =
@@ -175,7 +175,7 @@ defmodule FrontendExWeb.TxController do
 
         fee_eth =
           case tx.fee do
-            %{value: v} when is_binary(v) -> Format.format_wei_to_eth(v)
+            %{value: v} when is_binary(v) -> Format.format_native_amount(v)
             _ -> nil
           end
 
@@ -184,7 +184,7 @@ defmodule FrontendExWeb.TxController do
 
         gas_display = if tx.gas_used, do: format_gas_compact(tx.gas_used), else: nil
 
-        value_eth = Format.format_wei_to_eth(tx.value)
+        value_eth = Format.format_native_amount(tx.value)
         value_usd = compute_value_usd(tx.value, coin_price_f)
 
         assigns =
@@ -236,7 +236,7 @@ defmodule FrontendExWeb.TxController do
 
           fee =
             case tx.fee do
-              %{value: v} when is_binary(v) -> Format.format_wei_to_eth(v)
+              %{value: v} when is_binary(v) -> Format.format_native_amount(v)
               _ -> "0"
             end
 
@@ -285,7 +285,7 @@ defmodule FrontendExWeb.TxController do
               <text x="600" y="180" font-family="Inter, system-ui, sans-serif" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="3">TRANSACTION</text>
               
               <!-- Value -->
-              <text x="600" y="260" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="url(#value-gradient)" text-anchor="middle">#{Format.format_wei_to_eth(tx.value)} ETH</text>
+              <text x="600" y="260" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="url(#value-gradient)" text-anchor="middle">#{Format.format_native_amount(tx.value)} #{default_native_coin().symbol}</text>
               
               <!-- From/To Flow -->
               <rect x="80" y="320" width="440" height="120" rx="16" fill="rgba(255,255,255,0.05)"/>
@@ -307,7 +307,7 @@ defmodule FrontendExWeb.TxController do
               
               <rect x="440" y="480" width="320" height="90" rx="12" fill="rgba(255,255,255,0.03)"/>
               <text x="600" y="515" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="1">FEE</text>
-              <text x="600" y="545" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">#{fee} ETH</text>
+              <text x="600" y="545" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">#{fee} #{default_native_coin().symbol}</text>
               
               <rect x="780" y="480" width="340" height="90" rx="12" fill="rgba(255,255,255,0.03)"/>
               <text x="950" y="515" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="1">HASH</text>
@@ -805,7 +805,7 @@ defmodule FrontendExWeb.TxController do
   defp derive_tx_display_fields(%{} = tx) do
     fee_eth =
       case tx.fee do
-        %{value: v} when is_binary(v) -> Format.format_wei_to_eth_exact(v)
+        %{value: v} when is_binary(v) -> Format.format_native_amount_exact(v)
         _ -> nil
       end
 

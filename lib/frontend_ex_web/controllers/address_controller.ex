@@ -165,7 +165,7 @@ defmodule FrontendExWeb.AddressController do
 
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_wei_to_eth(v)
+        v when is_binary(v) -> Format.format_native_amount(v)
         _ -> nil
       end
 
@@ -183,7 +183,7 @@ defmodule FrontendExWeb.AddressController do
         _ -> "-"
       end
 
-    value_eth = Format.format_wei_to_eth(value) <> " ETH"
+    value_eth = Format.format_native_amount(value) <> " " <> default_native_coin().symbol
 
     %{
       hash: hash,
@@ -232,10 +232,10 @@ defmodule FrontendExWeb.AddressController do
     {balances, length(balances)}
   end
 
-  defp format_balance_display(nil), do: "0 ETH"
+  defp format_balance_display(nil), do: "0 " <> default_native_coin().symbol
 
   defp format_balance_display(wei_balance) when is_binary(wei_balance) do
-    Format.format_wei_to_eth_exact(wei_balance) <> " ETH"
+    Format.format_native_amount_exact(wei_balance) <> " " <> default_native_coin().symbol
   end
 
   defp derive_balance_usd_display(nil, _coin_price), do: nil
@@ -243,7 +243,7 @@ defmodule FrontendExWeb.AddressController do
 
   defp derive_balance_usd_display(wei_balance, coin_price)
        when is_binary(wei_balance) and is_binary(coin_price) do
-    with {eth, ""} <- Float.parse(Format.format_wei_to_eth(wei_balance)),
+    with {eth, ""} <- Float.parse(Format.format_native_amount(wei_balance)),
          {cp, ""} <- Float.parse(String.replace(coin_price, ",", "")) do
       usd = eth * cp
 

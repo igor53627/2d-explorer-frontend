@@ -52,19 +52,25 @@ function formatRelativeTime(timestamp) {
     return Math.floor(hours / 24) + 'd ago';
 }
 
-function formatWeiToEth(wei) {
+// Format a USDC base-units integer (6 decimals) into a display string.
+// Mirrors `FrontendEx.Format.format_native_amount/1` so live-updated
+// values rendered client-side match the SSR shape exactly.
+function formatNativeAmount(baseUnits) {
     try {
-        const w = BigInt(wei);
+        const w = BigInt(baseUnits);
         if (w === 0n) return '0';
-        const WEI_PER_ETH = 1000000000000000000n;
-        const decimals = w < 1000000000000n ? 8 : w < 1000000000000000n ? 6 : 4;
-        const intPart = w / WEI_PER_ETH;
-        const fracPart = w % WEI_PER_ETH;
-        const scale = 10n ** BigInt(18 - decimals);
+        const BASE_PER_NATIVE = 1000000n;
+        // Bucket thresholds match the Elixir helper (8 / 6 / 4 decimals).
+        // For a 6-decimal token, the < 10^-6 branch is unreachable in
+        // theory but kept structurally identical for future decimals.
+        const decimals = w < 1n ? 8 : w < 1000n ? 6 : 4;
+        const intPart = w / BASE_PER_NATIVE;
+        const fracPart = w % BASE_PER_NATIVE;
+        const scale = 10n ** BigInt(6 - Math.min(decimals, 6));
         const fracBase = 10n ** BigInt(decimals);
-        let frac = fracPart / scale;
-        const remainder = fracPart % scale;
-        if (remainder * 2n >= scale) frac += 1n;
+        let frac = scale === 0n ? fracPart : fracPart / scale;
+        const remainder = scale === 0n ? 0n : fracPart % scale;
+        if (scale > 0n && remainder * 2n >= scale) frac += 1n;
         let carryInt = intPart;
         if (frac >= fracBase) {
             carryInt += 1n;
@@ -99,7 +105,7 @@ function createBlockRow(block) {
             <div class="block-txns">
                 <a href="/block/${height}/transactions">${txCount} txns</a> in 12 secs
             </div>
-            <div class="block-reward">0 ETH</div>
+            <div class="block-reward">0 <%= @native_coin.symbol %></div>
         </div>
     `;
     return div;
@@ -109,7 +115,7 @@ function createTxRow(tx) {
     const hash = tx.hash;
     const from = tx.from?.hash || '';
     const to = tx.to?.hash;
-    const value = formatWeiToEth(tx.value || '0');
+    const value = formatNativeAmount(tx.value || '0');
     const timestamp = tx.timestamp;
     
     const div = document.createElement('div');
@@ -128,7 +134,7 @@ function createTxRow(tx) {
             </div>
         </div>
         <div class="tx-meta">
-            <div class="tx-value">${value} ETH</div>
+            <div class="tx-value">${value} <%= @native_coin.symbol %></div>
             <div class="tx-value-label">Value</div>
         </div>
     `;
