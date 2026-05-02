@@ -233,7 +233,7 @@
             Gas Price:
         </div>
         <div class="detail-value">
-            <span><%= @gas_price_gwei %> Gwei</span>
+            <span><%= @gas_price_gwei %> <%= @native_coin.symbol %></span>
             <%= if @gas_price_eth do %>
                 <span class="text-muted">(<%= @gas_price_eth %> <%= @native_coin.symbol %>)</span>
             <% end %>
@@ -290,13 +290,13 @@
             </div>
             <div class="detail-value">
                 <%= if @base_fee_gwei do %>
-                    <span>Base: <strong><%= @base_fee_gwei %></strong> Gwei</span>
+                    <span>Base: <strong><%= @base_fee_gwei %></strong> <%= @native_coin.symbol %></span>
                 <% end %>
                 <%= if @max_fee_gwei do %>
-                    <span style="margin-left: 16px;">Max: <strong><%= @max_fee_gwei %></strong> Gwei</span>
+                    <span style="margin-left: 16px;">Max: <strong><%= @max_fee_gwei %></strong> <%= @native_coin.symbol %></span>
                 <% end %>
                 <%= if @max_priority_fee_gwei do %>
-                    <span style="margin-left: 16px;">Max Priority: <strong><%= @max_priority_fee_gwei %></strong> Gwei</span>
+                    <span style="margin-left: 16px;">Max Priority: <strong><%= @max_priority_fee_gwei %></strong> <%= @native_coin.symbol %></span>
                 <% end %>
             </div>
         </div>

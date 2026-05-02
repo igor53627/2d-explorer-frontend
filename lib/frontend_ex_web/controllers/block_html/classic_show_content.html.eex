@@ -235,7 +235,7 @@
         <div class="detail-value">
             <span><%= @block.base_fee_per_gas %> wei</span>
             <%= if @block.base_fee_per_gas_gwei do %>
-                <span class="text-muted">(<%= @block.base_fee_per_gas_gwei %> Gwei)</span>
+                <span class="text-muted">(<%= @block.base_fee_per_gas_gwei %> <%= @native_coin.symbol %>)</span>
             <% end %>
         </div>
     </div>

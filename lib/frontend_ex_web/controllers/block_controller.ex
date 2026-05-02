@@ -42,6 +42,7 @@ defmodule FrontendExWeb.BlockController do
       |> send_resp(404, "Block not found")
     else
       {coin_price, gas_price} = derive_coin_gas(stats_json)
+      native_coin = derive_native_coin(stats_json)
 
       {block, txs_preview} =
         parse_block_and_preview_txs(block_json, txs_json, explorer_url)
@@ -51,7 +52,8 @@ defmodule FrontendExWeb.BlockController do
           block: block,
           transactions: txs_preview,
           coin_price: coin_price,
-          gas_price: gas_price
+          gas_price: gas_price,
+          native_coin: native_coin
         })
 
       styles = BlockHTML.classic_show_styles(base_assigns)
@@ -96,6 +98,7 @@ defmodule FrontendExWeb.BlockController do
       |> send_resp(404, "Block not found")
     else
       {coin_price, gas_price} = derive_coin_gas(stats_json)
+      native_coin = derive_native_coin(stats_json)
 
       block_height = parse_height(block_json)
       tx_count = parse_tx_count(block_json)
@@ -107,7 +110,8 @@ defmodule FrontendExWeb.BlockController do
           tx_count: tx_count,
           transactions: transactions,
           coin_price: coin_price,
-          gas_price: gas_price
+          gas_price: gas_price,
+          native_coin: native_coin
         })
 
       styles = BlockHTML.classic_txs_styles(base_assigns)

@@ -35,7 +35,8 @@ defmodule FrontendExWeb.TxsController do
       await_many_ok([{stats_path, stats_task}, {txs_path, txs_task}], "txs")
 
     {coin_price, gas_price, total_transactions_display} = derive_stats_fields(stats_json)
-    {transactions, next_cursor} = parse_transactions_response(txs_json)
+    native_coin = derive_native_coin(stats_json)
+    {transactions, next_cursor} = parse_transactions_response(txs_json, native_coin)
 
     page_label =
       if is_first_page do
@@ -62,7 +63,8 @@ defmodule FrontendExWeb.TxsController do
         page_label: page_label,
         is_first_page: is_first_page,
         next_cursor: next_cursor,
-        total_transactions_display: total_transactions_display
+        total_transactions_display: total_transactions_display,
+        native_coin: native_coin
       })
 
     styles = TxsHTML.classic_styles(base_assigns)
@@ -218,9 +220,9 @@ defmodule FrontendExWeb.TxsController do
 
   defp derive_stats_fields(_), do: {nil, nil, nil}
 
-  defp parse_transactions_response(nil), do: {[], nil}
+  defp parse_transactions_response(nil, _native_coin), do: {[], nil}
 
-  defp parse_transactions_response(%{} = json) do
+  defp parse_transactions_response(%{} = json, native_coin) do
     items =
       case json["items"] do
         list when is_list(list) -> list
@@ -236,16 +238,16 @@ defmodule FrontendExWeb.TxsController do
     transactions =
       items
       |> Enum.flat_map(fn
-        %{} = tx -> [display_tx(tx)]
+        %{} = tx -> [display_tx(tx, native_coin)]
         _ -> []
       end)
 
     {transactions, next_cursor}
   end
 
-  defp parse_transactions_response(_), do: {[], nil}
+  defp parse_transactions_response(_, _native_coin), do: {[], nil}
 
-  defp display_tx(%{} = tx) do
+  defp display_tx(%{} = tx, native_coin) do
     hash = to_string(tx["hash"] || "")
 
     from_hash =
@@ -283,7 +285,7 @@ defmodule FrontendExWeb.TxsController do
         _ -> "-"
       end
 
-    value = Format.format_native_amount(value_raw) <> " " <> default_native_coin().symbol
+    value = Format.format_native_amount(value_raw) <> " " <> native_coin.symbol
 
     %{
       hash: hash,

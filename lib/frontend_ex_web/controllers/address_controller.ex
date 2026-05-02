@@ -59,18 +59,19 @@ defmodule FrontendExWeb.AddressController do
       |> send_resp(404, "Address not found")
     else
       {coin_price, gas_price} = derive_coin_gas(stats_json)
+      native_coin = derive_native_coin(stats_json)
 
       address_info = parse_address(addr_json)
 
       transactions =
         txs_json
-        |> parse_transactions(address_info.hash)
+        |> parse_transactions(address_info.hash, native_coin)
         |> Enum.take(@txs_preview_limit)
 
       {all_token_balances, token_holdings_count} = parse_token_balances(tokens_json)
       token_balances = Enum.take(all_token_balances, @token_holdings_preview_limit)
 
-      balance_display = format_balance_display(address_info.coin_balance)
+      balance_display = format_balance_display(address_info.coin_balance, native_coin)
       balance_usd_display = derive_balance_usd_display(address_info.coin_balance, coin_price)
 
       token_holdings_display =
@@ -92,7 +93,8 @@ defmodule FrontendExWeb.AddressController do
           token_holdings_display: token_holdings_display,
           tx_count_display: tx_count_display,
           coin_price: coin_price,
-          gas_price: gas_price
+          gas_price: gas_price,
+          native_coin: native_coin
         })
 
       styles = AddressHTML.classic_styles(base_assigns)
@@ -132,9 +134,9 @@ defmodule FrontendExWeb.AddressController do
       transactions_count: nil
     }
 
-  defp parse_transactions(nil, _addr_hash), do: []
+  defp parse_transactions(nil, _addr_hash, _native_coin), do: []
 
-  defp parse_transactions(%{} = txs_json, addr_hash) when is_binary(addr_hash) do
+  defp parse_transactions(%{} = txs_json, addr_hash, native_coin) when is_binary(addr_hash) do
     items =
       case txs_json["items"] do
         list when is_list(list) -> list
@@ -142,10 +144,10 @@ defmodule FrontendExWeb.AddressController do
       end
 
     items
-    |> Enum.map(&display_tx(&1, addr_hash))
+    |> Enum.map(&display_tx(&1, addr_hash, native_coin))
   end
 
-  defp display_tx(%{} = tx, addr_hash) when is_binary(addr_hash) do
+  defp display_tx(%{} = tx, addr_hash, native_coin) when is_binary(addr_hash) do
     hash = to_string(tx["hash"] || "")
 
     from_hash =
@@ -183,7 +185,7 @@ defmodule FrontendExWeb.AddressController do
         _ -> "-"
       end
 
-    value_eth = Format.format_native_amount(value) <> " " <> default_native_coin().symbol
+    value_eth = Format.format_native_amount(value) <> " " <> native_coin.symbol
 
     %{
       hash: hash,
@@ -200,7 +202,7 @@ defmodule FrontendExWeb.AddressController do
     }
   end
 
-  defp display_tx(_, _addr_hash), do: nil
+  defp display_tx(_, _addr_hash, _native_coin), do: nil
 
   defp parse_token_balances(nil), do: {[], 0}
 
@@ -232,10 +234,10 @@ defmodule FrontendExWeb.AddressController do
     {balances, length(balances)}
   end
 
-  defp format_balance_display(nil), do: "0 " <> default_native_coin().symbol
+  defp format_balance_display(nil, native_coin), do: "0 " <> native_coin.symbol
 
-  defp format_balance_display(wei_balance) when is_binary(wei_balance) do
-    Format.format_native_amount_exact(wei_balance) <> " " <> default_native_coin().symbol
+  defp format_balance_display(wei_balance, native_coin) when is_binary(wei_balance) do
+    Format.format_native_amount_exact(wei_balance) <> " " <> native_coin.symbol
   end
 
   defp derive_balance_usd_display(nil, _coin_price), do: nil

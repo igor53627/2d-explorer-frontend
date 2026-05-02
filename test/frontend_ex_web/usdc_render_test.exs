@@ -39,25 +39,32 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "next_page_params" => nil
     }
 
+    @tx_hash "0xcafe000000000000000000000000000000000000000000000000000000000000"
+
+    @tx_detail %{
+      "hash" => @tx_hash,
+      "block_number" => 0,
+      "transaction_index" => 0,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{"hash" => "0x0000000000000000000000000000000000000001"},
+      "to" => %{"hash" => "0x0000000000000000000000000000000000000002"},
+      "value" => "100",
+      "status" => "ok",
+      "gas_used" => 21_000,
+      "gas_price" => "0",
+      "fee" => %{"value" => "0"},
+      "transaction_type" => 0,
+      "max_fee_per_gas" => nil,
+      "max_priority_fee_per_gas" => nil,
+      "base_fee_per_gas" => nil
+    }
+
     @transactions_list %{
-      "items" => [
-        %{
-          "hash" => "0xcafe000000000000000000000000000000000000000000000000000000000000",
-          "block_number" => 0,
-          "transaction_index" => 0,
-          "timestamp" => "2023-11-14T22:13:20Z",
-          "from" => %{"hash" => "0x0000000000000000000000000000000000000001"},
-          "to" => %{"hash" => "0x0000000000000000000000000000000000000002"},
-          "value" => "100",
-          "status" => "ok",
-          "gas_used" => 21_000,
-          "gas_price" => "0",
-          "fee" => %{"value" => "0"},
-          "transaction_type" => 0
-        }
-      ],
+      "items" => [@tx_detail],
       "next_page_params" => nil
     }
+
+    @tx_logs %{"items" => [], "next_page_params" => nil}
 
     @impl true
     def request_raw(url) when is_binary(url) do
@@ -69,7 +76,15 @@ defmodule FrontendExWeb.UsdcRenderTest do
           "/api/v2/stats" -> @stats
           "/api/v2/blocks" -> @blocks_list
           "/api/v2/transactions" -> @transactions_list
-          _ -> nil
+          "/api/v2/transactions/" <> rest ->
+            cond do
+              rest == @tx_hash -> @tx_detail
+              rest == "#{@tx_hash}/logs" -> @tx_logs
+              true -> nil
+            end
+
+          _ ->
+            nil
         end
 
       case body do
@@ -128,5 +143,18 @@ defmodule FrontendExWeb.UsdcRenderTest do
     body = conn |> get("/txs") |> html_response(200)
     assert body =~ "USDC", "expected /txs to render the USDC ticker on tx values"
     refute body =~ ~r/\bETH\b/
+  end
+
+  test "GET /tx/:hash surfaces USDC, no Gwei labels remain on gas fields",
+       %{conn: conn} do
+    body = conn |> get("/tx/0xcafe000000000000000000000000000000000000000000000000000000000000") |> html_response(200)
+
+    assert body =~ "USDC", "expected /tx/:hash to render the USDC ticker"
+    refute body =~ ~r/\bETH\b/
+    # Gwei labels were the high-severity finding from the previous review:
+    # gas-price/base-fee/max-fee values are USDC base units, so labeling
+    # them "Gwei" would lie to the user.
+    refute body =~ ~r/\bGwei\b/i,
+           "tx-detail page must not surface Gwei labels — gas prices are USDC base units"
   end
 end

@@ -46,6 +46,7 @@ defmodule FrontendExWeb.TxController do
         |> send_resp(404, "Transaction not found")
       else
         {coin_price, gas_price} = derive_coin_gas(stats_json)
+        native_coin = derive_native_coin(stats_json)
 
         logs_count = parse_logs_count(logs_json)
         latest_block_height = parse_latest_block_height(blocks_json)
@@ -108,7 +109,8 @@ defmodule FrontendExWeb.TxController do
             max_priority_fee_gwei: max_priority_fee_gwei,
             logs_count: logs_count,
             coin_price: coin_price,
-            gas_price: gas_price
+            gas_price: gas_price,
+          native_coin: native_coin
           })
 
         head_meta = TxHTML.classic_head_meta(base_assigns)
@@ -350,6 +352,7 @@ defmodule FrontendExWeb.TxController do
     [stats_json, logs_json] = await_ok_many([stats_task, logs_task], @task_timeout_ms)
 
     {coin_price, gas_price} = derive_coin_gas(stats_json)
+    native_coin = derive_native_coin(stats_json)
     logs = parse_tx_logs(logs_json)
     logs_count = length(logs)
 
@@ -360,7 +363,8 @@ defmodule FrontendExWeb.TxController do
         logs: logs,
         logs_count: logs_count,
         coin_price: coin_price,
-        gas_price: gas_price
+        gas_price: gas_price,
+          native_coin: native_coin
       })
 
     styles = TxHTML.classic_logs_styles(base_assigns)
@@ -393,6 +397,7 @@ defmodule FrontendExWeb.TxController do
       await_ok_many([stats_task, state_task, logs_task], @task_timeout_ms)
 
     {coin_price, gas_price} = derive_coin_gas(stats_json)
+    native_coin = derive_native_coin(stats_json)
     state_changes = parse_state_changes(state_json)
     logs_count = parse_logs_count(logs_json)
 
@@ -403,7 +408,8 @@ defmodule FrontendExWeb.TxController do
         state_changes: state_changes,
         logs_count: logs_count,
         coin_price: coin_price,
-        gas_price: gas_price
+        gas_price: gas_price,
+          native_coin: native_coin
       })
 
     styles = TxHTML.classic_state_styles(base_assigns)

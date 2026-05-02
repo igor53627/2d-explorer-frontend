@@ -24,13 +24,15 @@ defmodule FrontendExWeb.BlocksController do
       await_many_ok([{stats_path, stats_task}, {blocks_path, blocks_task}], "blocks")
 
     {coin_price, gas_price} = derive_coin_gas(stats_json)
+    native_coin = derive_native_coin(stats_json)
     blocks = parse_blocks(blocks_json)
 
     base_assigns =
       base_assigns(%{
         blocks: blocks,
         coin_price: coin_price,
-        gas_price: gas_price
+        gas_price: gas_price,
+        native_coin: native_coin
       })
 
     styles = BlocksHTML.classic_styles(base_assigns)
