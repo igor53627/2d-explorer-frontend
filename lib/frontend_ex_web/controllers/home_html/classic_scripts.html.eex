@@ -172,7 +172,13 @@ function createTxRow(tx) {
                 // server-side parser fix (see HomeController.display_block/1)
                 // so the realtime banner and total-txs counter don't get
                 // stuck at 0 against a 2d backend.
-                const txCount = payload.block.tx_count ?? payload.block.transaction_count ?? payload.block.transactions_count ?? 0;
+                //
+                // Coerce to integer: upstream sometimes ships these as JSON
+                // strings, which would otherwise turn `pendingTxCount += txCount`
+                // and `updateCounter(..., txCount)` into string concatenation
+                // ("0" + "5" = "05") and silently break the counters.
+                const rawTxCount = payload.block.tx_count ?? payload.block.transaction_count ?? payload.block.transactions_count ?? 0;
+                const txCount = Number.parseInt(rawTxCount, 10) || 0;
                 pendingTxCount += txCount;
                 
                 const banner = document.getElementById('new-txs-banner');
