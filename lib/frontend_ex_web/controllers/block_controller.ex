@@ -186,7 +186,11 @@ defmodule FrontendExWeb.BlockController do
       gas_target_delta: gas_target_delta,
       gas_limit: format_optional_number_string(block_json["gas_limit"]),
       size: format_optional_size(block_json["size"]),
-      base_fee_per_gas: block_json["base_fee_per_gas"],
+      # base_fee_per_gas arrives in native base units (USDC = 6 decimals on
+      # 2d). Format here so the template can label it with @native_coin.symbol
+      # without overstating by 10^6. Mirrors the tx-detail flow in
+      # tx_controller.ex (see base_fee_native there).
+      base_fee_per_gas: format_base_fee_native(block_json["base_fee_per_gas"]),
       base_fee_per_gas_gwei: nil,
       burnt_fees_eth: nil,
       hash: block_json["hash"],
@@ -210,8 +214,12 @@ defmodule FrontendExWeb.BlockController do
     _ -> 0
   end
 
+  # 2d returns "transaction_count" (singular); upstream Blockscout uses
+  # "tx_count" / "transactions_count". Accept all three so the detail page
+  # shows the real count instead of "0 transactions".
   defp parse_tx_count(%{} = block_json) do
-    case block_json["tx_count"] || block_json["transactions_count"] do
+    case block_json["tx_count"] || block_json["transaction_count"] ||
+           block_json["transactions_count"] do
       v when is_integer(v) -> v
       v when is_binary(v) -> v |> String.trim() |> String.to_integer()
       _ -> 0
@@ -394,4 +402,11 @@ defmodule FrontendExWeb.BlockController do
 
   defp format_optional_size(_), do: nil
 
+  defp format_base_fee_native(v) when is_binary(v),
+    do: Format.format_native_amount(String.trim(v))
+
+  defp format_base_fee_native(v) when is_integer(v) and v >= 0,
+    do: Format.format_native_amount(Integer.to_string(v))
+
+  defp format_base_fee_native(_), do: nil
 end

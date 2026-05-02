@@ -86,9 +86,9 @@ defmodule FrontendExWeb.HomeController do
     # Upstream Blockscout returns these counts as strings; 2d's API
     # returns them as JSON integers. Accept both shapes so the home
     # hero/overview cards don't render "-" against a 2d backend.
-    total_blocks = format_count(json["total_blocks"])
-    total_transactions = format_count(json["total_transactions"])
-    total_addresses = format_count(json["total_addresses"])
+    total_blocks = Format.format_count(json["total_blocks"])
+    total_transactions = Format.format_count(json["total_transactions"])
+    total_addresses = Format.format_count(json["total_addresses"])
 
     coin_price =
       case json["coin_price"] do
@@ -121,15 +121,6 @@ defmodule FrontendExWeb.HomeController do
       gas_prices: gas_prices
     }
   end
-
-  # Accept both shapes upstream Blockscout (string) and 2d API (integer)
-  # use for chain counts. Anything else → nil → "-" placeholder in template.
-  defp format_count(v) when is_binary(v), do: Format.format_number_with_commas(v)
-
-  defp format_count(v) when is_integer(v) and v >= 0,
-    do: Format.format_number_with_commas(Integer.to_string(v))
-
-  defp format_count(_), do: nil
 
   defp parse_blocks(nil), do: []
 
@@ -167,8 +158,12 @@ defmodule FrontendExWeb.HomeController do
         nil
       end
 
+    # 2d's /api/v2/blocks returns the per-block tx count as
+    # "transaction_count" (singular); upstream Blockscout uses "tx_count" /
+    # "transactions_count". Accept all three so the block tile shows the
+    # real count instead of "0 txns" against a 2d backend.
     tx_count =
-      case b["tx_count"] do
+      case b["tx_count"] || b["transaction_count"] || b["transactions_count"] do
         v when is_integer(v) -> v
         _ -> nil
       end

@@ -248,6 +248,19 @@ defmodule FrontendEx.Format do
     end
   end
 
+  @doc """
+  Formats a chain count that may arrive as either a binary (upstream
+  Blockscout shape) or a non-negative JSON integer (2d's API shape). Anything
+  else returns `nil` so callers can render a `-` placeholder.
+  """
+  @spec format_count(term()) :: binary() | nil
+  def format_count(v) when is_binary(v), do: format_number_with_commas(v)
+
+  def format_count(v) when is_integer(v) and v >= 0,
+    do: v |> Integer.to_string() |> format_number_with_commas()
+
+  def format_count(_), do: nil
+
   defp format_int_with_commas_str(int_part) when is_binary(int_part) do
     s = String.trim(int_part)
     if s == "", do: "0", else: insert_thousands_commas(s)

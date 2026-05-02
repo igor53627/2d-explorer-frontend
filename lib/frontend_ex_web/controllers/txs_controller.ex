@@ -205,11 +205,18 @@ defmodule FrontendExWeb.TxsController do
         _ -> nil
       end
 
+    # Upstream Blockscout returns total_transactions as a string; 2d's API
+    # returns it as a JSON integer. Accept both shapes (mirrors
+    # Format.format_count/1 used on the home page) so the
+    # "More than X transactions found" header doesn't disappear against a
+    # 2d backend.
     total_transactions_display =
       case stats_json["total_transactions"] do
         v when is_binary(v) ->
-          clean = String.replace(v, ",", "")
-          Format.format_number_with_commas(clean)
+          v |> String.replace(",", "") |> Format.format_count()
+
+        v when is_integer(v) ->
+          Format.format_count(v)
 
         _ ->
           nil

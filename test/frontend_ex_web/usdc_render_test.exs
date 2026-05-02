@@ -32,7 +32,6 @@ defmodule FrontendExWeb.UsdcRenderTest do
           "parent_hash" => "0x" <> String.duplicate("0", 64),
           "timestamp" => "2023-11-14T22:13:20Z",
           "transaction_count" => 1,
-          "tx_count" => 1,
           "miner" => %{"hash" => "0x2d00000000000000000000000000000000000001"}
         }
       ],
@@ -54,7 +53,11 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "to" => %{"hash" => "0x0000000000000000000000000000000000000002"},
       "value" => "100",
       "status" => "ok",
+      # gas_used / gas_limit ship as JSON integers in 2d's API (vs. strings
+      # upstream). The mixed shapes here pin parse_tx's normalizer:
+      # if it ever regresses to binary-only, the gas-usage row vanishes.
       "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
       "gas_price" => "5",
       "fee" => %{"value" => "105000"},
       "transaction_type" => 2,
@@ -69,6 +72,28 @@ defmodule FrontendExWeb.UsdcRenderTest do
     }
 
     @tx_logs %{"items" => [], "next_page_params" => nil}
+
+    # EIP-1559 block detail: non-null base_fee_per_gas in USDC base units
+    # (1500 base = 0.0015 USDC). Pins that /block/:id formats the base fee
+    # via Format.format_native_amount/1 instead of dropping the raw integer
+    # next to a USDC label (a 10^6 overstatement).
+    @block_detail %{
+      "height" => 0,
+      "hash" => "0x" <> String.duplicate("0", 64),
+      "parent_hash" => "0x" <> String.duplicate("0", 64),
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "transaction_count" => 1,
+      "miner" => %{"hash" => "0x2d00000000000000000000000000000000000001"},
+      "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
+      "size" => 1024,
+      "base_fee_per_gas" => "1500",
+      "nonce" => "0x0000000000000000",
+      "extra_data" => nil,
+      "state_root" => "0x" <> String.duplicate("0", 64)
+    }
+
+    @block_txs %{"items" => [], "next_page_params" => nil}
 
     @addr_hash "0x0000000000000000000000000000000000000001"
 
@@ -92,6 +117,8 @@ defmodule FrontendExWeb.UsdcRenderTest do
         case path do
           "/api/v2/stats" -> @stats
           "/api/v2/blocks" -> @blocks_list
+          "/api/v2/blocks/0" -> @block_detail
+          "/api/v2/blocks/0/transactions" -> @block_txs
           "/api/v2/transactions" -> @transactions_list
           "/api/v2/transactions/" <> rest ->
             cond do
@@ -181,6 +208,29 @@ defmodule FrontendExWeb.UsdcRenderTest do
     # them "Gwei" would lie to the user.
     refute body =~ ~r/\bGwei\b/i,
            "tx-detail page must not surface Gwei labels — gas prices are USDC base units"
+
+    # Pins bug_008: parse_tx must accept JSON-integer gas_used (2d's shape),
+    # otherwise the entire "Gas Limit & Usage by Txn" row disappears. Match
+    # both raw and HTML-escaped forms — Phoenix's safe_to_iodata/1 escapes
+    # literal '&' in EEx templates.
+    assert body =~ "Gas Limit & Usage by Txn" or body =~ "Gas Limit &amp; Usage by Txn",
+           "expected /tx/:hash to render the Gas Limit & Usage row when gas_used is JSON-integer"
+
+    assert body =~ "21000 / 30000000",
+           "expected gas_used / gas_limit to render verbatim from 2d's integer-shaped fields"
+  end
+
+  test "GET /block/:id formats base_fee_per_gas as USDC, not raw base units",
+       %{conn: conn} do
+    body = conn |> get("/block/0") |> html_response(200)
+
+    # 1500 base units / 10^6 decimals = 0.0015 USDC. The bug was the
+    # template rendering "1500 USDC" — a 10^6 overstatement.
+    assert body =~ "0.0015 USDC",
+           "expected /block/0 to render base_fee_per_gas as 0.0015 USDC"
+
+    refute body =~ "1500 USDC",
+           "tx-detail page must not surface raw base units alongside the USDC label"
   end
 
   test "GET /tx/:hash/card surfaces stats-derived USDC ticker",

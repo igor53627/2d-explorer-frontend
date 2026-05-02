@@ -77,8 +77,11 @@ defmodule FrontendExWeb.BlocksController do
         _ -> nil
       end
 
+    # 2d returns "transaction_count" (singular); upstream Blockscout uses
+    # "tx_count" / "transactions_count". Accept all three so each row shows
+    # the real count instead of "0".
     tx_count =
-      case b["tx_count"] do
+      case b["tx_count"] || b["transaction_count"] || b["transactions_count"] do
         v when is_integer(v) -> v
         v when is_binary(v) -> parse_int_or(v, 0)
         _ -> 0

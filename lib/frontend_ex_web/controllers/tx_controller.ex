@@ -714,18 +714,23 @@ defmodule FrontendExWeb.TxController do
       from: %{hash: from_hash},
       to: if(to_hash, do: %{hash: to_hash}, else: nil),
       value: to_string(tx_json["value"] || "0"),
-      gas_used: normalize_opt_string(tx_json["gas_used"]),
-      gas_price: normalize_opt_string(tx_json["gas_price"]),
-      gas_limit: normalize_opt_string(tx_json["gas_limit"]),
+      # Numeric-string fields: upstream Blockscout returns these as JSON
+      # strings, 2d's API returns them as JSON integers. normalize_int_or_string
+      # accepts both shapes so the gas-usage row, base/max/priority fee
+      # rows, and the share-card "Gas Used" cell don't silently disappear
+      # against a 2d backend.
+      gas_used: normalize_int_or_string(tx_json["gas_used"]),
+      gas_price: normalize_int_or_string(tx_json["gas_price"]),
+      gas_limit: normalize_int_or_string(tx_json["gas_limit"]),
       fee: parse_fee(tx_json["fee"]),
       status: normalize_opt_string(tx_json["status"]),
       timestamp: normalize_opt_string(tx_json["timestamp"]),
       confirmations: nil,
       method: normalize_opt_string(tx_json["method"]),
       tx_type: parse_u64(tx_json["type"]),
-      base_fee_per_gas: normalize_opt_string(tx_json["base_fee_per_gas"]),
-      max_fee_per_gas: normalize_opt_string(tx_json["max_fee_per_gas"]),
-      max_priority_fee_per_gas: normalize_opt_string(tx_json["max_priority_fee_per_gas"]),
+      base_fee_per_gas: normalize_int_or_string(tx_json["base_fee_per_gas"]),
+      max_fee_per_gas: normalize_int_or_string(tx_json["max_fee_per_gas"]),
+      max_priority_fee_per_gas: normalize_int_or_string(tx_json["max_priority_fee_per_gas"]),
       raw_input: normalize_opt_string(tx_json["raw_input"])
     }
   end
