@@ -33,18 +33,13 @@
             <div class="address-summary-value"><%= @balance_display %></div>
         </div>
         <div class="address-summary-row">
-            <div class="address-summary-label"><%= @native_coin.symbol %> Value</div>
+            <%!-- @balance_usd_display is fiat (USD), not a native-coin
+                amount — label stays unit-correct as "USD Value". --%>
+            <div class="address-summary-label">USD Value</div>
             <div class="address-summary-value"><%= @balance_usd_display || "N/A" %></div>
         </div>
-        <div class="address-summary-row">
-            <div class="address-summary-label">Token Holdings</div>
-            <div class="address-summary-value">
-                <a href="/address/<%= @address.hash %>/tokens" class="token-holdings-select" aria-label="Token holdings">
-                    <%= @token_holdings_display %>
-                    <svg class="token-holdings-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>
-                </a>
-            </div>
-        </div>
+        <%!-- 2d-fork: Token Holdings row removed — 2d has no ERC-20s,
+            USDC is the native coin and surfaced as the balance above. --%>
     </div>
 
     <div class="card address-summary-card">
@@ -76,11 +71,12 @@
     </div>
 </div>
 
+<%!-- 2d-fork: Internal Transactions / Token Transfers / NFT Transfers tabs
+    removed — none of those pages exist in 2d (no nested EVM frames,
+    no ERC-20s, no NFTs). Contract tab is preserved for forwards-compat
+    when contract verification lands. --%>
 <div class="tabs">
     <a href="/address/<%= @address.hash %>" class="tab active">Transactions</a>
-    <a href="/address/<%= @address.hash %>/internal" class="tab">Internal Transactions</a>
-    <a href="/address/<%= @address.hash %>/token-transfers" class="tab">Token Transfers (ERC-20)</a>
-    <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">NFT Transfers</a>
     <%= if @address.is_contract do %>
     <a href="<%= @explorer_url %>/address/<%= @address.hash %>?tab=contract" class="tab">Contract</a>
     <% end %>

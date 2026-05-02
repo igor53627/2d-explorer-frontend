@@ -78,12 +78,29 @@ if config_env() != :test do
   config :frontend_ex, FrontendExWeb.Endpoint, http: [ip: ip, port: port]
 end
 
-# Default points at a local 2d dev backend. Override via BLOCKSCOUT_API_URL
-# env in any non-default deployment (staging/prod/CI).
+# Default points at a local 2d dev backend (matches `mix phx.server` in
+# `~/pse/2d`). Production deployments MUST set BLOCKSCOUT_API_URL — a
+# silent fallback to `localhost:4000` would route every upstream call
+# into the void. Mirrors the EXPLORER_DATABASE_URL pattern in 2d itself.
 blockscout_api_url =
-  System.get_env("BLOCKSCOUT_API_URL", "http://localhost:4000")
-  |> String.trim()
-  |> String.trim_trailing("/")
+  case {config_env(), System.get_env("BLOCKSCOUT_API_URL")} do
+    {_, v} when is_binary(v) and v != "" ->
+      v |> String.trim() |> String.trim_trailing("/")
+
+    {:prod, _} ->
+      raise """
+      environment variable BLOCKSCOUT_API_URL is missing in MIX_ENV=prod.
+
+      The 2d fork talks to a 2d /api/v2/* endpoint; running with no URL
+      would silently fall back to http://localhost:4000, which is rarely
+      what production wants. Set the variable explicitly:
+
+        BLOCKSCOUT_API_URL=https://2d.example.com
+      """
+
+    _ ->
+      "http://localhost:4000"
+  end
 
 blockscout_txs_api_url =
   case System.get_env("BLOCKSCOUT_TXS_API_URL") do
@@ -109,17 +126,17 @@ base_url =
   |> String.trim()
   |> String.trim_trailing("/")
 
-ff_skin =
-  System.get_env("FF_SKIN", "53627")
-  |> String.trim()
+# 2d-fork: FF_SKIN env var removed — `Skin.current/0` always returns
+# `:classic` (the 53627 skin templates were deleted). Setting `FF_SKIN`
+# in deployments has no effect; remove it from your env file to avoid
+# operator confusion.
 
 config :frontend_ex,
   blockscout_api_url: blockscout_api_url,
   blockscout_txs_api_url: blockscout_txs_api_url,
   blockscout_url: blockscout_url,
   blockscout_ws_url: blockscout_ws_url,
-  base_url: base_url,
-  ff_skin: ff_skin
+  base_url: base_url
 
 metrics_enabled =
   case System.get_env("FF_METRICS_ENABLED") do

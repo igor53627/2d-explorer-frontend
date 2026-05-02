@@ -80,23 +80,12 @@ defmodule FrontendExWeb.HomeController do
         nil
       end
 
-    total_blocks =
-      case json["total_blocks"] do
-        v when is_binary(v) -> Format.format_number_with_commas(v)
-        _ -> nil
-      end
-
-    total_transactions =
-      case json["total_transactions"] do
-        v when is_binary(v) -> Format.format_number_with_commas(v)
-        _ -> nil
-      end
-
-    total_addresses =
-      case json["total_addresses"] do
-        v when is_binary(v) -> Format.format_number_with_commas(v)
-        _ -> nil
-      end
+    # Upstream Blockscout returns these counts as strings; 2d's API
+    # returns them as JSON integers. Accept both shapes so the home
+    # hero/overview cards don't render "-" against a 2d backend.
+    total_blocks = format_count(json["total_blocks"])
+    total_transactions = format_count(json["total_transactions"])
+    total_addresses = format_count(json["total_addresses"])
 
     coin_price =
       case json["coin_price"] do
@@ -129,6 +118,15 @@ defmodule FrontendExWeb.HomeController do
       gas_prices: gas_prices
     }
   end
+
+  # Accept both shapes upstream Blockscout (string) and 2d API (integer)
+  # use for chain counts. Anything else → nil → "-" placeholder in template.
+  defp format_count(v) when is_binary(v), do: Format.format_number_with_commas(v)
+
+  defp format_count(v) when is_integer(v) and v >= 0,
+    do: Format.format_number_with_commas(Integer.to_string(v))
+
+  defp format_count(_), do: nil
 
   defp parse_blocks(nil), do: []
 

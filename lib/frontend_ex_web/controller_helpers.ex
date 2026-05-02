@@ -252,9 +252,11 @@ defmodule FrontendExWeb.ControllerHelpers do
   """
   @spec derive_native_coin(map() | nil) :: %{symbol: String.t(), decimals: non_neg_integer()}
   def derive_native_coin(%{"native_coin" => %{"symbol" => sym, "decimals" => dec}})
-      when is_binary(sym) and is_integer(dec) and dec >= 0,
+      when is_binary(sym) and sym != "" and is_integer(dec) and dec >= 0,
       do: %{symbol: sym, decimals: dec}
 
+  # Blank symbol falls back to the default — rendering an empty ticker
+  # next to a balance is worse than showing "USDC".
   def derive_native_coin(_), do: default_native_coin()
 
   @doc "Per-fork default `native_coin` map — 2d uses USDC at 6 decimals."

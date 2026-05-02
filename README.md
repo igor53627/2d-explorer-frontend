@@ -17,7 +17,7 @@ Phoenix SSR block-explorer frontend for [2d](https://github.com/igor53627/2d) â€
 
 ## Architecture
 
-```
+```text
 Browser -> 2d-explorer-frontend (Phoenix SSR)
             -> 2d /api/v2/* (Phoenix, classic skin only, USDC native)
                 -> Postgres (state + history schemas, role: explorer)

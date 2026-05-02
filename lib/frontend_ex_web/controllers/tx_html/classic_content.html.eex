@@ -16,7 +16,6 @@
 <div class="tx-tabbar">
     <div class="tabs">
         <a href="/tx/<%= @tx.hash %>" class="tab active">Overview</a>
-        <a href="/tx/<%= @tx.hash %>/internal" class="tab">Internal Txns</a>
         <a href="/tx/<%= @tx.hash %>/logs" class="tab">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
         <a href="/tx/<%= @tx.hash %>/state" class="tab">State</a>
         <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blobs</a>
@@ -226,22 +225,19 @@
     </div>
     <% end %>
     
-    <%= if @gas_price_gwei do %>
+    <%= if @gas_price_native do %>
 <%= if is_nil(@fee_eth), do: "    \n", else: "" %>    <div class="detail-row">
         <div class="detail-label">
             <span class="help-icon">?</span>
             Gas Price:
         </div>
         <div class="detail-value">
-            <span><%= @gas_price_gwei %> <%= @native_coin.symbol %></span>
-            <%= if @gas_price_eth do %>
-                <span class="text-muted">(<%= @gas_price_eth %> <%= @native_coin.symbol %>)</span>
-            <% end %>
+            <span><%= @gas_price_native %> <%= @native_coin.symbol %></span>
         </div>
     </div>
     <% end %>
 
-    <%= if @gas_display || @base_fee_gwei || @max_fee_gwei || @max_priority_fee_gwei || @method_id do %>
+    <%= if @gas_display || @base_fee_native || @max_fee_native || @max_priority_fee_native || @method_id do %>
     <details class="more-details">
         <summary class="detail-row">
             <div class="detail-label">More Details:</div>
@@ -282,21 +278,21 @@
         </div>
         <% end %>
 
-        <%= if @base_fee_gwei || @max_fee_gwei || @max_priority_fee_gwei do %>
+        <%= if @base_fee_native || @max_fee_native || @max_priority_fee_native do %>
         <div class="detail-row">
             <div class="detail-label">
                 <span class="help-icon">?</span>
                 Gas Fees:
             </div>
             <div class="detail-value">
-                <%= if @base_fee_gwei do %>
-                    <span>Base: <strong><%= @base_fee_gwei %></strong> <%= @native_coin.symbol %></span>
+                <%= if @base_fee_native do %>
+                    <span>Base: <strong><%= @base_fee_native %></strong> <%= @native_coin.symbol %></span>
                 <% end %>
-                <%= if @max_fee_gwei do %>
-                    <span style="margin-left: 16px;">Max: <strong><%= @max_fee_gwei %></strong> <%= @native_coin.symbol %></span>
+                <%= if @max_fee_native do %>
+                    <span style="margin-left: 16px;">Max: <strong><%= @max_fee_native %></strong> <%= @native_coin.symbol %></span>
                 <% end %>
-                <%= if @max_priority_fee_gwei do %>
-                    <span style="margin-left: 16px;">Max Priority: <strong><%= @max_priority_fee_gwei %></strong> <%= @native_coin.symbol %></span>
+                <%= if @max_priority_fee_native do %>
+                    <span style="margin-left: 16px;">Max Priority: <strong><%= @max_priority_fee_native %></strong> <%= @native_coin.symbol %></span>
                 <% end %>
             </div>
         </div>

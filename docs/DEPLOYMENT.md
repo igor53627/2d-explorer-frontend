@@ -6,8 +6,7 @@
 mix setup
 
 LISTEN_ADDR=127.0.0.1:3010 \
-BLOCKSCOUT_API_URL=https://sepolia.53627.org \
-FF_SKIN=classic \
+BLOCKSCOUT_API_URL=http://localhost:4000 \
 mix phx.server
 ```
 

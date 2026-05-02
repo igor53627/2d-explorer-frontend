@@ -18,10 +18,10 @@
                 <span class="stat-label">Transactions</span>
                 <span class="stat-value"><%= if @stats, do: (@stats.total_transactions || "-"), else: "-" %></span>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">Base Fee</span>
-                <span class="stat-value">&lt; 1 Wei</span>
-            </div>
+            <%!-- 2d-fork: hardcoded "< 1 Wei" tile removed — base fee in 2d
+                is in USDC base units, and we don't surface a chain-wide
+                base-fee summary on the home tile. Restore via stats data
+                if/when the API exposes a meaningful aggregate. --%>
             <div class="stat-item">
                 <span class="stat-label">Latest Block</span>
                 <span class="stat-value"><%= if @blocks != [], do: hd(@blocks).height_formatted, else: "-" %></span>

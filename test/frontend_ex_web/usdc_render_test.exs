@@ -70,6 +70,19 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
     @tx_logs %{"items" => [], "next_page_params" => nil}
 
+    @addr_hash "0x0000000000000000000000000000000000000001"
+
+    @address_detail %{
+      "hash" => @addr_hash,
+      "coin_balance" => "1234567",
+      "is_contract" => false,
+      "is_verified" => false,
+      "transactions_count" => 0
+    }
+
+    @address_txs %{"items" => [], "next_page_params" => nil}
+    @address_tokens %{"items" => [], "next_page_params" => nil}
+
     @impl true
     def request_raw(url) when is_binary(url) do
       uri = URI.parse(url)
@@ -84,6 +97,14 @@ defmodule FrontendExWeb.UsdcRenderTest do
             cond do
               rest == @tx_hash -> @tx_detail
               rest == "#{@tx_hash}/logs" -> @tx_logs
+              true -> nil
+            end
+
+          "/api/v2/addresses/" <> rest ->
+            cond do
+              rest == @addr_hash -> @address_detail
+              rest == "#{@addr_hash}/transactions" -> @address_txs
+              rest == "#{@addr_hash}/tokens" -> @address_tokens
               true -> nil
             end
 
@@ -173,5 +194,49 @@ defmodule FrontendExWeb.UsdcRenderTest do
            "expected /tx/:hash/card share-card to render the stats-derived ticker"
 
     refute body =~ ~r/\bETH\b/
+  end
+
+  describe "no broken nav links to deleted routes" do
+    @addr_hash "0x0000000000000000000000000000000000000001"
+    @tx_hash "0xcafe000000000000000000000000000000000000000000000000000000000000"
+
+    @dead_routes [
+      "/tokens",
+      "/nft-latest-mints",
+      "/nft-transfers",
+      "/exportData",
+      "/token/",
+      "/address/#{@addr_hash}/tokens",
+      "/address/#{@addr_hash}/token-transfers",
+      "/address/#{@addr_hash}/internal",
+      "/tx/#{@tx_hash}/internal"
+    ]
+
+    test "home page does not link to any deleted route", %{conn: conn} do
+      body = conn |> get("/") |> html_response(200)
+
+      for route <- @dead_routes do
+        refute body =~ ~s|href="#{route}|,
+               "home page links to deleted route #{route}"
+      end
+    end
+
+    test "address page does not link to any deleted route", %{conn: conn} do
+      body = conn |> get("/address/#{@addr_hash}") |> html_response(200)
+
+      for route <- @dead_routes do
+        refute body =~ ~s|href="#{route}|,
+               "address page links to deleted route #{route}"
+      end
+    end
+
+    test "tx detail page does not link to any deleted route", %{conn: conn} do
+      body = conn |> get("/tx/#{@tx_hash}") |> html_response(200)
+
+      for route <- @dead_routes do
+        refute body =~ ~s|href="#{route}|,
+               "tx detail page links to deleted route #{route}"
+      end
+    end
   end
 end

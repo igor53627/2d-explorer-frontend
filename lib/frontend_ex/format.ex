@@ -5,31 +5,38 @@ defmodule FrontendEx.Format do
 
   import Bitwise
 
-  # The 2d native coin (USDC) has 6 decimals — i.e. 1 USDC = 1_000_000
-  # base units. Upstream `frontend-ex` was hardcoded to 18-decimal ETH;
-  # the helpers below operate on the 6-decimal native unit instead.
-  # Templates that need to display the symbol render it from the
-  # API-driven `@native_coin.symbol` assign (passed through
-  # `base_assigns`); never hardcode "ETH" or "USDC".
-  @base_units_per_native 1_000_000
-  @half_native div(@base_units_per_native, 2)
+  # Default native coin = USDC (6 decimals). Single-arity entry points
+  # (`format_native_amount/1`, `format_native_amount_exact/1`) use this
+  # for callers without `native_coin` in scope (e.g. SVG OG-image render).
+  # Two-arity variants take the live decimals from `/api/v2/stats.native_coin`
+  # so a future non-USDC token would format correctly without a code change.
+  @default_decimals 6
 
-  # Format a native-coin amount (USDC base units) as a rounded display
-  # string. The threshold buckets mirror the original wei→ETH function
-  # so very small amounts surface more decimal places.
+  @doc "Default decimals when a caller has no `native_coin` in scope."
+  def default_decimals, do: @default_decimals
+
+  @doc """
+  Format a native-coin amount (in base units) as a rounded display
+  string. Threshold buckets mirror the original wei→ETH helper so very
+  small amounts surface more decimal places.
+  """
   @spec format_native_amount(binary()) :: binary()
-  def format_native_amount(amount_str) when is_binary(amount_str) do
+  def format_native_amount(amount_str), do: format_native_amount(amount_str, @default_decimals)
+
+  @spec format_native_amount(binary(), non_neg_integer()) :: binary()
+  def format_native_amount(amount_str, decimals)
+      when is_binary(amount_str) and is_integer(decimals) and decimals >= 0 do
     amount_str = String.trim(amount_str)
+    base_units = Integer.pow(10, decimals)
 
     case Integer.parse(amount_str) do
       {n, ""} when n > 0 ->
         cond do
-          # < 0.000001 native (sub-base-unit if decimals > 6 — for USDC
-          # this branch is unreachable since base unit IS 10^-6, but
-          # keeping the same shape makes future decimals changes easier)
-          n < div(@base_units_per_native, 1_000_000) -> format_native_rounded(n, 8)
-          n < div(@base_units_per_native, 1_000) -> format_native_rounded(n, 6)
-          true -> format_native_rounded(n, 4)
+          # The threshold rule of thumb: bucket precision so very small
+          # values still surface a non-zero fractional part.
+          n < div(base_units, 1_000_000) -> format_native_rounded(n, 8, base_units)
+          n < div(base_units, 1_000) -> format_native_rounded(n, 6, base_units)
+          true -> format_native_rounded(n, 4, base_units)
         end
 
       {0, ""} ->
@@ -42,13 +49,19 @@ defmodule FrontendEx.Format do
 
   # Exact decimal representation — no rounding.
   @spec format_native_amount_exact(binary()) :: binary()
-  def format_native_amount_exact(amount_str) when is_binary(amount_str) do
+  def format_native_amount_exact(amount_str),
+    do: format_native_amount_exact(amount_str, @default_decimals)
+
+  @spec format_native_amount_exact(binary(), non_neg_integer()) :: binary()
+  def format_native_amount_exact(amount_str, decimals)
+      when is_binary(amount_str) and is_integer(decimals) and decimals >= 0 do
     amount_str = String.trim(amount_str)
+    base_units = Integer.pow(10, decimals)
 
     case Integer.parse(amount_str) do
       {n, ""} when is_integer(n) and n >= 0 ->
-        whole = div(n, @base_units_per_native)
-        frac = rem(n, @base_units_per_native)
+        whole = div(n, base_units)
+        frac = rem(n, base_units)
 
         if frac == 0 do
           Integer.to_string(whole)
@@ -56,7 +69,7 @@ defmodule FrontendEx.Format do
           frac_str =
             frac
             |> Integer.to_string()
-            |> String.pad_leading(decimals(), "0")
+            |> String.pad_leading(decimals, "0")
             |> String.trim_trailing("0")
 
           "#{whole}.#{frac_str}"
@@ -67,19 +80,13 @@ defmodule FrontendEx.Format do
     end
   end
 
-  defp decimals do
-    # Compile-time constant: log10(@base_units_per_native).
-    # Keeping it as a function rather than another @attribute avoids
-    # the temptation of two separate sources of truth.
-    6
-  end
-
-  defp format_native_rounded(amount, dp) when is_integer(amount) and amount >= 0 and dp >= 0 do
+  defp format_native_rounded(amount, dp, base_units)
+       when is_integer(amount) and amount >= 0 and dp >= 0 do
     pow10 = Integer.pow(10, dp)
 
     # Round half-up to the requested decimal places.
     numerator = amount * pow10
-    scaled = div(numerator + @half_native, @base_units_per_native)
+    scaled = div(numerator + div(base_units, 2), base_units)
 
     int_part = div(scaled, pow10)
     frac_part = rem(scaled, pow10)

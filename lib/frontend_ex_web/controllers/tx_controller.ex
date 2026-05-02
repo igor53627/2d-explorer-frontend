@@ -65,25 +65,25 @@ defmodule FrontendExWeb.TxController do
 
         {gas_display, gas_percentage} = gas_fields(display_tx.gas_used, display_tx.gas_limit)
 
-        gas_price_eth =
+        gas_price_native_exact =
           if display_tx.gas_price,
             do: Format.format_native_amount_exact(display_tx.gas_price),
             else: nil
 
-        gas_price_gwei =
+        gas_price_native =
           if display_tx.gas_price, do: Format.format_native_amount(display_tx.gas_price), else: nil
 
-        base_fee_gwei =
+        base_fee_native =
           if display_tx.base_fee_per_gas,
             do: Format.format_native_amount(display_tx.base_fee_per_gas),
             else: nil
 
-        max_fee_gwei =
+        max_fee_native =
           if display_tx.max_fee_per_gas,
             do: Format.format_native_amount(display_tx.max_fee_per_gas),
             else: nil
 
-        max_priority_fee_gwei =
+        max_priority_fee_native =
           if display_tx.max_priority_fee_per_gas,
             do: Format.format_native_amount(display_tx.max_priority_fee_per_gas),
             else: nil
@@ -102,11 +102,11 @@ defmodule FrontendExWeb.TxController do
             method_id: method_id,
             gas_display: gas_display,
             gas_percentage: gas_percentage,
-            gas_price_eth: gas_price_eth,
-            gas_price_gwei: gas_price_gwei,
-            base_fee_gwei: base_fee_gwei,
-            max_fee_gwei: max_fee_gwei,
-            max_priority_fee_gwei: max_priority_fee_gwei,
+            gas_price_native_exact: gas_price_native_exact,
+            gas_price_native: gas_price_native,
+            base_fee_native: base_fee_native,
+            max_fee_native: max_fee_native,
+            max_priority_fee_native: max_priority_fee_native,
             logs_count: logs_count,
             coin_price: coin_price,
             gas_price: gas_price,
@@ -432,14 +432,17 @@ defmodule FrontendExWeb.TxController do
 
   defp parse_coin_price_float(_), do: nil
 
-  defp compute_value_usd(wei_str, coin_price_f)
-       when is_binary(wei_str) and is_float(coin_price_f) do
-    wei_str = String.trim(wei_str)
+  # USDC has 6 decimals, so the divisor is 10^6, not the legacy 10^18.
+  # Sourcing the constant from `Format` keeps the divisor and the
+  # `format_native_amount/1` helper in sync.
+  defp compute_value_usd(amount_str, coin_price_f)
+       when is_binary(amount_str) and is_float(coin_price_f) do
+    amount_str = String.trim(amount_str)
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when is_integer(wei) and wei >= 0 ->
-        eth = wei / 1.0e18
-        usd = eth * coin_price_f
+    case Integer.parse(amount_str) do
+      {n, ""} when is_integer(n) and n >= 0 ->
+        native = n / 1.0e6
+        usd = native * coin_price_f
         :io_lib.format("~.2f", [usd]) |> IO.iodata_to_binary()
 
       _ ->
@@ -447,7 +450,7 @@ defmodule FrontendExWeb.TxController do
     end
   end
 
-  defp compute_value_usd(_wei_str, _coin_price_f), do: nil
+  defp compute_value_usd(_amount_str, _coin_price_f), do: nil
 
   defp tx_short_hash_card(hash) when is_binary(hash) do
     if byte_size(hash) > 16 do

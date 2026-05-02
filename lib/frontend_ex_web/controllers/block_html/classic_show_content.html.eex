@@ -233,10 +233,7 @@
             Base Fee Per Gas:
         </div>
         <div class="detail-value">
-            <span><%= @block.base_fee_per_gas %> wei</span>
-            <%= if @block.base_fee_per_gas_gwei do %>
-                <span class="text-muted">(<%= @block.base_fee_per_gas_gwei %> <%= @native_coin.symbol %>)</span>
-            <% end %>
+            <span><%= @block.base_fee_per_gas %> <%= @native_coin.symbol %></span>
         </div>
     </div>
     <% end %>

@@ -29,12 +29,9 @@ Browser
 
 ## Skins
 
-Skin selection is runtime-based:
-
-- `FF_SKIN=53627` uses `lib/frontend_ex_web/fast_layouts/s53627.html.eex`
-- `FF_SKIN=classic` uses `lib/frontend_ex_web/fast_layouts/classic.html.eex`
-
-See `FrontendExWeb.Skin` and `FrontendExWeb.FastLayouts`.
+The 2d fork supports only the `classic` skin —
+`lib/frontend_ex_web/fast_layouts/classic.html.eex`. `FrontendExWeb.Skin.current/0`
+always returns `:classic`; the upstream `FF_SKIN` env var was removed.
 
 ## Templates and Parity
 

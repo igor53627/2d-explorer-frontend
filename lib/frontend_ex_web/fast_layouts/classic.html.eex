@@ -88,34 +88,8 @@
                         </div>
                     </div>
 
-                    <div class="nav-dropdown">
-                        <button class="nav-link nav-dropdown-toggle <%= assigns[:nav_tokens] || "" %>" type="button" aria-haspopup="true" aria-expanded="false">
-                            Tokens
-                            <svg class="nav-caret" viewBox="0 0 12 12" aria-hidden="true">
-                                <path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </button>
-                        <div class="nav-menu">
-                            <div class="nav-menu-inner">
-                                <a href="/tokens" class="nav-menu-item">Tokens</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="nav-dropdown">
-                        <button class="nav-link nav-dropdown-toggle <%= assigns[:nav_nfts] || "" %>" type="button" aria-haspopup="true" aria-expanded="false">
-                            NFTs
-                            <svg class="nav-caret" viewBox="0 0 12 12" aria-hidden="true">
-                                <path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </button>
-                        <div class="nav-menu">
-                            <div class="nav-menu-inner">
-                                <a href="/nft-latest-mints" class="nav-menu-item">NFT Latest Mints</a>
-                                <a href="/nft-transfers" class="nav-menu-item">NFT Transfers</a>
-                            </div>
-                        </div>
-                    </div>
+                    <%!-- 2d-fork: Tokens / NFTs nav dropdowns removed — neither
+                        section exists in 2d, so the links would 404. --%>
 
                     <div class="nav-dropdown">
                         <button class="nav-link nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
