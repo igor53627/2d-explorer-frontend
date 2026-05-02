@@ -41,6 +41,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
     @tx_hash "0xcafe000000000000000000000000000000000000000000000000000000000000"
 
+    # EIP-1559 fixture: non-nil 1559 fee fields exercise the
+    # `<%= @gas_price_gwei %> <%= @native_coin.symbol %>` and
+    # `Base / Max / Max Priority` template branches that earlier had
+    # hardcoded "Gwei" labels. Values are USDC base units in 2d.
     @tx_detail %{
       "hash" => @tx_hash,
       "block_number" => 0,
@@ -51,12 +55,12 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "value" => "100",
       "status" => "ok",
       "gas_used" => 21_000,
-      "gas_price" => "0",
-      "fee" => %{"value" => "0"},
-      "transaction_type" => 0,
-      "max_fee_per_gas" => nil,
-      "max_priority_fee_per_gas" => nil,
-      "base_fee_per_gas" => nil
+      "gas_price" => "5",
+      "fee" => %{"value" => "105000"},
+      "transaction_type" => 2,
+      "max_fee_per_gas" => "10",
+      "max_priority_fee_per_gas" => "2",
+      "base_fee_per_gas" => "3"
     }
 
     @transactions_list %{

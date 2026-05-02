@@ -165,6 +165,7 @@ defmodule FrontendExWeb.TxController do
         send_tx_not_found(conn)
       else
         coin_price_f = parse_coin_price_float(stats_json)
+        native_coin = derive_native_coin(stats_json)
 
         tx = parse_tx(tx_json)
         from_name = get_in(tx_json, ["from", "name"])
@@ -198,7 +199,8 @@ defmodule FrontendExWeb.TxController do
             timestamp_relative: timestamp_relative,
             gas_display: gas_display,
             value_eth: value_eth,
-            value_usd: value_usd
+            value_usd: value_usd,
+            native_coin: native_coin
           })
 
         render(conn, :tx_card, assigns)
