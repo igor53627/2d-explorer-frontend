@@ -41,6 +41,8 @@ defmodule FrontendExWeb.HomeController do
     {coin_price, coin_price_change, gas_slow, gas_avg, gas_fast, gas_price} =
       derive_stats_fields(stats)
 
+    native_coin = derive_native_coin(stats_json)
+
     base_assigns =
       base_assigns(%{
         api_url: api_url,
@@ -53,7 +55,8 @@ defmodule FrontendExWeb.HomeController do
         gas_price: gas_price,
         gas_slow: gas_slow,
         gas_avg: gas_avg,
-        gas_fast: gas_fast
+        gas_fast: gas_fast,
+        native_coin: native_coin
       })
 
     styles = HomeHTML.classic_styles(base_assigns)

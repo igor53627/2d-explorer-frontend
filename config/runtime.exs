@@ -83,9 +83,13 @@ end
 # silent fallback to `localhost:4000` would route every upstream call
 # into the void. Mirrors the EXPLORER_DATABASE_URL pattern in 2d itself.
 blockscout_api_url =
-  case {config_env(), System.get_env("BLOCKSCOUT_API_URL")} do
-    {_, v} when is_binary(v) and v != "" ->
-      v |> String.trim() |> String.trim_trailing("/")
+  case {config_env(),
+        System.get_env("BLOCKSCOUT_API_URL")
+        |> Kernel.||("")
+        |> String.trim()
+        |> String.trim_trailing("/")} do
+    {_, v} when v != "" ->
+      v
 
     {:prod, _} ->
       raise """
@@ -96,6 +100,9 @@ blockscout_api_url =
       what production wants. Set the variable explicitly:
 
         BLOCKSCOUT_API_URL=https://2d.example.com
+
+      Whitespace-only or "/"-only values are also rejected — they would
+      trim down to an empty string and produce the same broken state.
       """
 
     _ ->

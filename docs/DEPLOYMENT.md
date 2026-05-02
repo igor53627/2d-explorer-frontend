@@ -47,11 +47,14 @@ podman run --rm \
   sh -lc 'mix local.hex --force && mix local.rebar --force && mix deps.get --only prod && mix compile && mix release --overwrite'
 ```
 
-Run the release:
+Run the release. **`BLOCKSCOUT_API_URL` is required in `MIX_ENV=prod`** —
+the runtime config raises with a clear message if it's missing or empty,
+so set it explicitly:
 
 ```bash
 export PHX_SERVER=true
 export SECRET_KEY_BASE="$(mix phx.gen.secret)"
+export BLOCKSCOUT_API_URL=https://2d.example.com  # required in prod
 
 # Example: bind locally for a quick smoke test
 export LISTEN_ADDR=127.0.0.1:3010
