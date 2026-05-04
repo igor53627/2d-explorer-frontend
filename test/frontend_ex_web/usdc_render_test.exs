@@ -211,6 +211,60 @@ defmodule FrontendExWeb.UsdcRenderTest do
     refute body =~ ~r/\bETH\b/
   end
 
+  describe "WS_URL host source (bug_004 regression pin)" do
+    # Pins that the realtime WS endpoint is derived from the Phoenix-channels
+    # host (BLOCKSCOUT_API_URL), not the public-facing frontend host
+    # (BLOCKSCOUT_URL). In single-host dev these coincide, masking any
+    # regression — split-deployment values force the distinction.
+
+    setup do
+      prev_url = Application.get_env(:frontend_ex, :blockscout_url)
+      prev_api = Application.get_env(:frontend_ex, :blockscout_api_url)
+      prev_ws = Application.get_env(:frontend_ex, :blockscout_ws_url)
+
+      on_exit(fn ->
+        if prev_url,
+          do: Application.put_env(:frontend_ex, :blockscout_url, prev_url),
+          else: Application.delete_env(:frontend_ex, :blockscout_url)
+
+        if prev_api,
+          do: Application.put_env(:frontend_ex, :blockscout_api_url, prev_api),
+          else: Application.delete_env(:frontend_ex, :blockscout_api_url)
+
+        if prev_ws,
+          do: Application.put_env(:frontend_ex, :blockscout_ws_url, prev_ws),
+          else: Application.delete_env(:frontend_ex, :blockscout_ws_url)
+      end)
+
+      :ok
+    end
+
+    test "WS_URL derives from api_url when split from frontend url", %{conn: conn} do
+      Application.put_env(:frontend_ex, :blockscout_url, "https://example.com")
+      Application.put_env(:frontend_ex, :blockscout_api_url, "https://api.example.com")
+      Application.delete_env(:frontend_ex, :blockscout_ws_url)
+
+      body = conn |> get("/") |> html_response(200)
+
+      assert body =~ "wss://api.example.com/socket/v2/websocket?vsn=2.0.0",
+             "expected WS_URL to derive from BLOCKSCOUT_API_URL host"
+
+      refute body =~ "wss://example.com/socket/v2/websocket",
+             "WS_URL must not derive from the public-facing BLOCKSCOUT_URL host"
+    end
+
+    test "explicit BLOCKSCOUT_WS_URL overrides derivation", %{conn: conn} do
+      Application.put_env(:frontend_ex, :blockscout_url, "https://example.com")
+      Application.put_env(:frontend_ex, :blockscout_api_url, "https://api.example.com")
+      Application.put_env(:frontend_ex, :blockscout_ws_url, "wss://realtime.example.com/ws")
+
+      body = conn |> get("/") |> html_response(200)
+
+      assert body =~ "wss://realtime.example.com/ws",
+             "explicit BLOCKSCOUT_WS_URL must take precedence over derivation"
+    end
+  end
+
   test "GET /blocks renders 200 (no token-symbol display on blocks-list by design)", %{conn: conn} do
     body = conn |> get("/blocks") |> html_response(200)
     refute body =~ ~r/\bETH\b/
