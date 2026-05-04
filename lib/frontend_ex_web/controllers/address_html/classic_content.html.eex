@@ -118,6 +118,10 @@
                 <span>Latest <%= length(@transactions) %> from a total of <%= @tx_count_display %> transactions</span>
             <% end %>
             <div class="toolbar-actions">
+                <div class="addr-format-toggle" role="group" aria-label="Display addresses as">
+                    <button type="button" data-addr-format="hex" class="addr-format-btn is-active">Hex</button>
+                    <button type="button" data-addr-format="base58" class="addr-format-btn">Base58</button>
+                </div>
                 <button class="btn" type="button" aria-label="Download page data">
                     <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5 1.42 1.42L11 6.84V16h2V6.84l3.08 3.08 1.42-1.42L12 2z"/></svg>
                     Download Page Data
@@ -130,7 +134,7 @@
         </div>
     </div>
     <div class="table-responsive">
-    <table class="txs-table address-txs-table">
+    <table class="txs-table address-txs-table" data-addr-format="hex">
         <thead>
             <tr>
                 <th class="dir-cell preview-cell">
@@ -192,12 +196,20 @@
                 </td>
                 <td><span class="text-muted"><%= tx.age %></span></td>
                 <td>
-                    <span class="hash-inline">
+                    <span class="hash-inline addr-hex">
                         <a href="/address/<%= tx.from_hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from_hash %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from_hash) %></a>
-                        <button class="copy-btn" data-copy="<%= tx.from_hash %>" title="Copy from address">
+                        <button class="copy-btn" data-copy="<%= tx.from_hash %>" title="Copy from address (Hex)">
                             <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                         </button>
                     </span>
+                    <%= if tx.from_hash_tron do %>
+                    <span class="hash-inline addr-base58">
+                        <a href="/address/<%= tx.from_hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from_hash_tron %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from_hash_tron) %></a>
+                        <button class="copy-btn" data-copy="<%= tx.from_hash_tron %>" title="Copy from address (Base58)">
+                            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                        </button>
+                    </span>
+                    <% end %>
                 </td>
                 <td class="dir-cell dir-col">
                     <%= if tx.is_out do %>
@@ -209,12 +221,20 @@
                 <td>
                     <%= case tx.to_hash do %>
                     <% to when is_binary(to) -> %>
-                        <span class="hash-inline">
+                        <span class="hash-inline addr-hex">
                             <a href="/address/<%= to %>" class="hash hash--truncate hash--sm" title="<%= to %>"><%= FrontendEx.Format.truncate_addr_classic(to) %></a>
-                            <button class="copy-btn" data-copy="<%= to %>" title="Copy to address">
+                            <button class="copy-btn" data-copy="<%= to %>" title="Copy to address (Hex)">
                                 <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                             </button>
                         </span>
+                        <%= if tx.to_hash_tron do %>
+                        <span class="hash-inline addr-base58">
+                            <a href="/address/<%= to %>" class="hash hash--truncate hash--sm" title="<%= tx.to_hash_tron %>"><%= FrontendEx.Format.truncate_addr_classic(tx.to_hash_tron) %></a>
+                            <button class="copy-btn" data-copy="<%= tx.to_hash_tron %>" title="Copy to address (Base58)">
+                                <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                            </button>
+                        </span>
+                        <% end %>
                     <% _ -> %>
                         <span class="text-muted">Contract Creation</span>
                     <% end %>
@@ -235,3 +255,32 @@
     </div>
 </div>
 <% end %>
+
+<script>
+(function() {
+    // Hex / Base58 toggle for the address transactions table.
+    // Persists choice in localStorage so it sticks across page loads.
+    var STORAGE_KEY = 'addr_format';
+    var table = document.querySelector('.address-txs-table');
+    var toggle = document.querySelector('.addr-format-toggle');
+    if (!table || !toggle) return;
+
+    function apply(format) {
+        if (format !== 'hex' && format !== 'base58') format = 'hex';
+        table.setAttribute('data-addr-format', format);
+        toggle.querySelectorAll('.addr-format-btn').forEach(function(btn) {
+            btn.classList.toggle('is-active', btn.dataset.addrFormat === format);
+        });
+    }
+
+    try { apply(localStorage.getItem(STORAGE_KEY) || 'hex'); } catch (_) { apply('hex'); }
+
+    toggle.addEventListener('click', function(e) {
+        var btn = e.target.closest('.addr-format-btn');
+        if (!btn) return;
+        var f = btn.dataset.addrFormat;
+        apply(f);
+        try { localStorage.setItem(STORAGE_KEY, f); } catch (_) {}
+    });
+})();
+</script>
