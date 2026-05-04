@@ -78,8 +78,19 @@ default_listen_addr = "0.0.0.0:3000"
 #             otherwise leave whatever `config/dev.exs` set, so a developer
 #             can override the port there without runtime.exs silently
 #             stomping it back to 3000.
+env_has_value? = fn name ->
+  case System.get_env(name) do
+    v when is_binary(v) -> String.trim(v) != ""
+    _ -> false
+  end
+end
+
+# Empty/whitespace exports (`PORT= mix phx.server`, stripped systemd
+# `Environment=PORT=` lines) must NOT trip the override — that would
+# silently revert config/dev.exs back to {0.0.0.0, 3000}, which is
+# exactly the contract violation the dev branch above promises against.
 explicit_listen_env? =
-  is_binary(System.get_env("LISTEN_ADDR")) or is_binary(System.get_env("PORT"))
+  env_has_value?.("LISTEN_ADDR") or env_has_value?.("PORT")
 
 apply_endpoint_http? =
   case config_env() do

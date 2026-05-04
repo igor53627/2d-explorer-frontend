@@ -5,11 +5,14 @@ defmodule FrontendEx.Format do
 
   import Bitwise
 
-  # Default native coin = USDC (6 decimals). Single-arity entry points
-  # (`format_native_amount/1`, `format_native_amount_exact/1`) use this
-  # for callers without `native_coin` in scope (e.g. SVG OG-image render).
-  # Two-arity variants take the live decimals from `/api/v2/stats.native_coin`
-  # so a future non-USDC token would format correctly without a code change.
+  # Native-coin decimals.
+  #
+  # 2d is hard-pinned to USDC (6 decimals) by product decision, so every
+  # current caller uses the single-arity `format_native_amount/1` /
+  # `format_native_amount_exact/1` helpers and inherits this constant.
+  # The two-arity variants exist for future-proofing — a non-USDC native
+  # would mean threading `@native_coin.decimals` through every call site
+  # (templates included), which is mechanical but not required today.
   @default_decimals 6
 
   @doc "Default decimals when a caller has no `native_coin` in scope."

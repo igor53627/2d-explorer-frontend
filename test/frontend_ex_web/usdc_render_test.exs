@@ -73,6 +73,29 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
     @tx_logs %{"items" => [], "next_page_params" => nil}
 
+    # EIP-4844 blob-commit fixture. 2d uses `transaction_type` (singular);
+    # upstream Blockscout uses `type`. parse_tx must accept both — without
+    # the fallback, @tx.tx_type is permanently nil against 2d and the
+    # template's `case @tx.tx_type do 3 -> "Commit EIP-4844 Blob"` branch
+    # is unreachable.
+    @tx_blob_hash "0xb10b000000000000000000000000000000000000000000000000000000000000"
+    @tx_blob_detail %{
+      "hash" => @tx_blob_hash,
+      "block_number" => 0,
+      "transaction_index" => 1,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{"hash" => "0x0000000000000000000000000000000000000001"},
+      "to" => %{"hash" => "0x0000000000000000000000000000000000000002"},
+      "value" => "0",
+      "status" => "ok",
+      "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
+      "gas_price" => "5",
+      "fee" => %{"value" => "105000"},
+      "transaction_type" => 3
+    }
+    @tx_blob_logs %{"items" => [], "next_page_params" => nil}
+
     # EIP-1559 block detail: non-null base_fee_per_gas in USDC base units
     # (1500 base = 0.0015 USDC). Pins that /block/:id formats the base fee
     # via Format.format_native_amount/1 instead of dropping the raw integer
@@ -124,6 +147,8 @@ defmodule FrontendExWeb.UsdcRenderTest do
             cond do
               rest == @tx_hash -> @tx_detail
               rest == "#{@tx_hash}/logs" -> @tx_logs
+              rest == @tx_blob_hash -> @tx_blob_detail
+              rest == "#{@tx_blob_hash}/logs" -> @tx_blob_logs
               true -> nil
             end
 
@@ -218,6 +243,21 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
     assert body =~ "21000 / 30000000",
            "expected gas_used / gas_limit to render verbatim from 2d's integer-shaped fields"
+  end
+
+  test "GET /tx/:hash with transaction_type=3 renders the EIP-4844 commit branch",
+       %{conn: conn} do
+    body =
+      conn
+      |> get("/tx/0xb10b000000000000000000000000000000000000000000000000000000000000")
+      |> html_response(200)
+
+    # 2d ships the type as `transaction_type: 3` (singular). If parse_tx
+    # ever regresses to reading only `tx_json["type"]`, @tx.tx_type goes
+    # nil and this branch silently disappears under the method-name
+    # fallback (a "-" label).
+    assert body =~ "EIP-4844 Blob",
+           "expected /tx/:hash with transaction_type=3 to render the EIP-4844 commit-tx label"
   end
 
   test "GET /block/:id formats base_fee_per_gas as USDC, not raw base units",

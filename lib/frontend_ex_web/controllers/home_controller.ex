@@ -11,7 +11,13 @@ defmodule FrontendExWeb.HomeController do
   def index(conn, _params) do
     explorer_url = explorer_url()
     api_url = Application.get_env(:frontend_ex, :blockscout_api_url, explorer_url)
-    ws_url = ws_url(explorer_url)
+    # WS endpoint lives next to the API (Phoenix-channels), not on the
+    # public-facing frontend host. In single-host deployments these
+    # coincide, but in split deployments deriving from explorer_url
+    # routes the browser WS handshake at the wrong host (no /socket route)
+    # and the realtime banner silently stops updating. README documents
+    # auto-derivation from BLOCKSCOUT_API_URL.
+    ws_url = ws_url(api_url)
 
     stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
 
@@ -160,11 +166,14 @@ defmodule FrontendExWeb.HomeController do
 
     # 2d's /api/v2/blocks returns the per-block tx count as
     # "transaction_count" (singular); upstream Blockscout uses "tx_count" /
-    # "transactions_count". Accept all three so the block tile shows the
-    # real count instead of "0 txns" against a 2d backend.
+    # "transactions_count". Accept all three names AND both shapes
+    # (integer for 2d, JSON-string for upstream) — matches BlocksController
+    # and BlockController so the home tile, /blocks rows, and /block/:id
+    # all agree against the same upstream record.
     tx_count =
       case b["tx_count"] || b["transaction_count"] || b["transactions_count"] do
         v when is_integer(v) -> v
+        v when is_binary(v) -> parse_int_or(v, 0)
         _ -> nil
       end
 

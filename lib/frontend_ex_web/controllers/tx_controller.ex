@@ -441,16 +441,18 @@ defmodule FrontendExWeb.TxController do
 
   defp parse_coin_price_float(_), do: nil
 
-  # USDC has 6 decimals, so the divisor is 10^6, not the legacy 10^18.
-  # Sourcing the constant from `Format` keeps the divisor and the
-  # `format_native_amount/1` helper in sync.
+  # USDC has 6 decimals (10^6 divisor, not the legacy 10^18). Sourced
+  # from `Format.default_decimals/0` so this stays in lockstep with the
+  # divisor `format_native_amount/1` uses for every other balance/fee/
+  # value rendered on the share-card.
   defp compute_value_usd(amount_str, coin_price_f)
        when is_binary(amount_str) and is_float(coin_price_f) do
     amount_str = String.trim(amount_str)
+    divisor = Integer.pow(10, Format.default_decimals()) * 1.0
 
     case Integer.parse(amount_str) do
       {n, ""} when is_integer(n) and n >= 0 ->
-        native = n / 1.0e6
+        native = n / divisor
         usd = native * coin_price_f
         :io_lib.format("~.2f", [usd]) |> IO.iodata_to_binary()
 
@@ -736,7 +738,12 @@ defmodule FrontendExWeb.TxController do
       timestamp: normalize_opt_string(tx_json["timestamp"]),
       confirmations: nil,
       method: normalize_opt_string(tx_json["method"]),
-      tx_type: parse_u64(tx_json["type"]),
+      # Upstream Blockscout exposes the EIP-2718 type as `type`; 2d's
+      # /api/v2/transactions/:hash response uses `transaction_type`
+      # (singular). Field-fallback here mirrors the per-block tx-count
+      # parsers — without it, tx_type is permanently nil against 2d and
+      # the EIP-4844 commit-tx label branch in the template is unreachable.
+      tx_type: parse_u64(tx_json["type"] || tx_json["transaction_type"]),
       base_fee_per_gas: normalize_int_or_string(tx_json["base_fee_per_gas"]),
       max_fee_per_gas: normalize_int_or_string(tx_json["max_fee_per_gas"]),
       max_priority_fee_per_gas: normalize_int_or_string(tx_json["max_priority_fee_per_gas"]),
