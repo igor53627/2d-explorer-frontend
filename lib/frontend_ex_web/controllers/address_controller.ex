@@ -72,7 +72,12 @@ defmodule FrontendExWeb.AddressController do
       token_balances = Enum.take(all_token_balances, @token_holdings_preview_limit)
 
       balance_display = format_balance_display(address_info.coin_balance, native_coin)
-      balance_usd_display = derive_balance_usd_display(address_info.coin_balance, coin_price)
+
+      balance_usd_display =
+        derive_balance_usd_display(address_info.coin_balance, coin_price, native_coin)
+
+      {tx_first_seen, tx_latest_seen} =
+        derive_tx_time_window(transactions, address_info.transactions_count)
 
       token_holdings_display =
         if token_holdings_count == 0 do
@@ -92,6 +97,8 @@ defmodule FrontendExWeb.AddressController do
           balance_usd_display: balance_usd_display,
           token_holdings_display: token_holdings_display,
           tx_count_display: tx_count_display,
+          tx_first_seen: tx_first_seen,
+          tx_latest_seen: tx_latest_seen,
           coin_price: coin_price,
           gas_price: gas_price,
           native_coin: native_coin
@@ -245,26 +252,69 @@ defmodule FrontendExWeb.AddressController do
     Format.format_native_amount_exact(wei_balance) <> " " <> native_coin.symbol
   end
 
-  defp derive_balance_usd_display(nil, _coin_price), do: nil
-  defp derive_balance_usd_display(_wei_balance, nil), do: nil
+  defp derive_balance_usd_display(nil, _coin_price, _native_coin), do: nil
 
-  defp derive_balance_usd_display(wei_balance, coin_price)
+  # USDC is dollar-pegged 1:1, so when /api/v2/stats doesn't advertise
+  # `coin_price` (current 2d shape) we still show a meaningful USD value
+  # by reading the balance directly. Falls through to the explicit
+  # coin_price path for any non-stable native coin (forwards-compat).
+  defp derive_balance_usd_display(wei_balance, _coin_price, %{symbol: "USDC"})
+       when is_binary(wei_balance) do
+    case Float.parse(Format.format_native_amount(wei_balance)) do
+      {usdc, ""} -> "$" <> format_two_decimals_with_commas(usdc)
+      _ -> nil
+    end
+  end
+
+  defp derive_balance_usd_display(_wei_balance, nil, _native_coin), do: nil
+
+  defp derive_balance_usd_display(wei_balance, coin_price, _native_coin)
        when is_binary(wei_balance) and is_binary(coin_price) do
     with {eth, ""} <- Float.parse(Format.format_native_amount(wei_balance)),
          {cp, ""} <- Float.parse(String.replace(coin_price, ",", "")) do
-      usd = eth * cp
-
-      usd_s = :io_lib.format("~.2f", [usd]) |> IO.iodata_to_binary()
-
-      formatted =
-        case String.split(usd_s, ".", parts: 2) do
-          [int_part, frac_part] -> Format.format_number_with_commas(int_part) <> "." <> frac_part
-          [int_part] -> Format.format_number_with_commas(int_part)
-        end
-
-      "$" <> formatted
+      "$" <> format_two_decimals_with_commas(eth * cp)
     else
       _ -> nil
+    end
+  end
+
+  defp format_two_decimals_with_commas(n) when is_float(n) do
+    s = :io_lib.format("~.2f", [n]) |> IO.iodata_to_binary()
+
+    case String.split(s, ".", parts: 2) do
+      [int_part, frac_part] -> Format.format_number_with_commas(int_part) <> "." <> frac_part
+      [int_part] -> Format.format_number_with_commas(int_part)
+    end
+  end
+
+  # Latest / First tx timestamps — derived from the already-fetched preview
+  # list. The preview is freshness-DESC, so head = latest (always exact).
+  # First is only exact when the preview holds the whole history (i.e.
+  # length(preview) == transactions_count); otherwise we'd surface "first
+  # within the last N" which is misleading, so we return nil there and the
+  # template hides the row.
+  defp derive_tx_time_window([], _count), do: {nil, nil}
+
+  defp derive_tx_time_window(transactions, total_count) when is_list(transactions) do
+    timestamps =
+      transactions
+      |> Enum.flat_map(fn
+        %{timestamp_raw: ts} when is_binary(ts) and ts != "" -> [ts]
+        _ -> []
+      end)
+
+    case timestamps do
+      [] ->
+        {nil, nil}
+
+      [single] ->
+        # Single tx in preview AND total_count is 1 → first == latest exact.
+        if total_count in [nil, 1], do: {single, single}, else: {nil, single}
+
+      list ->
+        latest = List.first(list)
+        first = if length(list) == total_count, do: List.last(list), else: nil
+        {first, latest}
     end
   end
 

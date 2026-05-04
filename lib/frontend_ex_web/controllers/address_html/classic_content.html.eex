@@ -11,30 +11,32 @@
             </h1>
         </div>
 
-        <div class="address-page-header-hash">
-            <span class="addr-hash-text"><%= @address.hash %></span>
-            <div class="addr-actions">
-                <button class="copy-btn" data-copy="<%= @address.hash %>" title="Copy address">
-                    <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                </button>
-                <button class="btn btn-icon" type="button" aria-label="Show QR code" title="Show QR code" disabled>
-                    <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm10-2h6v6h-2V5h-4V3zm0 8h2v2h-2V11zm-2 0v6H3v-2h8v-4h2zm4 4h2v2h-2v-2zm0-4h4v4h-2v-2h-2v-2zm-2 6h2v2h-2v-2zm4 0h2v4h-4v-2h2v-2z"/></svg>
-                </button>
+        <div class="address-page-header-hashes">
+            <div class="address-page-header-hash">
+                <span class="addr-hash-text"><%= @address.hash %></span>
+                <div class="addr-actions">
+                    <button class="copy-btn" data-copy="<%= @address.hash %>" title="Copy address">
+                        <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    </button>
+                    <button class="btn btn-icon" type="button" aria-label="Show QR code" title="Show QR code" disabled>
+                        <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm10-2h6v6h-2V5h-4V3zm0 8h2v2h-2V11zm-2 0v6H3v-2h8v-4h2zm4 4h2v2h-2v-2zm0-4h4v4h-2v-2h-2v-2zm-2 6h2v2h-2v-2zm4 0h2v4h-4v-2h2v-2z"/></svg>
+                    </button>
+                </div>
             </div>
-        </div>
-        <%= if @address.tron_hash do %>
-        <div class="address-page-header-hash">
-            <span class="addr-hash-text"><%= @address.tron_hash %></span>
-            <div class="addr-actions">
-                <button class="copy-btn" data-copy="<%= @address.tron_hash %>" title="Copy Base58 form">
-                    <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                </button>
+            <%= if @address.tron_hash do %>
+            <div class="address-page-header-hash">
+                <span class="addr-hash-text"><%= @address.tron_hash %></span>
+                <div class="addr-actions">
+                    <button class="copy-btn" data-copy="<%= @address.tron_hash %>" title="Copy Base58 form">
+                        <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    </button>
+                </div>
             </div>
+            <div class="address-page-header-note">
+                Both addresses point to the same account. Hex (0x…) is how Ethereum wallets address it; Base58 (T…) is how Tron wallets address it.
+            </div>
+            <% end %>
         </div>
-        <div class="address-page-header-note">
-            Both addresses point to the same account. Hex (0x…) is how Ethereum wallets address it; Base58 (T…) is how Tron wallets address it.
-        </div>
-        <% end %>
     </div>
 </div>
 
@@ -61,26 +63,18 @@
             <div class="address-summary-label">Transactions Sent</div>
             <div class="address-summary-value"><%= if @tx_count_display == "", do: "N/A", else: @tx_count_display %></div>
         </div>
+        <%= if @tx_latest_seen do %>
         <div class="address-summary-row">
             <div class="address-summary-label">Latest</div>
-            <div class="address-summary-value">N/A</div>
+            <div class="address-summary-value"><%= FrontendEx.Format.format_relative_time(@tx_latest_seen) %></div>
         </div>
+        <% end %>
+        <%= if @tx_first_seen do %>
         <div class="address-summary-row">
             <div class="address-summary-label">First</div>
-            <div class="address-summary-value">N/A</div>
+            <div class="address-summary-value"><%= FrontendEx.Format.format_relative_time(@tx_first_seen) %></div>
         </div>
-        <div class="address-summary-row">
-            <div class="address-summary-label">Funded By</div>
-            <div class="address-summary-value">N/A</div>
-        </div>
-    </div>
-
-    <div class="card address-summary-card">
-        <div class="address-summary-title">Multichain Info</div>
-        <div class="address-summary-row">
-            <div class="address-summary-label">N/A</div>
-            <div class="address-summary-value">N/A</div>
-        </div>
+        <% end %>
     </div>
 </div>
 
