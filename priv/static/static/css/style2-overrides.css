@@ -127,10 +127,12 @@
 }
 
 .address-page-header{
-  padding:24px 0 16px;
-  margin-top:-12px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  box-shadow:0 0.5rem 1.2rem rgba(189,197,209,.2);
+  padding:20px;
   margin-bottom:16px;
-  border-bottom:1px solid var(--border);
 }
 .address-page-header-content{
   display:flex;
@@ -1174,8 +1176,7 @@ button.nav-link{
   }
   .address-summary-grid{grid-template-columns:1fr;}
   .address-page-header{
-    padding:16px 0 10px;
-    margin-top:0;
+    padding:14px 16px;
     margin-bottom:12px;
   }
   .address-page-header-content{
