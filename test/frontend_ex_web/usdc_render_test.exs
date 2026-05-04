@@ -131,6 +131,36 @@ defmodule FrontendExWeb.UsdcRenderTest do
     @address_txs %{"items" => [], "next_page_params" => nil}
     @address_tokens %{"items" => [], "next_page_params" => nil}
 
+    # Separate fixture for the More-Info Latest/First regression: a
+    # second pool address with a single transaction that carries a
+    # `timestamp`. transactions_count = 1 and preview length = 1, so
+    # both Latest and First rows must surface (mirrors the path
+    # `derive_tx_time_window/2` will hit once 2d ships TASK-13.7).
+    @addr_with_ts_hash "0x0000000000000000000000000000000000000002"
+    @addr_with_ts_detail %{
+      "hash" => @addr_with_ts_hash,
+      "coin_balance" => "500000",
+      "is_contract" => false,
+      "is_verified" => false,
+      "transactions_count" => 1
+    }
+    @addr_with_ts_txs %{
+      "items" => [
+        %{
+          "hash" => "0xab" <> String.duplicate("0", 62),
+          "block_number" => 0,
+          "transaction_index" => 0,
+          "timestamp" => "2023-11-14T22:13:20Z",
+          "from" => %{"hash" => @addr_with_ts_hash},
+          "to" => %{"hash" => "0x0000000000000000000000000000000000000003"},
+          "value" => "100",
+          "status" => "ok",
+          "transaction_type" => 0
+        }
+      ],
+      "next_page_params" => nil
+    }
+
     @impl true
     def request_raw(url) when is_binary(url) do
       uri = URI.parse(url)
@@ -157,6 +187,9 @@ defmodule FrontendExWeb.UsdcRenderTest do
               rest == @addr_hash -> @address_detail
               rest == "#{@addr_hash}/transactions" -> @address_txs
               rest == "#{@addr_hash}/tokens" -> @address_tokens
+              rest == @addr_with_ts_hash -> @addr_with_ts_detail
+              rest == "#{@addr_with_ts_hash}/transactions" -> @addr_with_ts_txs
+              rest == "#{@addr_with_ts_hash}/tokens" -> @address_tokens
               true -> nil
             end
 
@@ -297,6 +330,48 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
     assert body =~ "21000 / 30000000",
            "expected gas_used / gas_limit to render verbatim from 2d's integer-shaped fields"
+  end
+
+  describe "GET /address/:hash More Info — Latest / First (timestamp_raw regression)" do
+    # Pins display_tx/3 → derive_tx_time_window/2 plumbing. If
+    # display_tx ever drops timestamp_raw again, derive_tx_time_window
+    # silently returns {nil, nil} and these rows vanish (the bug
+    # roborev caught on commit 724600a).
+
+    test "shows Latest + First when preview holds the whole tx history",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/address/0x0000000000000000000000000000000000000002")
+        |> html_response(200)
+
+      assert body =~ "Latest", "expected the More Info 'Latest' label to render"
+
+      assert body =~ "First",
+             "expected 'First' to render when preview length equals transactions_count"
+
+      # The fixture timestamp is 2023-11-14; the test clock is frozen at
+      # 2026-02-09. Format.format_relative_time will produce a "X
+      # year(s) ago" / "X month(s) ago" string — assert just on the
+      # "ago" suffix to stay robust against rounding differences.
+      assert body =~ ~r/\bago\b/, "expected a relative-time string for Latest/First"
+    end
+
+    test "hides Latest / First when no timestamps are available (current 2d API)",
+         %{conn: conn} do
+      # @addr_hash → @address_txs has items: [] → derive_tx_time_window
+      # returns {nil, nil} → template gates hide both rows.
+      body =
+        conn
+        |> get("/address/0x0000000000000000000000000000000000000001")
+        |> html_response(200)
+
+      refute body =~ ~r/<div class="address-summary-label">Latest</,
+             "Latest row must be hidden when no tx timestamps are known"
+
+      refute body =~ ~r/<div class="address-summary-label">First</,
+             "First row must be hidden when no tx timestamps are known"
+    end
   end
 
   test "GET /address/:hash renders both 0x and Tron-base58 forms of the same account",
