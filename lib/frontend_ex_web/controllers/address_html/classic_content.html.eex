@@ -32,7 +32,7 @@
             </div>
         </div>
         <div class="address-page-header-note">
-            Same account, two wallet-side views (Hex / Base58).
+            Both addresses point to the same account. Hex (0x…) is how Ethereum wallets address it; Base58 (T…) is how Tron wallets address it.
         </div>
         <% end %>
     </div>
