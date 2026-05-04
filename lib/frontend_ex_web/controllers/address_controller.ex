@@ -191,8 +191,14 @@ defmodule FrontendExWeb.AddressController do
 
     block_number = parse_u64(tx["block_number"])
 
-    age =
+    timestamp_raw =
       case tx["timestamp"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
+    age =
+      case timestamp_raw do
         v when is_binary(v) -> Format.format_relative_time(v)
         _ -> "-"
       end
@@ -204,6 +210,7 @@ defmodule FrontendExWeb.AddressController do
       method: method,
       block_number: block_number,
       age: age,
+      timestamp_raw: timestamp_raw,
       from_hash: from_hash,
       to_hash: to_hash,
       amount: value_eth,

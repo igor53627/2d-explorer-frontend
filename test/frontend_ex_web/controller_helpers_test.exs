@@ -38,7 +38,7 @@ defmodule FrontendExWeb.ControllerHelpersTest do
 
     test "falls back to the default when unset" do
       Application.delete_env(:frontend_ex, :blockscout_url)
-      assert ControllerHelpers.explorer_url() == "http://localhost:4001"
+      assert ControllerHelpers.explorer_url() == "https://2d.example.com"
     end
   end
 

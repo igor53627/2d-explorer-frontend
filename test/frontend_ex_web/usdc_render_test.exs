@@ -301,18 +301,18 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
   test "GET /address/:hash renders both 0x and Tron-base58 forms of the same account",
        %{conn: conn} do
-    body = conn |> get("/address/0x0000000000000000000000000000000000000001") |> html_response(200)
+    # Hardcoded oracle: independently verified against
+    # `Chain.Tron.Address.encode/1` in ~/pse/2d. See
+    # test/frontend_ex/tron/address_test.exs for unit-level coverage of
+    # the converter; this test pins that the Tron-form actually surfaces
+    # in the rendered HTML, not just that the converter is wired.
+    eth_hex = "0x0000000000000000000000000000000000000001"
+    expected_tron = "T9yD14Nj9j7xAB4dbGeiX9h8unkKLxmGkn"
 
-    # 2d's unified-account model: same 20-byte account, two display
-    # surfaces (0x… for eth_*, T… for /wallet/*). Both must render.
-    assert body =~ "0x0000000000000000000000000000000000000001",
+    body = conn |> get("/address/#{eth_hex}") |> html_response(200)
+
+    assert body =~ eth_hex,
            "expected /address/:hash to render the 0x form"
-
-    expected_tron =
-      FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000001")
-
-    assert is_binary(expected_tron) and String.starts_with?(expected_tron, "T"),
-           "Tron-form derivation must produce a T-prefixed Base58Check string"
 
     assert body =~ expected_tron,
            "expected /address/:hash to render the Tron-form alongside the 0x form"

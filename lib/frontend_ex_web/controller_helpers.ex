@@ -17,7 +17,13 @@ defmodule FrontendExWeb.ControllerHelpers do
   alias FrontendEx.Format
   alias FrontendEx.Version
 
-  @default_blockscout_url "http://localhost:4001"
+  # Last-resort fallback for `:blockscout_url` when neither runtime.exs nor
+  # a test put_env wrote a value. In :prod, runtime.exs always sets one
+  # (it falls back to BLOCKSCOUT_API_URL, which itself fails fast when
+  # unset) — so this constant should never trigger there. The placeholder
+  # host signals "operator must set BLOCKSCOUT_URL" rather than silently
+  # producing localhost links from a misconfigured deploy.
+  @default_blockscout_url "https://2d.example.com"
   @default_timeout_ms 10_000
   @safe_empty {:safe, ""}
 
