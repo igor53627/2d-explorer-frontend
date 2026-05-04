@@ -70,11 +70,45 @@ parse_listen_addr =
 
 default_listen_addr = "0.0.0.0:3000"
 
-{ip, port} =
-  parse_listen_addr.(System.get_env("LISTEN_ADDR") || default_listen_addr) ||
-    {parse_ipv4.("0.0.0.0"), String.to_integer(System.get_env("PORT", "3000"))}
+# Endpoint http binding:
+#
+#   * :prod — always set (LISTEN_ADDR / PORT, default 0.0.0.0:3000)
+#   * :test — never set (test env owns the endpoint config)
+#   * :dev  — only if the operator explicitly set LISTEN_ADDR or PORT;
+#             otherwise leave whatever `config/dev.exs` set, so a developer
+#             can override the port there without runtime.exs silently
+#             stomping it back to 3000.
+explicit_listen_env? =
+  is_binary(System.get_env("LISTEN_ADDR")) or is_binary(System.get_env("PORT"))
 
-if config_env() != :test do
+apply_endpoint_http? =
+  case config_env() do
+    :prod -> true
+    :test -> false
+    _ -> explicit_listen_env?
+  end
+
+if apply_endpoint_http? do
+  # Resolution order (each step ignored if env var is unset/blank):
+  #   1. LISTEN_ADDR — full ip:port spec
+  #   2. PORT        — port-only override (ip stays 0.0.0.0)
+  #   3. default_listen_addr
+  listen_addr_env = System.get_env("LISTEN_ADDR")
+  port_env = System.get_env("PORT")
+
+  {ip, port} =
+    cond do
+      is_binary(listen_addr_env) and listen_addr_env != "" ->
+        parse_listen_addr.(listen_addr_env) ||
+          parse_listen_addr.(default_listen_addr)
+
+      is_binary(port_env) and port_env != "" ->
+        {parse_ipv4.("0.0.0.0"), String.to_integer(port_env)}
+
+      true ->
+        parse_listen_addr.(default_listen_addr)
+    end
+
   config :frontend_ex, FrontendExWeb.Endpoint, http: [ip: ip, port: port]
 end
 

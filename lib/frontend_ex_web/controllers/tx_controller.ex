@@ -182,8 +182,17 @@ defmodule FrontendExWeb.TxController do
             _ -> nil
           end
 
+        # 2d's /api/v2/transactions/:hash response does not include a
+        # `timestamp` field (only `block_number`); upstream Blockscout does.
+        # When the field is missing, fall back to "Block #N" instead of
+        # rendering a meaningless "--" — block height is the next-best
+        # location anchor a user can recognize.
         timestamp_relative =
-          if tx.timestamp, do: Format.format_relative_time(tx.timestamp), else: nil
+          cond do
+            tx.timestamp -> Format.format_relative_time(tx.timestamp)
+            is_integer(tx.block_number) -> "Block ##{tx.block_number}"
+            true -> nil
+          end
 
         gas_display = if tx.gas_used, do: format_gas_compact(tx.gas_used), else: nil
 

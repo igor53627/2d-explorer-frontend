@@ -29,16 +29,39 @@ The frontend is stateless — no database, no sessions. It makes upstream HTTP c
 
 ```bash
 mix setup
+```
 
-# Start 2d's Phoenix endpoint (in another terminal, in ~/pse/2d):
-#   mix phx.server   # default :4000
+### Local dev against ~/pse/2d
 
-LISTEN_ADDR=127.0.0.1:3010 \
+The explorer talks to a 2d backend over Blockscout-shaped `/api/v2/*` and
+a Phoenix-channels WS endpoint. Both Phoenix apps default to port 4000, so
+the explorer needs a different one.
+
+In one terminal — boot 2d:
+
+```bash
+cd ~/pse/2d
+mix setup           # first time only
+mix phx.server      # listens on :4000
+mix chain.gen_txs   # optional — generate demo txs so pages aren't empty
+```
+
+In another — boot the explorer:
+
+```bash
+PORT=4001 \
 BLOCKSCOUT_API_URL=http://localhost:4000 \
 mix phx.server
 ```
 
-Visit http://127.0.0.1:3010.
+Visit http://127.0.0.1:4001. The `BLOCKSCOUT_WS_URL` env is optional for
+local dev — the explorer derives `ws://localhost:4000/socket/v2/websocket`
+from the API URL automatically (TLS is mirrored from the API URL scheme:
+`http://` → `ws://`, `https://` → `wss://`). Set it explicitly if your
+WS endpoint lives at a different host or port from the HTTP API.
+
+`PORT=4001` is honored at runtime in `:dev` only when the env var is set
+explicitly — without it, `config/dev.exs` keeps Phoenix's default :4000.
 
 ## Tests
 

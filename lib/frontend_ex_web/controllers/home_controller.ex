@@ -294,13 +294,25 @@ defmodule FrontendExWeb.HomeController do
   end
 
   defp derive_ws_url(explorer_url) when is_binary(explorer_url) do
-    host =
-      explorer_url
-      |> String.trim()
-      |> String.trim_trailing("/")
-      |> String.replace_prefix("https://", "")
-      |> String.replace_prefix("http://", "")
+    trimmed = explorer_url |> String.trim() |> String.trim_trailing("/")
 
-    "wss://" <> host <> "/socket/v2/websocket?vsn=2.0.0"
+    # Mirror the source scheme: a plain http:// URL (typical local dev
+    # against `~/pse/2d` on :4000) must derive ws://, not wss://, otherwise
+    # the browser tries TLS against a non-TLS port and the WS handshake
+    # silently fails. Operators can still override via BLOCKSCOUT_WS_URL.
+    {scheme, host} =
+      cond do
+        String.starts_with?(trimmed, "https://") ->
+          {"wss://", String.replace_prefix(trimmed, "https://", "")}
+
+        String.starts_with?(trimmed, "http://") ->
+          {"ws://", String.replace_prefix(trimmed, "http://", "")}
+
+        true ->
+          # No scheme — default to wss:// for safety in unknown deployments.
+          {"wss://", trimmed}
+      end
+
+    scheme <> host <> "/socket/v2/websocket?vsn=2.0.0"
   end
 end

@@ -227,11 +227,5 @@
         </tbody>
     </table>
     </div>
-    <div class="table-footer">
-        <a class="table-footer-link" href="<%= @explorer_url %>/txs?a=<%= @address.hash %>" target="_blank" rel="noopener noreferrer">
-            View All Transactions
-            <svg class="table-footer-icon" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-        </a>
-    </div>
 </div>
 <% end %>
