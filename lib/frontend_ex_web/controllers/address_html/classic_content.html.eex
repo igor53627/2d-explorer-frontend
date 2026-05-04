@@ -2,7 +2,6 @@
 <div class="address-page-header">
     <div class="address-page-header-content">
         <div class="address-page-header-title">
-            <span class="addr-icon"></span>
             <h1 class="address-page-title">
                 Address
                 <%= if @address.is_contract do %>
