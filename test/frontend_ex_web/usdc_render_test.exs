@@ -337,24 +337,34 @@ defmodule FrontendExWeb.UsdcRenderTest do
     # display_tx ever drops timestamp_raw again, derive_tx_time_window
     # silently returns {nil, nil} and these rows vanish (the bug
     # roborev caught on commit 724600a).
+    #
+    # Assertions are scoped to the ".address-summary-label" + adjacent
+    # ".address-summary-value" pair so they don't match the table
+    # toolbar's "Latest 20 from a total of …" header or "ago" strings
+    # that appear in the per-row Age column.
 
-    test "shows Latest + First when preview holds the whole tx history",
+    test "shows Latest + First rows with relative time when preview holds the whole tx history",
          %{conn: conn} do
       body =
         conn
         |> get("/address/0x0000000000000000000000000000000000000002")
         |> html_response(200)
 
-      assert body =~ "Latest", "expected the More Info 'Latest' label to render"
+      assert [_, latest_value] = Regex.run(more_info_pair_re("Latest"), body),
+             "expected More Info to contain a Latest <label,value> pair"
 
-      assert body =~ "First",
-             "expected 'First' to render when preview length equals transactions_count"
+      assert [_, first_value] = Regex.run(more_info_pair_re("First"), body),
+             "expected More Info to contain a First <label,value> pair"
 
-      # The fixture timestamp is 2023-11-14; the test clock is frozen at
-      # 2026-02-09. Format.format_relative_time will produce a "X
-      # year(s) ago" / "X month(s) ago" string — assert just on the
-      # "ago" suffix to stay robust against rounding differences.
-      assert body =~ ~r/\bago\b/, "expected a relative-time string for Latest/First"
+      # Fixture timestamp 2023-11-14 + frozen clock 2026-02-09 →
+      # Format.format_relative_time returns a non-empty "X … ago" /
+      # "X … from now" string. Validate it's not just "-" or empty,
+      # without locking the exact granularity (years/months/days) which
+      # can shift if the clock ever moves.
+      for v <- [latest_value, first_value] do
+        refute v in ["", "-"], "Latest/First value must not be a placeholder"
+        assert String.length(v) >= 3, "Latest/First value should be a real timestamp display"
+      end
     end
 
     test "hides Latest / First when no timestamps are available (current 2d API)",
@@ -366,12 +376,20 @@ defmodule FrontendExWeb.UsdcRenderTest do
         |> get("/address/0x0000000000000000000000000000000000000001")
         |> html_response(200)
 
-      refute body =~ ~r/<div class="address-summary-label">Latest</,
-             "Latest row must be hidden when no tx timestamps are known"
+      refute Regex.match?(more_info_label_re("Latest"), body),
+             "Latest label must be absent when no tx timestamps are known"
 
-      refute body =~ ~r/<div class="address-summary-label">First</,
-             "First row must be hidden when no tx timestamps are known"
+      refute Regex.match?(more_info_label_re("First"), body),
+             "First label must be absent when no tx timestamps are known"
     end
+  end
+
+  defp more_info_label_re(label) do
+    ~r{class="address-summary-label">\s*#{Regex.escape(label)}\s*<}
+  end
+
+  defp more_info_pair_re(label) do
+    ~r{class="address-summary-label">\s*#{Regex.escape(label)}\s*</div>\s*<div\s+class="address-summary-value">\s*([^<]+?)\s*</div>}
   end
 
   test "GET /address/:hash renders both 0x and Tron-base58 forms of the same account",
