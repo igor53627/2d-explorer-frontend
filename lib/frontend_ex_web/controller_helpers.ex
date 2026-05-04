@@ -17,7 +17,7 @@ defmodule FrontendExWeb.ControllerHelpers do
   alias FrontendEx.Format
   alias FrontendEx.Version
 
-  @default_blockscout_url "https://sepolia.53627.org"
+  @default_blockscout_url "http://localhost:4001"
   @default_timeout_ms 10_000
   @safe_empty {:safe, ""}
 
@@ -26,8 +26,8 @@ defmodule FrontendExWeb.ControllerHelpers do
   def safe_empty, do: @safe_empty
 
   @doc """
-  Resolves the upstream explorer URL from application env, falling back to the
-  default Sepolia Blockscout.
+  Resolves the public-facing explorer URL from application env (set by
+  `runtime.exs` from `BLOCKSCOUT_URL`), falling back to a local-dev default.
   """
   @spec explorer_url() :: binary()
   def explorer_url do

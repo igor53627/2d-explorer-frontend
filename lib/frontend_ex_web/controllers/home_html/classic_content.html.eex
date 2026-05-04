@@ -1,7 +1,7 @@
 
 <div class="hero">
     <div class="hero-inner">
-        <h1 class="hero-title">Sepolia Testnet Explorer <span>| Search anything</span></h1>
+        <h1 class="hero-title">2D Explorer <span>| Search anything</span></h1>
         <form class="search-box" action="/search" method="get">
             <select class="search-dropdown">
                 <option>All Filters</option>

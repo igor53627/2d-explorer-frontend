@@ -118,7 +118,7 @@ defmodule FrontendExWeb.TxController do
 
         render(conn, :classic_content, %{
           base_assigns
-          | page_title: "Transaction #{display_tx.hash} | Sepolia",
+          | page_title: "Transaction #{display_tx.hash} | 2D",
             head_meta: head_meta,
             styles: styles
         })
@@ -382,7 +382,7 @@ defmodule FrontendExWeb.TxController do
 
     render(conn, :classic_logs_content, %{
       base_assigns
-      | page_title: "Transaction #{hash} Logs | Sepolia",
+      | page_title: "Transaction #{hash} Logs | 2D",
         styles: styles
     })
   end
@@ -427,7 +427,7 @@ defmodule FrontendExWeb.TxController do
 
     render(conn, :classic_state_content, %{
       base_assigns
-      | page_title: "Transaction #{hash} State | Sepolia",
+      | page_title: "Transaction #{hash} State | 2D",
         styles: styles
     })
   end

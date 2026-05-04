@@ -39,7 +39,7 @@ defmodule FrontendExWeb.BlocksController do
 
     render(conn, :classic_content, %{
       base_assigns
-      | page_title: "Blocks | Sepolia",
+      | page_title: "Blocks | 2D",
         nav_blocks: "active",
         styles: styles
     })

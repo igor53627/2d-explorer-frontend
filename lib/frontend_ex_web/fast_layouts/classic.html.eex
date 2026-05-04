@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= @page_title || "Sepolia Testnet Explorer" %></title>
-    <link rel="icon" type="image/png" href="https://sepolia.53627.org/favicon/favicon-32x32.png">
+    <title><%= @page_title || "2D Explorer" %></title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style2.css">
     <link rel="stylesheet" href="/static/css/style2-overrides.css">
@@ -16,7 +15,7 @@
         <div class="topbar">
             <div class="container topbar-inner">
                 <div class="topbar-left">
-                    <span class="topbar-badge">Sepolia Testnet</span>
+                    <span class="topbar-badge">2D</span>
                 </div>
                 <div class="topbar-right">
                     <form class="topbar-search" action="/search" method="get">
@@ -67,7 +66,7 @@
                         <rect x="14" y="7" width="4" height="18" fill="#ffffff"></rect>
                         <rect x="19.5" y="11" width="4" height="12" fill="#ffffff"></rect>
                     </svg>
-                    <span class="logo-title">Sepolia Explorer</span>
+                    <span class="logo-title">2D Explorer</span>
                 </a>
 
                 <nav class="nav" aria-label="Primary">
@@ -106,7 +105,7 @@
                     </div>
                 </nav>
 
-                <span class="topbar-badge mobile-badge">Sepolia Testnet</span>
+                <span class="topbar-badge mobile-badge">2D</span>
 
                 <button class="mobile-menu-btn" type="button" aria-label="Open menu" title="Menu">
                     <svg viewBox="0 0 24 24">
@@ -132,7 +131,7 @@
                     Powered by <a href="https://ethereum.org">Ethereum</a>
                 </div>
                 <div class="footer-text">
-                    Sepolia Testnet Explorer
+                    2D Explorer
                 </div>
                 <div class="footer-text footer-version" title="frontend-ex release">
                     v<%= @app_version %>·<%= @git_sha %><%= if assigns[:backend_version], do: " · backend v#{@backend_version}" %><%= if assigns[:backend_sha], do: "·#{@backend_sha}" %>

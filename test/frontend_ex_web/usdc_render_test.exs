@@ -299,6 +299,25 @@ defmodule FrontendExWeb.UsdcRenderTest do
            "expected gas_used / gas_limit to render verbatim from 2d's integer-shaped fields"
   end
 
+  test "GET /address/:hash renders both 0x and Tron-base58 forms of the same account",
+       %{conn: conn} do
+    body = conn |> get("/address/0x0000000000000000000000000000000000000001") |> html_response(200)
+
+    # 2d's unified-account model: same 20-byte account, two display
+    # surfaces (0x… for eth_*, T… for /wallet/*). Both must render.
+    assert body =~ "0x0000000000000000000000000000000000000001",
+           "expected /address/:hash to render the 0x form"
+
+    expected_tron =
+      FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000001")
+
+    assert is_binary(expected_tron) and String.starts_with?(expected_tron, "T"),
+           "Tron-form derivation must produce a T-prefixed Base58Check string"
+
+    assert body =~ expected_tron,
+           "expected /address/:hash to render the Tron-form alongside the 0x form"
+  end
+
   test "GET /tx/:hash with transaction_type=3 renders the EIP-4844 commit branch",
        %{conn: conn} do
     body =

@@ -101,7 +101,7 @@ defmodule FrontendExWeb.AddressController do
 
       render(conn, :classic_content, %{
         base_assigns
-        | page_title: "Address #{address_info.hash} | Sepolia",
+        | page_title: "Address #{address_info.hash} | 2D",
           styles: styles
       })
     end
@@ -118,6 +118,10 @@ defmodule FrontendExWeb.AddressController do
 
     %{
       hash: hash,
+      # Same internal account, Tron-form display: derive deterministically
+      # from the 0x form so the explorer can show both surfaces side-by-side
+      # without waiting on the backend to advertise the tron variant.
+      tron_hash: FrontendEx.Tron.Address.from_eth_hex(hash),
       is_contract: json["is_contract"],
       is_verified: json["is_verified"],
       coin_balance: normalize_opt_string(json["coin_balance"]),
@@ -128,6 +132,7 @@ defmodule FrontendExWeb.AddressController do
   defp parse_address(_),
     do: %{
       hash: "",
+      tron_hash: nil,
       is_contract: nil,
       is_verified: nil,
       coin_balance: nil,

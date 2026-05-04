@@ -70,7 +70,7 @@ defmodule FrontendExWeb.HomeController do
 
     render(conn, :classic_content, %{
       base_assigns
-      | page_title: "Sepolia Testnet Explorer",
+      | page_title: "2D Explorer",
         nav_home: "active",
         styles: styles,
         scripts: scripts

@@ -60,7 +60,7 @@ defmodule FrontendExWeb.BlockController do
 
       render(conn, :classic_show_content, %{
         base_assigns
-        | page_title: "Block ##{block.height} | Sepolia",
+        | page_title: "Block ##{block.height} | 2D",
           nav_blocks: "active",
           styles: styles
       })
@@ -118,7 +118,7 @@ defmodule FrontendExWeb.BlockController do
 
       render(conn, :classic_txs_content, %{
         base_assigns
-        | page_title: "Block ##{block_height} Transactions | Sepolia",
+        | page_title: "Block ##{block_height} Transactions | 2D",
           nav_blocks: "active",
           styles: styles
       })

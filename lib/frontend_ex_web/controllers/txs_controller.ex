@@ -71,7 +71,7 @@ defmodule FrontendExWeb.TxsController do
 
     render(conn, :classic_content, %{
       base_assigns
-      | page_title: "Transactions | Sepolia",
+      | page_title: "Transactions | 2D",
         nav_txs: "active",
         styles: styles
     })
