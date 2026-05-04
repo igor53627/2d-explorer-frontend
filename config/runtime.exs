@@ -89,25 +89,37 @@ apply_endpoint_http? =
   end
 
 if apply_endpoint_http? do
-  # Resolution order (each step ignored if env var is unset/blank):
+  # Resolution order (each step's value used only if it parses cleanly;
+  # otherwise we fall through to the next):
   #   1. LISTEN_ADDR — full ip:port spec
   #   2. PORT        — port-only override (ip stays 0.0.0.0)
   #   3. default_listen_addr
   listen_addr_env = System.get_env("LISTEN_ADDR")
   port_env = System.get_env("PORT")
 
-  {ip, port} =
-    cond do
-      is_binary(listen_addr_env) and listen_addr_env != "" ->
-        parse_listen_addr.(listen_addr_env) ||
-          parse_listen_addr.(default_listen_addr)
+  port_only =
+    case port_env do
+      v when is_binary(v) ->
+        case Integer.parse(String.trim(v)) do
+          {p, ""} when p > 0 and p < 65_536 -> {parse_ipv4.("0.0.0.0"), p}
+          _ -> nil
+        end
 
-      is_binary(port_env) and port_env != "" ->
-        {parse_ipv4.("0.0.0.0"), String.to_integer(port_env)}
-
-      true ->
-        parse_listen_addr.(default_listen_addr)
+      _ ->
+        nil
     end
+
+  listen_addr_explicit =
+    if is_binary(listen_addr_env) and String.trim(listen_addr_env) != "" do
+      parse_listen_addr.(listen_addr_env)
+    else
+      nil
+    end
+
+  # Fall through LISTEN_ADDR → PORT → default. A malformed LISTEN_ADDR no
+  # longer hides a valid PORT override (regression caught by roborev).
+  {ip, port} =
+    listen_addr_explicit || port_only || parse_listen_addr.(default_listen_addr)
 
   config :frontend_ex, FrontendExWeb.Endpoint, http: [ip: ip, port: port]
 end
