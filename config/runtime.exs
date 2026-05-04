@@ -70,18 +70,101 @@ parse_listen_addr =
 
 default_listen_addr = "0.0.0.0:3000"
 
-{ip, port} =
-  parse_listen_addr.(System.get_env("LISTEN_ADDR") || default_listen_addr) ||
-    {parse_ipv4.("0.0.0.0"), String.to_integer(System.get_env("PORT", "3000"))}
+# Endpoint http binding:
+#
+#   * :prod — always set (LISTEN_ADDR / PORT, default 0.0.0.0:3000)
+#   * :test — never set (test env owns the endpoint config)
+#   * :dev  — only if the operator explicitly set LISTEN_ADDR or PORT;
+#             otherwise leave whatever `config/dev.exs` set, so a developer
+#             can override the port there without runtime.exs silently
+#             stomping it back to 3000.
+env_has_value? = fn name ->
+  case System.get_env(name) do
+    v when is_binary(v) -> String.trim(v) != ""
+    _ -> false
+  end
+end
 
-if config_env() != :test do
+# Empty/whitespace exports (`PORT= mix phx.server`, stripped systemd
+# `Environment=PORT=` lines) must NOT trip the override — that would
+# silently revert config/dev.exs back to {0.0.0.0, 3000}, which is
+# exactly the contract violation the dev branch above promises against.
+explicit_listen_env? =
+  env_has_value?.("LISTEN_ADDR") or env_has_value?.("PORT")
+
+apply_endpoint_http? =
+  case config_env() do
+    :prod -> true
+    :test -> false
+    _ -> explicit_listen_env?
+  end
+
+if apply_endpoint_http? do
+  # Resolution order (each step's value used only if it parses cleanly;
+  # otherwise we fall through to the next):
+  #   1. LISTEN_ADDR — full ip:port spec
+  #   2. PORT        — port-only override (ip stays 0.0.0.0)
+  #   3. default_listen_addr
+  listen_addr_env = System.get_env("LISTEN_ADDR")
+  port_env = System.get_env("PORT")
+
+  port_only =
+    case port_env do
+      v when is_binary(v) ->
+        case Integer.parse(String.trim(v)) do
+          {p, ""} when p > 0 and p < 65_536 -> {parse_ipv4.("0.0.0.0"), p}
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+
+  listen_addr_explicit =
+    if is_binary(listen_addr_env) and String.trim(listen_addr_env) != "" do
+      parse_listen_addr.(listen_addr_env)
+    else
+      nil
+    end
+
+  # Fall through LISTEN_ADDR → PORT → default. A malformed LISTEN_ADDR no
+  # longer hides a valid PORT override (regression caught by roborev).
+  {ip, port} =
+    listen_addr_explicit || port_only || parse_listen_addr.(default_listen_addr)
+
   config :frontend_ex, FrontendExWeb.Endpoint, http: [ip: ip, port: port]
 end
 
+# Default points at a local 2d dev backend (matches `mix phx.server` in
+# `~/pse/2d`). Production deployments MUST set BLOCKSCOUT_API_URL — a
+# silent fallback to `localhost:4000` would route every upstream call
+# into the void. Mirrors the EXPLORER_DATABASE_URL pattern in 2d itself.
 blockscout_api_url =
-  System.get_env("BLOCKSCOUT_API_URL", "https://sepolia.53627.org")
-  |> String.trim()
-  |> String.trim_trailing("/")
+  case {config_env(),
+        System.get_env("BLOCKSCOUT_API_URL")
+        |> Kernel.||("")
+        |> String.trim()
+        |> String.trim_trailing("/")} do
+    {_, v} when v != "" ->
+      v
+
+    {:prod, _} ->
+      raise """
+      environment variable BLOCKSCOUT_API_URL is missing in MIX_ENV=prod.
+
+      The 2d fork talks to a 2d /api/v2/* endpoint; running with no URL
+      would silently fall back to http://localhost:4000, which is rarely
+      what production wants. Set the variable explicitly:
+
+        BLOCKSCOUT_API_URL=https://2d.example.com
+
+      Whitespace-only or "/"-only values are also rejected — they would
+      trim down to an empty string and produce the same broken state.
+      """
+
+    _ ->
+      "http://localhost:4000"
+  end
 
 blockscout_txs_api_url =
   case System.get_env("BLOCKSCOUT_TXS_API_URL") do
@@ -107,17 +190,17 @@ base_url =
   |> String.trim()
   |> String.trim_trailing("/")
 
-ff_skin =
-  System.get_env("FF_SKIN", "53627")
-  |> String.trim()
+# 2d-fork: FF_SKIN env var removed — `Skin.current/0` always returns
+# `:classic` (the 53627 skin templates were deleted). Setting `FF_SKIN`
+# in deployments has no effect; remove it from your env file to avoid
+# operator confusion.
 
 config :frontend_ex,
   blockscout_api_url: blockscout_api_url,
   blockscout_txs_api_url: blockscout_txs_api_url,
   blockscout_url: blockscout_url,
   blockscout_ws_url: blockscout_ws_url,
-  base_url: base_url,
-  ff_skin: ff_skin
+  base_url: base_url
 
 metrics_enabled =
   case System.get_env("FF_METRICS_ENABLED") do

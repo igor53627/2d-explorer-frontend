@@ -1,0 +1,21 @@
+{
+  "base_fee_per_gas": null,
+  "block_number": 0,
+  "from": {
+    "hash": "0x0000000000000000000000000000000000000001"
+  },
+  "gas_price": "0",
+  "gas_used": 21000,
+  "hash": "0xcafe000000000000000000000000000000000000000000000000000000000000",
+  "input": "0x",
+  "max_fee_per_gas": null,
+  "max_priority_fee_per_gas": null,
+  "nonce": 0,
+  "status": "ok",
+  "to": {
+    "hash": "0x0000000000000000000000000000000000000002"
+  },
+  "transaction_index": 0,
+  "transaction_type": 0,
+  "value": "100"
+}

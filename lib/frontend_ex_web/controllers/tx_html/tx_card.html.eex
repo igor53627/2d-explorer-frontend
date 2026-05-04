@@ -269,7 +269,7 @@
             
             <div class="tx-type">
                 <div class="tx-type-label">Transaction</div>
-                <div class="tx-value"><%= @value_eth %> ETH</div>
+                <div class="tx-value"><%= @value_eth %> <%= @native_coin.symbol %></div>
                 <%= if is_binary(@value_usd) do %>
                 <div class="tx-value-usd">~$<%= @value_usd %></div>
                 <% end %>
@@ -321,7 +321,7 @@
                 
                 <div class="detail-item">
                     <div class="detail-label">Fee</div>
-                    <div class="detail-value"><%= if is_binary(@fee_eth), do: @fee_eth, else: "0" %> ETH</div>
+                    <div class="detail-value"><%= if is_binary(@fee_eth), do: @fee_eth, else: "0" %> <%= @native_coin.symbol %></div>
                 </div>
                 
                 <div class="detail-item">
@@ -358,7 +358,7 @@
             if (navigator.share) {
                 navigator.share({
                     title: 'Transaction <%= @short_hash %>',
-                    text: '<%= @value_eth %> ETH transaction on Blockscout',
+                    text: '<%= @value_eth %> <%= @native_coin.symbol %> transaction on Blockscout',
                     url: url
                 });
             } else {

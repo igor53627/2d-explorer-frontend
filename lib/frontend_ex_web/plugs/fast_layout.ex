@@ -6,12 +6,6 @@ defmodule FrontendExWeb.Plugs.FastLayout do
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    layout =
-      case FrontendExWeb.Skin.current() do
-        :classic -> {FrontendExWeb.FastLayouts, :classic}
-        :s53627 -> {FrontendExWeb.FastLayouts, :s53627}
-      end
-
-    put_root_layout(conn, html: layout)
+    put_root_layout(conn, html: {FrontendExWeb.FastLayouts, :classic})
   end
 end

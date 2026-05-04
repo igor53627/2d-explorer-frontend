@@ -94,7 +94,7 @@ defmodule FrontendExWeb.TxsCursorPaginationTest do
     restore =
       put_env(%{
         ff_skin: "classic",
-        blockscout_url: "https://sepolia.53627.org",
+        blockscout_url: "https://2d.example.com",
         blockscout_api_url: "http://127.0.0.1:4901",
         blockscout_ws_url: nil,
         clock_utc_now: @frozen_now,
@@ -118,7 +118,7 @@ defmodule FrontendExWeb.TxsCursorPaginationTest do
     restore =
       put_env(%{
         ff_skin: "classic",
-        blockscout_url: "https://sepolia.53627.org",
+        blockscout_url: "https://2d.example.com",
         blockscout_api_url: "http://127.0.0.1:4901",
         blockscout_ws_url: nil,
         clock_utc_now: @frozen_now,

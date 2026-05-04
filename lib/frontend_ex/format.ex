@@ -5,21 +5,41 @@ defmodule FrontendEx.Format do
 
   import Bitwise
 
-  @wei_per_eth 1_000_000_000_000_000_000
-  @wei_lt_0_000001_eth 1_000_000_000_000
-  @wei_lt_0_001_eth 1_000_000_000_000_000
-  @wei_per_gwei 1_000_000_000
+  # Native-coin decimals.
+  #
+  # 2d is hard-pinned to USDC (6 decimals) by product decision, so every
+  # current caller uses the single-arity `format_native_amount/1` /
+  # `format_native_amount_exact/1` helpers and inherits this constant.
+  # The two-arity variants exist for future-proofing — a non-USDC native
+  # would mean threading `@native_coin.decimals` through every call site
+  # (templates included), which is mechanical but not required today.
+  @default_decimals 6
 
-  @spec format_wei_to_eth(binary()) :: binary()
-  def format_wei_to_eth(wei_str) when is_binary(wei_str) do
-    wei_str = String.trim(wei_str)
+  @doc "Default decimals when a caller has no `native_coin` in scope."
+  def default_decimals, do: @default_decimals
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when wei > 0 ->
+  @doc """
+  Format a native-coin amount (in base units) as a rounded display
+  string. Threshold buckets mirror the original wei→ETH helper so very
+  small amounts surface more decimal places.
+  """
+  @spec format_native_amount(binary()) :: binary()
+  def format_native_amount(amount_str), do: format_native_amount(amount_str, @default_decimals)
+
+  @spec format_native_amount(binary(), non_neg_integer()) :: binary()
+  def format_native_amount(amount_str, decimals)
+      when is_binary(amount_str) and is_integer(decimals) and decimals >= 0 do
+    amount_str = String.trim(amount_str)
+    base_units = Integer.pow(10, decimals)
+
+    case Integer.parse(amount_str) do
+      {n, ""} when n > 0 ->
         cond do
-          wei < @wei_lt_0_000001_eth -> format_eth_rounded(wei, 8)
-          wei < @wei_lt_0_001_eth -> format_eth_rounded(wei, 6)
-          true -> format_eth_rounded(wei, 4)
+          # The threshold rule of thumb: bucket precision so very small
+          # values still surface a non-zero fractional part.
+          n < div(base_units, 1_000_000) -> format_native_rounded(n, 8, base_units)
+          n < div(base_units, 1_000) -> format_native_rounded(n, 6, base_units)
+          true -> format_native_rounded(n, 4, base_units)
         end
 
       {0, ""} ->
@@ -30,25 +50,32 @@ defmodule FrontendEx.Format do
     end
   end
 
-  @spec format_wei_to_eth_exact(binary()) :: binary()
-  def format_wei_to_eth_exact(wei_str) when is_binary(wei_str) do
-    wei_str = String.trim(wei_str)
+  # Exact decimal representation — no rounding.
+  @spec format_native_amount_exact(binary()) :: binary()
+  def format_native_amount_exact(amount_str),
+    do: format_native_amount_exact(amount_str, @default_decimals)
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when is_integer(wei) and wei >= 0 ->
-        eth_int = div(wei, @wei_per_eth)
-        eth_frac = rem(wei, @wei_per_eth)
+  @spec format_native_amount_exact(binary(), non_neg_integer()) :: binary()
+  def format_native_amount_exact(amount_str, decimals)
+      when is_binary(amount_str) and is_integer(decimals) and decimals >= 0 do
+    amount_str = String.trim(amount_str)
+    base_units = Integer.pow(10, decimals)
 
-        if eth_frac == 0 do
-          Integer.to_string(eth_int)
+    case Integer.parse(amount_str) do
+      {n, ""} when is_integer(n) and n >= 0 ->
+        whole = div(n, base_units)
+        frac = rem(n, base_units)
+
+        if frac == 0 do
+          Integer.to_string(whole)
         else
-          frac =
-            eth_frac
+          frac_str =
+            frac
             |> Integer.to_string()
-            |> String.pad_leading(18, "0")
+            |> String.pad_leading(decimals, "0")
             |> String.trim_trailing("0")
 
-          "#{eth_int}.#{frac}"
+          "#{whole}.#{frac_str}"
         end
 
       _ ->
@@ -56,54 +83,21 @@ defmodule FrontendEx.Format do
     end
   end
 
-  @spec format_wei_to_gwei(binary()) :: binary()
-  def format_wei_to_gwei(wei_str) when is_binary(wei_str) do
-    wei_str = String.trim(wei_str)
+  defp format_native_rounded(amount, dp, base_units)
+       when is_integer(amount) and amount >= 0 and dp >= 0 do
+    pow10 = Integer.pow(10, dp)
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when is_integer(wei) and wei >= 0 ->
-        if wei == 0 do
-          "0"
-        else
-          gwei_int = div(wei, @wei_per_gwei)
-          gwei_frac = rem(wei, @wei_per_gwei)
-
-          if gwei_frac == 0 do
-            Integer.to_string(gwei_int)
-          else
-            frac =
-              gwei_frac
-              |> Integer.to_string()
-              |> String.pad_leading(9, "0")
-              |> String.trim_trailing("0")
-
-            if frac == "" do
-              Integer.to_string(gwei_int)
-            else
-              "#{gwei_int}.#{frac}"
-            end
-          end
-        end
-
-      _ ->
-        "0"
-    end
-  end
-
-  defp format_eth_rounded(wei, decimals) when is_integer(wei) and wei >= 0 and decimals >= 0 do
-    pow10 = Integer.pow(10, decimals)
-
-    # Round half-up to the requested number of decimals.
-    numerator = wei * pow10
-    scaled = div(numerator + div(@wei_per_eth, 2), @wei_per_eth)
+    # Round half-up to the requested decimal places.
+    numerator = amount * pow10
+    scaled = div(numerator + div(base_units, 2), base_units)
 
     int_part = div(scaled, pow10)
     frac_part = rem(scaled, pow10)
 
-    if decimals == 0 do
+    if dp == 0 do
       Integer.to_string(int_part)
     else
-      frac = frac_part |> Integer.to_string() |> String.pad_leading(decimals, "0")
+      frac = frac_part |> Integer.to_string() |> String.pad_leading(dp, "0")
       "#{int_part}.#{frac}"
     end
   end
@@ -256,6 +250,19 @@ defmodule FrontendEx.Format do
         s
     end
   end
+
+  @doc """
+  Formats a chain count that may arrive as either a binary (upstream
+  Blockscout shape) or a non-negative JSON integer (2d's API shape). Anything
+  else returns `nil` so callers can render a `-` placeholder.
+  """
+  @spec format_count(term()) :: binary() | nil
+  def format_count(v) when is_binary(v), do: format_number_with_commas(v)
+
+  def format_count(v) when is_integer(v) and v >= 0,
+    do: v |> Integer.to_string() |> format_number_with_commas()
+
+  def format_count(_), do: nil
 
   defp format_int_with_commas_str(int_part) when is_binary(int_part) do
     s = String.trim(int_part)

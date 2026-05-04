@@ -1,9 +1,0 @@
-
-<meta property="og:title" content="Transaction: <%= FrontendEx.Format.format_wei_to_eth_exact(@tx.value) %> ETH <%= case @tx.status do %><% "ok" -> %>[Success]<% "error" -> %>[Failed]<% nil -> %>[Pending]<% s -> %>[<%= s %>]<% end %>">
-<meta property="og:description" content="From <%= FrontendEx.Format.truncate_hash(@tx.from.hash) %> → <%= if @tx.to, do: FrontendEx.Format.truncate_hash(@tx.to.hash), else: "Contract Creation" %> | Block <%= if @tx.block_number, do: ("#" <> Integer.to_string(@tx.block_number)), else: "Pending" %>">
-<meta property="og:image" content="<%= @base_url %>/tx/<%= @tx.hash %>/og-image.svg">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="<%= FrontendEx.Format.format_wei_to_eth_exact(@tx.value) %> ETH Transaction">
-<meta name="twitter:description" content="<%= case @tx.status do %><% "ok" -> %>Success<% "error" -> %>Failed<% nil -> %>Pending<% s -> %><%= s %><% end %> | <%= FrontendEx.Format.truncate_hash(@tx.from.hash) %> → <%= if @tx.to, do: FrontendEx.Format.truncate_hash(@tx.to.hash), else: "Contract" %>">
-<meta name="twitter:image" content="<%= @base_url %>/tx/<%= @tx.hash %>/og-image.svg">

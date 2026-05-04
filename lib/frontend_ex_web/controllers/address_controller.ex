@@ -4,7 +4,6 @@ defmodule FrontendExWeb.AddressController do
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
   alias FrontendExWeb.AddressHTML
-  alias FrontendExWeb.BlockHTML
 
   @txs_preview_limit 25
   @token_holdings_preview_limit 10
@@ -22,8 +21,6 @@ defmodule FrontendExWeb.AddressController do
   end
 
   defp show_valid(conn, address, params) do
-    skin = FrontendExWeb.Skin.current()
-
     cursor_query =
       case Map.get(params, "cursor") do
         v when is_binary(v) -> String.trim(v)
@@ -62,19 +59,25 @@ defmodule FrontendExWeb.AddressController do
       |> send_resp(404, "Address not found")
     else
       {coin_price, gas_price} = derive_coin_gas(stats_json)
+      native_coin = derive_native_coin(stats_json)
 
       address_info = parse_address(addr_json)
 
       transactions =
         txs_json
-        |> parse_transactions(address_info.hash)
+        |> parse_transactions(address_info.hash, native_coin)
         |> Enum.take(@txs_preview_limit)
 
       {all_token_balances, token_holdings_count} = parse_token_balances(tokens_json)
       token_balances = Enum.take(all_token_balances, @token_holdings_preview_limit)
 
-      balance_display = format_balance_display(address_info.coin_balance)
-      balance_usd_display = derive_balance_usd_display(address_info.coin_balance, coin_price)
+      balance_display = format_balance_display(address_info.coin_balance, native_coin)
+
+      balance_usd_display =
+        derive_balance_usd_display(address_info.coin_balance, coin_price, native_coin)
+
+      {tx_first_seen, tx_latest_seen} =
+        derive_tx_time_window(transactions, address_info.transactions_count)
 
       token_holdings_display =
         if token_holdings_count == 0 do
@@ -94,29 +97,20 @@ defmodule FrontendExWeb.AddressController do
           balance_usd_display: balance_usd_display,
           token_holdings_display: token_holdings_display,
           tx_count_display: tx_count_display,
+          tx_first_seen: tx_first_seen,
+          tx_latest_seen: tx_latest_seen,
           coin_price: coin_price,
-          gas_price: gas_price
+          gas_price: gas_price,
+          native_coin: native_coin
         })
 
-      case skin do
-        :classic ->
-          styles = AddressHTML.classic_styles(base_assigns)
+      styles = AddressHTML.classic_styles(base_assigns)
 
-          render(conn, :classic_content, %{
-            base_assigns
-            | page_title: "Address #{address_info.hash} | Sepolia",
-              styles: styles
-          })
-
-        :s53627 ->
-          topbar = BlockHTML.s53627_topbar(base_assigns)
-
-          render(conn, :s53627_content, %{
-            base_assigns
-            | page_title: "Address #{address_info.hash} | Explorer",
-              topbar: topbar
-          })
-      end
+      render(conn, :classic_content, %{
+        base_assigns
+        | page_title: "Address #{address_info.hash} | 2D",
+          styles: styles
+      })
     end
   end
 
@@ -131,6 +125,10 @@ defmodule FrontendExWeb.AddressController do
 
     %{
       hash: hash,
+      # Same internal account, Tron-form display: derive deterministically
+      # from the 0x form so the explorer can show both surfaces side-by-side
+      # without waiting on the backend to advertise the tron variant.
+      tron_hash: FrontendEx.Tron.Address.from_eth_hex(hash),
       is_contract: json["is_contract"],
       is_verified: json["is_verified"],
       coin_balance: normalize_opt_string(json["coin_balance"]),
@@ -141,15 +139,16 @@ defmodule FrontendExWeb.AddressController do
   defp parse_address(_),
     do: %{
       hash: "",
+      tron_hash: nil,
       is_contract: nil,
       is_verified: nil,
       coin_balance: nil,
       transactions_count: nil
     }
 
-  defp parse_transactions(nil, _addr_hash), do: []
+  defp parse_transactions(nil, _addr_hash, _native_coin), do: []
 
-  defp parse_transactions(%{} = txs_json, addr_hash) when is_binary(addr_hash) do
+  defp parse_transactions(%{} = txs_json, addr_hash, native_coin) when is_binary(addr_hash) do
     items =
       case txs_json["items"] do
         list when is_list(list) -> list
@@ -157,10 +156,10 @@ defmodule FrontendExWeb.AddressController do
       end
 
     items
-    |> Enum.map(&display_tx(&1, addr_hash))
+    |> Enum.map(&display_tx(&1, addr_hash, native_coin))
   end
 
-  defp display_tx(%{} = tx, addr_hash) when is_binary(addr_hash) do
+  defp display_tx(%{} = tx, addr_hash, native_coin) when is_binary(addr_hash) do
     hash = to_string(tx["hash"] || "")
 
     from_hash =
@@ -180,7 +179,7 @@ defmodule FrontendExWeb.AddressController do
 
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_wei_to_eth(v)
+        v when is_binary(v) -> Format.format_native_amount(v)
         _ -> nil
       end
 
@@ -192,19 +191,26 @@ defmodule FrontendExWeb.AddressController do
 
     block_number = parse_u64(tx["block_number"])
 
-    age =
+    timestamp_raw =
       case tx["timestamp"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
+    age =
+      case timestamp_raw do
         v when is_binary(v) -> Format.format_relative_time(v)
         _ -> "-"
       end
 
-    value_eth = Format.format_wei_to_eth(value) <> " ETH"
+    value_eth = Format.format_native_amount(value) <> " " <> native_coin.symbol
 
     %{
       hash: hash,
       method: method,
       block_number: block_number,
       age: age,
+      timestamp_raw: timestamp_raw,
       from_hash: from_hash,
       to_hash: to_hash,
       amount: value_eth,
@@ -215,7 +221,7 @@ defmodule FrontendExWeb.AddressController do
     }
   end
 
-  defp display_tx(_, _addr_hash), do: nil
+  defp display_tx(_, _addr_hash, _native_coin), do: nil
 
   defp parse_token_balances(nil), do: {[], 0}
 
@@ -247,32 +253,75 @@ defmodule FrontendExWeb.AddressController do
     {balances, length(balances)}
   end
 
-  defp format_balance_display(nil), do: "0 ETH"
+  defp format_balance_display(nil, native_coin), do: "0 " <> native_coin.symbol
 
-  defp format_balance_display(wei_balance) when is_binary(wei_balance) do
-    Format.format_wei_to_eth_exact(wei_balance) <> " ETH"
+  defp format_balance_display(wei_balance, native_coin) when is_binary(wei_balance) do
+    Format.format_native_amount_exact(wei_balance) <> " " <> native_coin.symbol
   end
 
-  defp derive_balance_usd_display(nil, _coin_price), do: nil
-  defp derive_balance_usd_display(_wei_balance, nil), do: nil
+  defp derive_balance_usd_display(nil, _coin_price, _native_coin), do: nil
 
-  defp derive_balance_usd_display(wei_balance, coin_price)
+  # USDC is dollar-pegged 1:1, so when /api/v2/stats doesn't advertise
+  # `coin_price` (current 2d shape) we still show a meaningful USD value
+  # by reading the balance directly. Falls through to the explicit
+  # coin_price path for any non-stable native coin (forwards-compat).
+  defp derive_balance_usd_display(wei_balance, _coin_price, %{symbol: "USDC"})
+       when is_binary(wei_balance) do
+    case Float.parse(Format.format_native_amount(wei_balance)) do
+      {usdc, ""} -> "$" <> format_two_decimals_with_commas(usdc)
+      _ -> nil
+    end
+  end
+
+  defp derive_balance_usd_display(_wei_balance, nil, _native_coin), do: nil
+
+  defp derive_balance_usd_display(wei_balance, coin_price, _native_coin)
        when is_binary(wei_balance) and is_binary(coin_price) do
-    with {eth, ""} <- Float.parse(Format.format_wei_to_eth(wei_balance)),
+    with {eth, ""} <- Float.parse(Format.format_native_amount(wei_balance)),
          {cp, ""} <- Float.parse(String.replace(coin_price, ",", "")) do
-      usd = eth * cp
-
-      usd_s = :io_lib.format("~.2f", [usd]) |> IO.iodata_to_binary()
-
-      formatted =
-        case String.split(usd_s, ".", parts: 2) do
-          [int_part, frac_part] -> Format.format_number_with_commas(int_part) <> "." <> frac_part
-          [int_part] -> Format.format_number_with_commas(int_part)
-        end
-
-      "$" <> formatted
+      "$" <> format_two_decimals_with_commas(eth * cp)
     else
       _ -> nil
+    end
+  end
+
+  defp format_two_decimals_with_commas(n) when is_float(n) do
+    s = :io_lib.format("~.2f", [n]) |> IO.iodata_to_binary()
+
+    case String.split(s, ".", parts: 2) do
+      [int_part, frac_part] -> Format.format_number_with_commas(int_part) <> "." <> frac_part
+      [int_part] -> Format.format_number_with_commas(int_part)
+    end
+  end
+
+  # Latest / First tx timestamps — derived from the already-fetched preview
+  # list. The preview is freshness-DESC, so head = latest (always exact).
+  # First is only exact when the preview holds the whole history (i.e.
+  # length(preview) == transactions_count); otherwise we'd surface "first
+  # within the last N" which is misleading, so we return nil there and the
+  # template hides the row.
+  defp derive_tx_time_window([], _count), do: {nil, nil}
+
+  defp derive_tx_time_window(transactions, total_count) when is_list(transactions) do
+    timestamps =
+      transactions
+      |> Enum.flat_map(fn
+        %{timestamp_raw: ts} when is_binary(ts) and ts != "" -> [ts]
+        _ -> []
+      end)
+
+    case timestamps do
+      [] ->
+        {nil, nil}
+
+      [single] ->
+        # Single tx in preview AND total_count is 1 → first == latest exact.
+        if total_count in [nil, 1], do: {single, single}, else: {nil, single}
+
+      list ->
+        latest = List.first(list)
+        first = if length(list) == total_count, do: List.last(list), else: nil
+        {first, latest}
     end
   end
 

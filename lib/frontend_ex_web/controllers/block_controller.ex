@@ -18,8 +18,7 @@ defmodule FrontendExWeb.BlockController do
   end
 
   defp show_block(conn, id) do
-    skin = FrontendExWeb.Skin.current()
-    # parse_block_and_preview_txs/4 needs the explorer URL for its own
+    # parse_block_and_preview_txs/3 needs the explorer URL for its own
     # templating; binding it once here avoids a second helper call.
     explorer_url = explorer_url()
 
@@ -43,38 +42,28 @@ defmodule FrontendExWeb.BlockController do
       |> send_resp(404, "Block not found")
     else
       {coin_price, gas_price} = derive_coin_gas(stats_json)
+      native_coin = derive_native_coin(stats_json)
 
       {block, txs_preview} =
-        parse_block_and_preview_txs(block_json, txs_json, skin, explorer_url)
+        parse_block_and_preview_txs(block_json, txs_json, explorer_url)
 
       base_assigns =
         base_assigns(%{
           block: block,
           transactions: txs_preview,
           coin_price: coin_price,
-          gas_price: gas_price
+          gas_price: gas_price,
+          native_coin: native_coin
         })
 
-      case skin do
-        :classic ->
-          styles = BlockHTML.classic_show_styles(base_assigns)
+      styles = BlockHTML.classic_show_styles(base_assigns)
 
-          render(conn, :classic_show_content, %{
-            base_assigns
-            | page_title: "Block ##{block.height} | Sepolia",
-              nav_blocks: "active",
-              styles: styles
-          })
-
-        :s53627 ->
-          topbar = BlockHTML.s53627_topbar(base_assigns)
-
-          render(conn, :s53627_show_content, %{
-            base_assigns
-            | page_title: "Block #{block.height} | Explorer",
-              topbar: topbar
-          })
-      end
+      render(conn, :classic_show_content, %{
+        base_assigns
+        | page_title: "Block ##{block.height} | 2D",
+          nav_blocks: "active",
+          styles: styles
+      })
     end
   end
 
@@ -89,8 +78,6 @@ defmodule FrontendExWeb.BlockController do
   end
 
   defp txs_block(conn, id) do
-    skin = FrontendExWeb.Skin.current()
-
     stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
     block_task = Task.async(fn -> Client.get_json_cached("/api/v2/blocks/#{id}", :public) end)
 
@@ -111,6 +98,7 @@ defmodule FrontendExWeb.BlockController do
       |> send_resp(404, "Block not found")
     else
       {coin_price, gas_price} = derive_coin_gas(stats_json)
+      native_coin = derive_native_coin(stats_json)
 
       block_height = parse_height(block_json)
       tx_count = parse_tx_count(block_json)
@@ -122,33 +110,22 @@ defmodule FrontendExWeb.BlockController do
           tx_count: tx_count,
           transactions: transactions,
           coin_price: coin_price,
-          gas_price: gas_price
+          gas_price: gas_price,
+          native_coin: native_coin
         })
 
-      case skin do
-        :classic ->
-          styles = BlockHTML.classic_txs_styles(base_assigns)
+      styles = BlockHTML.classic_txs_styles(base_assigns)
 
-          render(conn, :classic_txs_content, %{
-            base_assigns
-            | page_title: "Block ##{block_height} Transactions | Sepolia",
-              nav_blocks: "active",
-              styles: styles
-          })
-
-        :s53627 ->
-          topbar = BlockHTML.s53627_topbar(base_assigns)
-
-          render(conn, :s53627_txs_content, %{
-            base_assigns
-            | page_title: "Block #{block_height} Transactions | Explorer",
-              topbar: topbar
-          })
-      end
+      render(conn, :classic_txs_content, %{
+        base_assigns
+        | page_title: "Block ##{block_height} Transactions | 2D",
+          nav_blocks: "active",
+          styles: styles
+      })
     end
   end
 
-  defp parse_block_and_preview_txs(block_json, txs_json, skin, explorer_url)
+  defp parse_block_and_preview_txs(block_json, txs_json, explorer_url)
        when is_map(block_json) and (is_map(txs_json) or is_nil(txs_json)) do
     height = parse_height(block_json)
     ts_raw = to_string(block_json["timestamp"] || "")
@@ -194,7 +171,7 @@ defmodule FrontendExWeb.BlockController do
     display_block = %{
       height: height,
       timestamp_relative: Format.format_relative_time(ts_raw),
-      timestamp_readable: format_timestamp_readable(ts_raw, skin),
+      timestamp_readable: Format.format_readable_date_classic_plus_utc(ts_raw),
       tx_count: parse_tx_count(block_json),
       internal_transactions_count: internal_transactions_count,
       miner: miner,
@@ -209,7 +186,11 @@ defmodule FrontendExWeb.BlockController do
       gas_target_delta: gas_target_delta,
       gas_limit: format_optional_number_string(block_json["gas_limit"]),
       size: format_optional_size(block_json["size"]),
-      base_fee_per_gas: block_json["base_fee_per_gas"],
+      # base_fee_per_gas arrives in native base units (USDC = 6 decimals on
+      # 2d). Format here so the template can label it with @native_coin.symbol
+      # without overstating by 10^6. Mirrors the tx-detail flow in
+      # tx_controller.ex (see base_fee_native there).
+      base_fee_per_gas: format_base_fee_native(block_json["base_fee_per_gas"]),
       base_fee_per_gas_gwei: nil,
       burnt_fees_eth: nil,
       hash: block_json["hash"],
@@ -233,8 +214,12 @@ defmodule FrontendExWeb.BlockController do
     _ -> 0
   end
 
+  # 2d returns "transaction_count" (singular); upstream Blockscout uses
+  # "tx_count" / "transactions_count". Accept all three so the detail page
+  # shows the real count instead of "0 transactions".
   defp parse_tx_count(%{} = block_json) do
-    case block_json["tx_count"] || block_json["transactions_count"] do
+    case block_json["tx_count"] || block_json["transaction_count"] ||
+           block_json["transactions_count"] do
       v when is_integer(v) -> v
       v when is_binary(v) -> v |> String.trim() |> String.to_integer()
       _ -> 0
@@ -417,8 +402,11 @@ defmodule FrontendExWeb.BlockController do
 
   defp format_optional_size(_), do: nil
 
-  defp format_timestamp_readable(timestamp, :classic),
-    do: Format.format_readable_date_classic_plus_utc(timestamp)
+  defp format_base_fee_native(v) when is_binary(v),
+    do: Format.format_native_amount(String.trim(v))
 
-  defp format_timestamp_readable(timestamp, _skin), do: Format.format_readable_date(timestamp)
+  defp format_base_fee_native(v) when is_integer(v) and v >= 0,
+    do: Format.format_native_amount(Integer.to_string(v))
+
+  defp format_base_fee_native(_), do: nil
 end

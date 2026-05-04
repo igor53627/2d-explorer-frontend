@@ -9,11 +9,15 @@ defmodule FrontendExWeb.HomeController do
   @txs_limit 6
 
   def index(conn, _params) do
-    skin = FrontendExWeb.Skin.current()
-
     explorer_url = explorer_url()
     api_url = Application.get_env(:frontend_ex, :blockscout_api_url, explorer_url)
-    ws_url = ws_url(explorer_url)
+    # WS endpoint lives next to the API (Phoenix-channels), not on the
+    # public-facing frontend host. In single-host deployments these
+    # coincide, but in split deployments deriving from explorer_url
+    # routes the browser WS handshake at the wrong host (no /socket route)
+    # and the realtime banner silently stops updating. README documents
+    # auto-derivation from BLOCKSCOUT_API_URL.
+    ws_url = ws_url(api_url)
 
     stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
 
@@ -43,6 +47,8 @@ defmodule FrontendExWeb.HomeController do
     {coin_price, coin_price_change, gas_slow, gas_avg, gas_fast, gas_price} =
       derive_stats_fields(stats)
 
+    native_coin = derive_native_coin(stats_json)
+
     base_assigns =
       base_assigns(%{
         api_url: api_url,
@@ -55,33 +61,20 @@ defmodule FrontendExWeb.HomeController do
         gas_price: gas_price,
         gas_slow: gas_slow,
         gas_avg: gas_avg,
-        gas_fast: gas_fast
+        gas_fast: gas_fast,
+        native_coin: native_coin
       })
 
-    case skin do
-      :classic ->
-        styles = HomeHTML.classic_styles(base_assigns)
-        scripts = HomeHTML.classic_scripts(base_assigns)
+    styles = HomeHTML.classic_styles(base_assigns)
+    scripts = HomeHTML.classic_scripts(base_assigns)
 
-        render(conn, :classic_content, %{
-          base_assigns
-          | page_title: "Sepolia Testnet Explorer",
-            nav_home: "active",
-            styles: styles,
-            scripts: scripts
-        })
-
-      :s53627 ->
-        topbar = HomeHTML.s53627_topbar(base_assigns)
-        scripts = HomeHTML.s53627_scripts(base_assigns)
-
-        render(conn, :s53627_content, %{
-          base_assigns
-          | page_title: "Sepolia explorer",
-            topbar: topbar,
-            scripts: scripts
-        })
-    end
+    render(conn, :classic_content, %{
+      base_assigns
+      | page_title: "2D Explorer",
+        nav_home: "active",
+        styles: styles,
+        scripts: scripts
+    })
   end
 
   defp parse_stats(nil), do: nil
@@ -96,23 +89,12 @@ defmodule FrontendExWeb.HomeController do
         nil
       end
 
-    total_blocks =
-      case json["total_blocks"] do
-        v when is_binary(v) -> Format.format_number_with_commas(v)
-        _ -> nil
-      end
-
-    total_transactions =
-      case json["total_transactions"] do
-        v when is_binary(v) -> Format.format_number_with_commas(v)
-        _ -> nil
-      end
-
-    total_addresses =
-      case json["total_addresses"] do
-        v when is_binary(v) -> Format.format_number_with_commas(v)
-        _ -> nil
-      end
+    # Upstream Blockscout returns these counts as strings; 2d's API
+    # returns them as JSON integers. Accept both shapes so the home
+    # hero/overview cards don't render "-" against a 2d backend.
+    total_blocks = Format.format_count(json["total_blocks"])
+    total_transactions = Format.format_count(json["total_transactions"])
+    total_addresses = Format.format_count(json["total_addresses"])
 
     coin_price =
       case json["coin_price"] do
@@ -182,9 +164,16 @@ defmodule FrontendExWeb.HomeController do
         nil
       end
 
+    # 2d's /api/v2/blocks returns the per-block tx count as
+    # "transaction_count" (singular); upstream Blockscout uses "tx_count" /
+    # "transactions_count". Accept all three names AND both shapes
+    # (integer for 2d, JSON-string for upstream) — matches BlocksController
+    # and BlockController so the home tile, /blocks rows, and /block/:id
+    # all agree against the same upstream record.
     tx_count =
-      case b["tx_count"] do
+      case b["tx_count"] || b["transaction_count"] || b["transactions_count"] do
         v when is_integer(v) -> v
+        v when is_binary(v) -> parse_int_or(v, 0)
         _ -> nil
       end
 
@@ -228,11 +217,11 @@ defmodule FrontendExWeb.HomeController do
         _ -> nil
       end
 
-    value = Format.format_wei_to_eth(to_string(tx["value"] || "0"))
+    value = Format.format_native_amount(to_string(tx["value"] || "0"))
 
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_wei_to_eth(v)
+        v when is_binary(v) -> Format.format_native_amount(v)
         _ -> "0"
       end
 
@@ -314,13 +303,25 @@ defmodule FrontendExWeb.HomeController do
   end
 
   defp derive_ws_url(explorer_url) when is_binary(explorer_url) do
-    host =
-      explorer_url
-      |> String.trim()
-      |> String.trim_trailing("/")
-      |> String.replace_prefix("https://", "")
-      |> String.replace_prefix("http://", "")
+    trimmed = explorer_url |> String.trim() |> String.trim_trailing("/")
 
-    "wss://" <> host <> "/socket/v2/websocket?vsn=2.0.0"
+    # Mirror the source scheme: a plain http:// URL (typical local dev
+    # against `~/pse/2d` on :4000) must derive ws://, not wss://, otherwise
+    # the browser tries TLS against a non-TLS port and the WS handshake
+    # silently fails. Operators can still override via BLOCKSCOUT_WS_URL.
+    {scheme, host} =
+      cond do
+        String.starts_with?(trimmed, "https://") ->
+          {"wss://", String.replace_prefix(trimmed, "https://", "")}
+
+        String.starts_with?(trimmed, "http://") ->
+          {"ws://", String.replace_prefix(trimmed, "http://", "")}
+
+        true ->
+          # No scheme — default to wss:// for safety in unknown deployments.
+          {"wss://", trimmed}
+      end
+
+    scheme <> host <> "/socket/v2/websocket?vsn=2.0.0"
   end
 end

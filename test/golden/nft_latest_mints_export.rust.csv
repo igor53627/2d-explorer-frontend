@@ -1,3 +1,0 @@
-TxHash,Block,Timestamp,Age,Maker,Type,Item,Collection,TokenAddress,TokenId
-"0x1111111111111111111111111111111111111111111111111111111111111111","7000000","","'-","0x1111111111111111111111111111111111111111","ERC-721","Cool Cats #123","Cool Cats","0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","123"
-"0x3333333333333333333333333333333333333333333333333333333333333333","7000002","","'-","0x4444444444444444444444444444444444444444","ERC-1155","0xcccccccccccccccccccccccccccccccccccccccc","0xcccccccccccccccccccccccccccccccccccccccc","0xcccccccccccccccccccccccccccccccccccccccc",""

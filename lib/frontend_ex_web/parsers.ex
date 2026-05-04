@@ -113,4 +113,17 @@ defmodule FrontendExWeb.Parsers do
   @spec normalize_opt_string(term()) :: binary() | nil
   def normalize_opt_string(v) when is_binary(v), do: String.trim(v)
   def normalize_opt_string(_), do: nil
+
+  @doc """
+  Like `normalize_opt_string/1`, but also accepts non-negative integers and
+  renders them as decimal strings. Use this for upstream-vs-2d shape
+  divergence on numeric-string fields (gas_used, gas_price, base_fee_per_gas
+  …): upstream Blockscout returns these as JSON strings, 2d's API as JSON
+  integers. Downstream callers (`Format.format_native_amount/1`,
+  `Integer.parse/1`) want a binary either way.
+  """
+  @spec normalize_int_or_string(term()) :: binary() | nil
+  def normalize_int_or_string(v) when is_binary(v), do: String.trim(v)
+  def normalize_int_or_string(v) when is_integer(v) and v >= 0, do: Integer.to_string(v)
+  def normalize_int_or_string(_), do: nil
 end

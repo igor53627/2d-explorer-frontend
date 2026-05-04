@@ -4,15 +4,12 @@ defmodule FrontendExWeb.TxsController do
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Blockscout.Cursor
   alias FrontendEx.Format
-  alias FrontendExWeb.BlockHTML
   alias FrontendExWeb.TxsHTML
 
   @page_size_options [10, 25, 50, 100]
   @default_page_size 50
 
   def index(conn, params) when is_map(params) do
-    skin = FrontendExWeb.Skin.current()
-
     page_size = normalize_page_size(params)
 
     cursor_query = cursor_query_from_params(params)
@@ -38,7 +35,8 @@ defmodule FrontendExWeb.TxsController do
       await_many_ok([{stats_path, stats_task}, {txs_path, txs_task}], "txs")
 
     {coin_price, gas_price, total_transactions_display} = derive_stats_fields(stats_json)
-    {transactions, next_cursor} = parse_transactions_response(txs_json)
+    native_coin = derive_native_coin(stats_json)
+    {transactions, next_cursor} = parse_transactions_response(txs_json, native_coin)
 
     page_label =
       if is_first_page do
@@ -65,29 +63,18 @@ defmodule FrontendExWeb.TxsController do
         page_label: page_label,
         is_first_page: is_first_page,
         next_cursor: next_cursor,
-        total_transactions_display: total_transactions_display
+        total_transactions_display: total_transactions_display,
+        native_coin: native_coin
       })
 
-    case skin do
-      :classic ->
-        styles = TxsHTML.classic_styles(base_assigns)
+    styles = TxsHTML.classic_styles(base_assigns)
 
-        render(conn, :classic_content, %{
-          base_assigns
-          | page_title: "Transactions | Sepolia",
-            nav_txs: "active",
-            styles: styles
-        })
-
-      :s53627 ->
-        topbar = BlockHTML.s53627_topbar(base_assigns)
-
-        render(conn, :s53627_content, %{
-          base_assigns
-          | page_title: "Transactions | Explorer",
-            topbar: topbar
-        })
-    end
+    render(conn, :classic_content, %{
+      base_assigns
+      | page_title: "Transactions | 2D",
+        nav_txs: "active",
+        styles: styles
+    })
   end
 
   defp normalize_page_size(params),
@@ -218,11 +205,18 @@ defmodule FrontendExWeb.TxsController do
         _ -> nil
       end
 
+    # Upstream Blockscout returns total_transactions as a string; 2d's API
+    # returns it as a JSON integer. Accept both shapes (mirrors
+    # Format.format_count/1 used on the home page) so the
+    # "More than X transactions found" header doesn't disappear against a
+    # 2d backend.
     total_transactions_display =
       case stats_json["total_transactions"] do
         v when is_binary(v) ->
-          clean = String.replace(v, ",", "")
-          Format.format_number_with_commas(clean)
+          v |> String.replace(",", "") |> Format.format_count()
+
+        v when is_integer(v) ->
+          Format.format_count(v)
 
         _ ->
           nil
@@ -233,9 +227,9 @@ defmodule FrontendExWeb.TxsController do
 
   defp derive_stats_fields(_), do: {nil, nil, nil}
 
-  defp parse_transactions_response(nil), do: {[], nil}
+  defp parse_transactions_response(nil, _native_coin), do: {[], nil}
 
-  defp parse_transactions_response(%{} = json) do
+  defp parse_transactions_response(%{} = json, native_coin) do
     items =
       case json["items"] do
         list when is_list(list) -> list
@@ -251,16 +245,16 @@ defmodule FrontendExWeb.TxsController do
     transactions =
       items
       |> Enum.flat_map(fn
-        %{} = tx -> [display_tx(tx)]
+        %{} = tx -> [display_tx(tx, native_coin)]
         _ -> []
       end)
 
     {transactions, next_cursor}
   end
 
-  defp parse_transactions_response(_), do: {[], nil}
+  defp parse_transactions_response(_, _native_coin), do: {[], nil}
 
-  defp display_tx(%{} = tx) do
+  defp display_tx(%{} = tx, native_coin) do
     hash = to_string(tx["hash"] || "")
 
     from_hash =
@@ -280,7 +274,7 @@ defmodule FrontendExWeb.TxsController do
 
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_wei_to_eth(v)
+        v when is_binary(v) -> Format.format_native_amount(v)
         _ -> nil
       end
 
@@ -298,7 +292,7 @@ defmodule FrontendExWeb.TxsController do
         _ -> "-"
       end
 
-    value = Format.format_wei_to_eth(value_raw) <> " ETH"
+    value = Format.format_native_amount(value_raw) <> " " <> native_coin.symbol
 
     %{
       hash: hash,

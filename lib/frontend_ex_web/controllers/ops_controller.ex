@@ -31,8 +31,7 @@ defmodule FrontendExWeb.OpsController do
       # Helpful when debugging in prod; values come from runtime config.
       upstream: %{
         blockscout_api_url: Application.get_env(:frontend_ex, :blockscout_api_url),
-        blockscout_url: Application.get_env(:frontend_ex, :blockscout_url),
-        ff_skin: Application.get_env(:frontend_ex, :ff_skin)
+        blockscout_url: Application.get_env(:frontend_ex, :blockscout_url)
       }
     })
   end

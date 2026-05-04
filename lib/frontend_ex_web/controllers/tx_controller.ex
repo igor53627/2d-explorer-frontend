@@ -3,7 +3,6 @@ defmodule FrontendExWeb.TxController do
 
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
-  alias FrontendExWeb.BlockHTML
   alias FrontendExWeb.TxHTML
 
   @task_timeout_ms 10_000
@@ -18,8 +17,6 @@ defmodule FrontendExWeb.TxController do
       |> put_resp_content_type("text/plain")
       |> send_resp(404, "Transaction not found")
     else
-      skin = FrontendExWeb.Skin.current()
-
       base_url = Application.get_env(:frontend_ex, :base_url, "https://fast.53627.org")
 
       stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
@@ -49,6 +46,7 @@ defmodule FrontendExWeb.TxController do
         |> send_resp(404, "Transaction not found")
       else
         {coin_price, gas_price} = derive_coin_gas(stats_json)
+        native_coin = derive_native_coin(stats_json)
 
         logs_count = parse_logs_count(logs_json)
         latest_block_height = parse_latest_block_height(blocks_json)
@@ -63,31 +61,31 @@ defmodule FrontendExWeb.TxController do
           address_flags(display_tx)
 
         {fee_eth, timestamp_relative, timestamp_readable, method_id} =
-          derive_tx_display_fields(display_tx, skin)
+          derive_tx_display_fields(display_tx)
 
         {gas_display, gas_percentage} = gas_fields(display_tx.gas_used, display_tx.gas_limit)
 
-        gas_price_eth =
+        gas_price_native_exact =
           if display_tx.gas_price,
-            do: Format.format_wei_to_eth_exact(display_tx.gas_price),
+            do: Format.format_native_amount_exact(display_tx.gas_price),
             else: nil
 
-        gas_price_gwei =
-          if display_tx.gas_price, do: Format.format_wei_to_gwei(display_tx.gas_price), else: nil
+        gas_price_native =
+          if display_tx.gas_price, do: Format.format_native_amount(display_tx.gas_price), else: nil
 
-        base_fee_gwei =
+        base_fee_native =
           if display_tx.base_fee_per_gas,
-            do: Format.format_wei_to_gwei(display_tx.base_fee_per_gas),
+            do: Format.format_native_amount(display_tx.base_fee_per_gas),
             else: nil
 
-        max_fee_gwei =
+        max_fee_native =
           if display_tx.max_fee_per_gas,
-            do: Format.format_wei_to_gwei(display_tx.max_fee_per_gas),
+            do: Format.format_native_amount(display_tx.max_fee_per_gas),
             else: nil
 
-        max_priority_fee_gwei =
+        max_priority_fee_native =
           if display_tx.max_priority_fee_per_gas,
-            do: Format.format_wei_to_gwei(display_tx.max_priority_fee_per_gas),
+            do: Format.format_native_amount(display_tx.max_priority_fee_per_gas),
             else: nil
 
         base_assigns =
@@ -104,85 +102,47 @@ defmodule FrontendExWeb.TxController do
             method_id: method_id,
             gas_display: gas_display,
             gas_percentage: gas_percentage,
-            gas_price_eth: gas_price_eth,
-            gas_price_gwei: gas_price_gwei,
-            base_fee_gwei: base_fee_gwei,
-            max_fee_gwei: max_fee_gwei,
-            max_priority_fee_gwei: max_priority_fee_gwei,
+            gas_price_native_exact: gas_price_native_exact,
+            gas_price_native: gas_price_native,
+            base_fee_native: base_fee_native,
+            max_fee_native: max_fee_native,
+            max_priority_fee_native: max_priority_fee_native,
             logs_count: logs_count,
             coin_price: coin_price,
-            gas_price: gas_price
+            gas_price: gas_price,
+          native_coin: native_coin
           })
 
-        case skin do
-          :classic ->
-            head_meta = TxHTML.classic_head_meta(base_assigns)
-            styles = TxHTML.classic_styles(base_assigns)
+        head_meta = TxHTML.classic_head_meta(base_assigns)
+        styles = TxHTML.classic_styles(base_assigns)
 
-            render(conn, :classic_content, %{
-              base_assigns
-              | page_title: "Transaction #{display_tx.hash} | Sepolia",
-                head_meta: head_meta,
-                styles: styles
-            })
-
-          :s53627 ->
-            head_meta = TxHTML.s53627_head_meta(base_assigns)
-            topbar = BlockHTML.s53627_topbar(base_assigns)
-
-            render(conn, :s53627_content, %{
-              base_assigns
-              | page_title: "Transaction #{display_tx.hash} | Explorer",
-                head_meta: head_meta,
-                topbar: topbar
-            })
-        end
+        render(conn, :classic_content, %{
+          base_assigns
+          | page_title: "Transaction #{display_tx.hash} | 2D",
+            head_meta: head_meta,
+            styles: styles
+        })
       end
-    end
-  end
-
-  def internal(conn, %{"hash" => hash}) when is_binary(hash) do
-    hash = String.trim(hash)
-
-    cond do
-      not valid_tx_hash?(hash) ->
-        send_tx_not_found(conn)
-
-      FrontendExWeb.Skin.current() != :classic ->
-        redirect_to_overview(conn, hash)
-
-      true ->
-        render_internal_tab(conn, hash, conn.params)
     end
   end
 
   def logs(conn, %{"hash" => hash}) when is_binary(hash) do
     hash = String.trim(hash)
 
-    cond do
-      not valid_tx_hash?(hash) ->
-        send_tx_not_found(conn)
-
-      FrontendExWeb.Skin.current() != :classic ->
-        redirect_to_overview(conn, hash)
-
-      true ->
-        render_logs_tab(conn, hash)
+    if valid_tx_hash?(hash) do
+      render_logs_tab(conn, hash)
+    else
+      send_tx_not_found(conn)
     end
   end
 
   def state(conn, %{"hash" => hash}) when is_binary(hash) do
     hash = String.trim(hash)
 
-    cond do
-      not valid_tx_hash?(hash) ->
-        send_tx_not_found(conn)
-
-      FrontendExWeb.Skin.current() != :classic ->
-        redirect_to_overview(conn, hash)
-
-      true ->
-        render_state_tab(conn, hash)
+    if valid_tx_hash?(hash) do
+      render_state_tab(conn, hash)
+    else
+      send_tx_not_found(conn)
     end
   end
 
@@ -205,6 +165,7 @@ defmodule FrontendExWeb.TxController do
         send_tx_not_found(conn)
       else
         coin_price_f = parse_coin_price_float(stats_json)
+        native_coin = derive_native_coin(stats_json)
 
         tx = parse_tx(tx_json)
         from_name = get_in(tx_json, ["from", "name"])
@@ -217,16 +178,25 @@ defmodule FrontendExWeb.TxController do
 
         fee_eth =
           case tx.fee do
-            %{value: v} when is_binary(v) -> Format.format_wei_to_eth(v)
+            %{value: v} when is_binary(v) -> Format.format_native_amount(v)
             _ -> nil
           end
 
+        # 2d's /api/v2/transactions/:hash response does not include a
+        # `timestamp` field (only `block_number`); upstream Blockscout does.
+        # When the field is missing, fall back to "Block #N" instead of
+        # rendering a meaningless "--" — block height is the next-best
+        # location anchor a user can recognize.
         timestamp_relative =
-          if tx.timestamp, do: Format.format_relative_time(tx.timestamp), else: nil
+          cond do
+            tx.timestamp -> Format.format_relative_time(tx.timestamp)
+            is_integer(tx.block_number) -> "Block ##{tx.block_number}"
+            true -> nil
+          end
 
         gas_display = if tx.gas_used, do: format_gas_compact(tx.gas_used), else: nil
 
-        value_eth = Format.format_wei_to_eth(tx.value)
+        value_eth = Format.format_native_amount(tx.value)
         value_usd = compute_value_usd(tx.value, coin_price_f)
 
         assigns =
@@ -238,7 +208,8 @@ defmodule FrontendExWeb.TxController do
             timestamp_relative: timestamp_relative,
             gas_display: gas_display,
             value_eth: value_eth,
-            value_usd: value_usd
+            value_usd: value_usd,
+            native_coin: native_coin
           })
 
         render(conn, :tx_card, assigns)
@@ -278,7 +249,7 @@ defmodule FrontendExWeb.TxController do
 
           fee =
             case tx.fee do
-              %{value: v} when is_binary(v) -> Format.format_wei_to_eth(v)
+              %{value: v} when is_binary(v) -> Format.format_native_amount(v)
               _ -> "0"
             end
 
@@ -327,7 +298,7 @@ defmodule FrontendExWeb.TxController do
               <text x="600" y="180" font-family="Inter, system-ui, sans-serif" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="3">TRANSACTION</text>
               
               <!-- Value -->
-              <text x="600" y="260" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="url(#value-gradient)" text-anchor="middle">#{Format.format_wei_to_eth(tx.value)} ETH</text>
+              <text x="600" y="260" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="url(#value-gradient)" text-anchor="middle">#{Format.format_native_amount(tx.value)} #{default_native_coin().symbol}</text>
               
               <!-- From/To Flow -->
               <rect x="80" y="320" width="440" height="120" rx="16" fill="rgba(255,255,255,0.05)"/>
@@ -349,7 +320,7 @@ defmodule FrontendExWeb.TxController do
               
               <rect x="440" y="480" width="320" height="90" rx="12" fill="rgba(255,255,255,0.03)"/>
               <text x="600" y="515" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="1">FEE</text>
-              <text x="600" y="545" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">#{fee} ETH</text>
+              <text x="600" y="545" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">#{fee} #{default_native_coin().symbol}</text>
               
               <rect x="780" y="480" width="340" height="90" rx="12" fill="rgba(255,255,255,0.03)"/>
               <text x="950" y="515" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="1">HASH</text>
@@ -369,16 +340,6 @@ defmodule FrontendExWeb.TxController do
         {:error, _} ->
           send_tx_not_found(conn)
       end
-    end
-  end
-
-  defp redirect_to_overview(conn, hash) when is_binary(hash) do
-    hash = String.trim(hash)
-
-    if valid_tx_hash?(hash) do
-      redirect(conn, to: "/tx/#{hash}")
-    else
-      send_tx_not_found(conn)
     end
   end
 
@@ -402,6 +363,7 @@ defmodule FrontendExWeb.TxController do
     [stats_json, logs_json] = await_ok_many([stats_task, logs_task], @task_timeout_ms)
 
     {coin_price, gas_price} = derive_coin_gas(stats_json)
+    native_coin = derive_native_coin(stats_json)
     logs = parse_tx_logs(logs_json)
     logs_count = length(logs)
 
@@ -412,14 +374,15 @@ defmodule FrontendExWeb.TxController do
         logs: logs,
         logs_count: logs_count,
         coin_price: coin_price,
-        gas_price: gas_price
+        gas_price: gas_price,
+          native_coin: native_coin
       })
 
     styles = TxHTML.classic_logs_styles(base_assigns)
 
     render(conn, :classic_logs_content, %{
       base_assigns
-      | page_title: "Transaction #{hash} Logs | Sepolia",
+      | page_title: "Transaction #{hash} Logs | 2D",
         styles: styles
     })
   end
@@ -445,6 +408,7 @@ defmodule FrontendExWeb.TxController do
       await_ok_many([stats_task, state_task, logs_task], @task_timeout_ms)
 
     {coin_price, gas_price} = derive_coin_gas(stats_json)
+    native_coin = derive_native_coin(stats_json)
     state_changes = parse_state_changes(state_json)
     logs_count = parse_logs_count(logs_json)
 
@@ -455,80 +419,16 @@ defmodule FrontendExWeb.TxController do
         state_changes: state_changes,
         logs_count: logs_count,
         coin_price: coin_price,
-        gas_price: gas_price
+        gas_price: gas_price,
+          native_coin: native_coin
       })
 
     styles = TxHTML.classic_state_styles(base_assigns)
 
     render(conn, :classic_state_content, %{
       base_assigns
-      | page_title: "Transaction #{hash} State | Sepolia",
+      | page_title: "Transaction #{hash} State | 2D",
         styles: styles
-    })
-  end
-
-  defp render_internal_tab(conn, hash, params) when is_binary(hash) and is_map(params) do
-    show_advanced = parse_advanced(params)
-
-    stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
-
-    internal_task =
-      Task.async(fn ->
-        Client.get_json_cached(
-          "/api/v2/transactions/#{hash}/internal-transactions",
-          :public,
-          @immutable_ttl_ms
-        )
-      end)
-
-    logs_task =
-      Task.async(fn ->
-        Client.get_json_cached("/api/v2/transactions/#{hash}/logs", :public, @immutable_ttl_ms)
-      end)
-
-    [stats_json, internal_json, logs_json] =
-      await_ok_many([stats_task, internal_task, logs_task], @task_timeout_ms)
-
-    {coin_price, gas_price} = derive_coin_gas(stats_json)
-
-    internal_txns = parse_internal_txns(internal_json)
-
-    zero_value_count =
-      Enum.count(internal_txns, fn itx ->
-        zero_wei?(Map.get(itx, "value"))
-      end)
-
-    internal_txns =
-      if show_advanced do
-        internal_txns
-      else
-        Enum.reject(internal_txns, fn itx ->
-          zero_wei?(Map.get(itx, "value"))
-        end)
-      end
-
-    logs_count = parse_logs_count(logs_json)
-
-    base_assigns =
-      base_assigns(%{
-        base_url: Application.get_env(:frontend_ex, :base_url, "https://fast.53627.org"),
-        tx_hash: hash,
-        internal_txns: internal_txns,
-        logs_count: logs_count,
-        show_advanced: show_advanced,
-        zero_value_count: zero_value_count,
-        coin_price: coin_price,
-        gas_price: gas_price
-      })
-
-    styles = TxHTML.classic_internal_styles(base_assigns)
-    scripts = TxHTML.classic_internal_scripts(base_assigns)
-
-    render(conn, :classic_internal_content, %{
-      base_assigns
-      | page_title: "Transaction #{hash} Internal Txns | Sepolia",
-        styles: styles,
-        scripts: scripts
     })
   end
 
@@ -541,14 +441,19 @@ defmodule FrontendExWeb.TxController do
 
   defp parse_coin_price_float(_), do: nil
 
-  defp compute_value_usd(wei_str, coin_price_f)
-       when is_binary(wei_str) and is_float(coin_price_f) do
-    wei_str = String.trim(wei_str)
+  # USDC has 6 decimals (10^6 divisor, not the legacy 10^18). Sourced
+  # from `Format.default_decimals/0` so this stays in lockstep with the
+  # divisor `format_native_amount/1` uses for every other balance/fee/
+  # value rendered on the share-card.
+  defp compute_value_usd(amount_str, coin_price_f)
+       when is_binary(amount_str) and is_float(coin_price_f) do
+    amount_str = String.trim(amount_str)
+    divisor = Integer.pow(10, Format.default_decimals()) * 1.0
 
-    case Integer.parse(wei_str) do
-      {wei, ""} when is_integer(wei) and wei >= 0 ->
-        eth = wei / 1.0e18
-        usd = eth * coin_price_f
+    case Integer.parse(amount_str) do
+      {n, ""} when is_integer(n) and n >= 0 ->
+        native = n / divisor
+        usd = native * coin_price_f
         :io_lib.format("~.2f", [usd]) |> IO.iodata_to_binary()
 
       _ ->
@@ -556,7 +461,7 @@ defmodule FrontendExWeb.TxController do
     end
   end
 
-  defp compute_value_usd(_wei_str, _coin_price_f), do: nil
+  defp compute_value_usd(_amount_str, _coin_price_f), do: nil
 
   defp tx_short_hash_card(hash) when is_binary(hash) do
     if byte_size(hash) > 16 do
@@ -607,31 +512,6 @@ defmodule FrontendExWeb.TxController do
   end
 
   defp maybe_put_to_name(tx, _to_name), do: tx
-
-  defp parse_advanced(%{"advanced" => v}) do
-    case v do
-      true -> true
-      "true" -> true
-      "TRUE" -> true
-      "1" -> true
-      _ -> false
-    end
-  end
-
-  defp parse_advanced(_), do: false
-
-  defp zero_wei?(nil), do: true
-
-  defp zero_wei?(v) when is_binary(v) do
-    raw =
-      v
-      |> String.trim()
-      |> String.trim_leading("0")
-
-    raw == "" or raw == "0"
-  end
-
-  defp zero_wei?(_), do: false
 
   defp parse_tx_logs(%{"items" => items}) when is_list(items) do
     Enum.map(items, &parse_tx_log/1)
@@ -777,8 +657,6 @@ defmodule FrontendExWeb.TxController do
   defp parse_state_changes(%{"items" => items}) when is_list(items), do: items
   defp parse_state_changes(_), do: []
 
-  defp parse_internal_txns(%{"items" => items}) when is_list(items), do: items
-  defp parse_internal_txns(_), do: []
 
   defp await_ok_many(tasks, timeout_ms)
        when is_list(tasks) and is_integer(timeout_ms) and timeout_ms >= 0 do
@@ -847,18 +725,28 @@ defmodule FrontendExWeb.TxController do
       from: %{hash: from_hash},
       to: if(to_hash, do: %{hash: to_hash}, else: nil),
       value: to_string(tx_json["value"] || "0"),
-      gas_used: normalize_opt_string(tx_json["gas_used"]),
-      gas_price: normalize_opt_string(tx_json["gas_price"]),
-      gas_limit: normalize_opt_string(tx_json["gas_limit"]),
+      # Numeric-string fields: upstream Blockscout returns these as JSON
+      # strings, 2d's API returns them as JSON integers. normalize_int_or_string
+      # accepts both shapes so the gas-usage row, base/max/priority fee
+      # rows, and the share-card "Gas Used" cell don't silently disappear
+      # against a 2d backend.
+      gas_used: normalize_int_or_string(tx_json["gas_used"]),
+      gas_price: normalize_int_or_string(tx_json["gas_price"]),
+      gas_limit: normalize_int_or_string(tx_json["gas_limit"]),
       fee: parse_fee(tx_json["fee"]),
       status: normalize_opt_string(tx_json["status"]),
       timestamp: normalize_opt_string(tx_json["timestamp"]),
       confirmations: nil,
       method: normalize_opt_string(tx_json["method"]),
-      tx_type: parse_u64(tx_json["type"]),
-      base_fee_per_gas: normalize_opt_string(tx_json["base_fee_per_gas"]),
-      max_fee_per_gas: normalize_opt_string(tx_json["max_fee_per_gas"]),
-      max_priority_fee_per_gas: normalize_opt_string(tx_json["max_priority_fee_per_gas"]),
+      # Upstream Blockscout exposes the EIP-2718 type as `type`; 2d's
+      # /api/v2/transactions/:hash response uses `transaction_type`
+      # (singular). Field-fallback here mirrors the per-block tx-count
+      # parsers — without it, tx_type is permanently nil against 2d and
+      # the EIP-4844 commit-tx label branch in the template is unreachable.
+      tx_type: parse_u64(tx_json["type"] || tx_json["transaction_type"]),
+      base_fee_per_gas: normalize_int_or_string(tx_json["base_fee_per_gas"]),
+      max_fee_per_gas: normalize_int_or_string(tx_json["max_fee_per_gas"]),
+      max_priority_fee_per_gas: normalize_int_or_string(tx_json["max_priority_fee_per_gas"]),
       raw_input: normalize_opt_string(tx_json["raw_input"])
     }
   end
@@ -946,10 +834,10 @@ defmodule FrontendExWeb.TxController do
   defp truthy?(true), do: true
   defp truthy?(_), do: false
 
-  defp derive_tx_display_fields(%{} = tx, skin) do
+  defp derive_tx_display_fields(%{} = tx) do
     fee_eth =
       case tx.fee do
-        %{value: v} when is_binary(v) -> Format.format_wei_to_eth_exact(v)
+        %{value: v} when is_binary(v) -> Format.format_native_amount_exact(v)
         _ -> nil
       end
 
@@ -957,15 +845,8 @@ defmodule FrontendExWeb.TxController do
 
     timestamp_readable =
       case tx.timestamp do
-        ts when is_binary(ts) ->
-          if skin == :classic do
-            Format.format_readable_date_classic(ts)
-          else
-            Format.format_readable_date(ts)
-          end
-
-        _ ->
-          nil
+        ts when is_binary(ts) -> Format.format_readable_date_classic(ts)
+        _ -> nil
       end
 
     method_id =

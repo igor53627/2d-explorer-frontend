@@ -4,9 +4,9 @@ This project is configured primarily via environment variables (read in `config/
 
 ## Skins
 
-- `FF_SKIN`
-  - Values: `53627` (default) or `classic`
-  - Effect: selects which root layout + content fragments are rendered for parity routes.
+The 2d fork supports only the `classic` skin. The `FF_SKIN` env var
+that upstream `frontend-ex` parsed has been removed; setting it in the
+environment is silently ignored.
 
 ## Networking
 

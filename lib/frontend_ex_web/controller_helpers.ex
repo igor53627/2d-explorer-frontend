@@ -17,7 +17,13 @@ defmodule FrontendExWeb.ControllerHelpers do
   alias FrontendEx.Format
   alias FrontendEx.Version
 
-  @default_blockscout_url "https://sepolia.53627.org"
+  # Last-resort fallback for `:blockscout_url` when neither runtime.exs nor
+  # a test put_env wrote a value. In :prod, runtime.exs always sets one
+  # (it falls back to BLOCKSCOUT_API_URL, which itself fails fast when
+  # unset) — so this constant should never trigger there. The placeholder
+  # host signals "operator must set BLOCKSCOUT_URL" rather than silently
+  # producing localhost links from a misconfigured deploy.
+  @default_blockscout_url "https://2d.example.com"
   @default_timeout_ms 10_000
   @safe_empty {:safe, ""}
 
@@ -26,8 +32,8 @@ defmodule FrontendExWeb.ControllerHelpers do
   def safe_empty, do: @safe_empty
 
   @doc """
-  Resolves the upstream explorer URL from application env, falling back to the
-  default Sepolia Blockscout.
+  Resolves the public-facing explorer URL from application env (set by
+  `runtime.exs` from `BLOCKSCOUT_URL`), falling back to a local-dev default.
   """
   @spec explorer_url() :: binary()
   def explorer_url do
@@ -58,6 +64,11 @@ defmodule FrontendExWeb.ControllerHelpers do
       nav_nfts: "",
       app_version: Version.app(),
       git_sha: Version.sha(),
+      # Default native coin used when a controller didn't pass one (for
+      # example error pages, share cards). Real per-page rendering passes
+      # the value from `derive_native_coin/1` so the symbol/decimals
+      # follow the live `/api/v2/stats.native_coin` shape.
+      native_coin: default_native_coin(),
       # `Map.get/2` is defensive: an override with unexpected keys would
       # otherwise crash the request via `backend.version` KeyError.
       backend_version: backend && Map.get(backend, :version),
@@ -236,4 +247,25 @@ defmodule FrontendExWeb.ControllerHelpers do
   end
 
   def derive_coin_gas(_), do: {nil, nil}
+
+  @doc """
+  Extract `native_coin: %{symbol, decimals}` from the `/api/v2/stats`
+  response body.
+
+  Falls back to the 2d default (`%{symbol: "USDC", decimals: 6}`) when
+  the field is missing or malformed — the fork is hard-pinned to 2d, so
+  USDC is the right default for every consumer.
+  """
+  @spec derive_native_coin(map() | nil) :: %{symbol: String.t(), decimals: non_neg_integer()}
+  def derive_native_coin(%{"native_coin" => %{"symbol" => sym, "decimals" => dec}})
+      when is_binary(sym) and sym != "" and is_integer(dec) and dec >= 0,
+      do: %{symbol: sym, decimals: dec}
+
+  # Blank symbol falls back to the default — rendering an empty ticker
+  # next to a balance is worse than showing "USDC".
+  def derive_native_coin(_), do: default_native_coin()
+
+  @doc "Per-fork default `native_coin` map — 2d uses USDC at 6 decimals."
+  @spec default_native_coin() :: %{symbol: String.t(), decimals: non_neg_integer()}
+  def default_native_coin, do: %{symbol: "USDC", decimals: 6}
 end

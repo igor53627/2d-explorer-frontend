@@ -1,0 +1,9 @@
+{
+  "latest_block_number": 0,
+  "native_coin": {
+    "decimals": 6,
+    "symbol": "USDC"
+  },
+  "total_blocks": 1,
+  "total_transactions": 1
+}

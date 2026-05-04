@@ -8,7 +8,7 @@
 </div>
 
 <div class="testnet-banner">
-    This is a Sepolia Testnet block only
+    This is a 2D block only
 </div>
 
 <div class="tabs">
@@ -62,9 +62,9 @@
                         <span class="text-muted">Contract Creation</span>
                     <% end %>
                 </td>
-                <td><%= FrontendEx.Format.format_wei_to_eth(tx.value) %> ETH</td>
+                <td><%= FrontendEx.Format.format_native_amount(tx.value) %> <%= @native_coin.symbol %></td>
                 <td class="text-muted">
-                    <%= if tx.fee do %><%= FrontendEx.Format.format_wei_to_eth(tx.fee.value) %><% else %>-<% end %>
+                    <%= if tx.fee do %><%= FrontendEx.Format.format_native_amount(tx.fee.value) %><% else %>-<% end %>
                 </td>
             </tr>
             <% end %>
