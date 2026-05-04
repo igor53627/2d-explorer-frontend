@@ -63,7 +63,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "transaction_type" => 2,
       "max_fee_per_gas" => "10",
       "max_priority_fee_per_gas" => "2",
-      "base_fee_per_gas" => "3"
+      "base_fee_per_gas" => "3",
+      # Default tx is eth-broadcasted; the From/To rendering should use
+      # EIP-55 checksummed 0x form, not Tron Base58.
+      "kind" => "eth_rlp"
     }
 
     @transactions_list %{
@@ -155,7 +158,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
           "to" => %{"hash" => "0x0000000000000000000000000000000000000003"},
           "value" => "100",
           "status" => "ok",
-          "transaction_type" => 0
+          "transaction_type" => 0,
+          # Tron-broadcasted: From/To columns must render Tron Base58
+          # (T…), not 0x.
+          "kind" => "tron_pb"
         }
       ],
       "next_page_params" => nil
@@ -330,6 +336,39 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
     assert body =~ "21000 / 30000000",
            "expected gas_used / gas_limit to render verbatim from 2d's integer-shaped fields"
+  end
+
+  test "GET /address/:hash with tron_pb tx renders From/To in Tron Base58 form",
+       %{conn: conn} do
+    # The tx fixture has kind=tron_pb. From is 0x…0002 = TLLM…
+    # (independently-verified vector). The From column must render the
+    # T-form, NOT the 0x form.
+    body =
+      conn
+      |> get("/address/0x0000000000000000000000000000000000000002")
+      |> html_response(200)
+
+    expected_from_tron =
+      FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000002")
+
+    expected_to_tron =
+      FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000003")
+
+    assert is_binary(expected_from_tron) and String.starts_with?(expected_from_tron, "T")
+    assert is_binary(expected_to_tron) and String.starts_with?(expected_to_tron, "T")
+
+    # Truncated form appears in the table cell.
+    assert body =~ FrontendEx.Format.truncate_addr_classic(expected_from_tron),
+           "expected truncated Tron-form for From column"
+
+    assert body =~ FrontendEx.Format.truncate_addr_classic(expected_to_tron),
+           "expected truncated Tron-form for To column"
+
+    # Link target stays on the canonical 0x address — both surfaces
+    # resolve to the same internal account, but the router only knows
+    # /address/0x….
+    assert body =~ ~s{href="/address/0x0000000000000000000000000000000000000002"},
+           "row link must still point at the canonical /address/0x…"
   end
 
   describe "GET /address/:hash More Info — Latest / First (timestamp_raw regression)" do

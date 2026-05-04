@@ -245,15 +245,27 @@ defmodule FrontendExWeb.HomeController do
 
     is_contract_call = Enum.any?(tx_types, &(&1 == "contract_call"))
 
+    # Pick wallet-native truncated form for from/to based on broadcast
+    # surface (TASK-13.11). Hash kept as-is (canonical 0x for routing).
+    kind =
+      case tx["kind"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
+    from_display = FrontendEx.Tron.Address.display_for_kind(from_hash, kind)
+    to_display = if to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, kind)
+
     %{
       hash: hash,
-      from: %{hash: from_hash, display: Format.truncate_addr(from_hash)},
-      to: if(to_hash, do: %{hash: to_hash, display: Format.truncate_addr(to_hash)}, else: nil),
+      from: %{hash: from_hash, display: Format.truncate_addr(from_display)},
+      to: if(to_hash, do: %{hash: to_hash, display: Format.truncate_addr(to_display)}, else: nil),
       value: value,
       fee: fee,
       status: status,
       timestamp: if(ts_raw, do: Format.format_relative_time(ts_raw), else: nil),
       timestamp_raw: ts_raw,
+      kind: kind,
       tx_type_label: if(is_contract_call, do: "Contract call", else: "Coin transfer"),
       tx_type_class: if(is_contract_call, do: "badge-blue", else: "badge-orange")
     }

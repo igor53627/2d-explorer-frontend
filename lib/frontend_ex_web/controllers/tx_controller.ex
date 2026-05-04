@@ -343,6 +343,13 @@ defmodule FrontendExWeb.TxController do
     end
   end
 
+  defp address_display_for(eth_hex, "tron_pb") when is_binary(eth_hex) do
+    FrontendEx.Tron.Address.from_eth_hex(eth_hex) || Format.checksum_eth_address(eth_hex)
+  end
+
+  defp address_display_for(eth_hex, _kind) when is_binary(eth_hex),
+    do: Format.checksum_eth_address(eth_hex)
+
   defp send_tx_not_found(conn) do
     conn
     |> put_resp_content_type("text/plain")
@@ -719,11 +726,18 @@ defmodule FrontendExWeb.TxController do
         _ -> nil
       end
 
+    # Broadcast surface (TASK-13.11) drives wallet-native From/To form:
+    # tron_pb → T-Base58, anything else → EIP-55 checksummed 0x.
+    kind = normalize_opt_string(tx_json["kind"])
+    from_display = address_display_for(from_hash, kind)
+    to_display = if to_hash, do: address_display_for(to_hash, kind)
+
     %{
       hash: hash,
       block_number: parse_u64(tx_json["block_number"]),
-      from: %{hash: from_hash},
-      to: if(to_hash, do: %{hash: to_hash}, else: nil),
+      kind: kind,
+      from: %{hash: from_hash, display: from_display},
+      to: if(to_hash, do: %{hash: to_hash, display: to_display}, else: nil),
       value: to_string(tx_json["value"] || "0"),
       # Numeric-string fields: upstream Blockscout returns these as JSON
       # strings, 2d's API returns them as JSON integers. normalize_int_or_string

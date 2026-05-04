@@ -205,14 +205,26 @@ defmodule FrontendExWeb.AddressController do
 
     value_eth = Format.format_native_amount(value) <> " " <> native_coin.symbol
 
+    # Broadcast surface (TASK-13.11). nil → unknown shape; "eth_rlp" /
+    # "tron_pb" picks the wallet-native display form for from/to.
+    kind =
+      case tx["kind"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
     %{
       hash: hash,
       method: method,
       block_number: block_number,
       age: age,
       timestamp_raw: timestamp_raw,
+      kind: kind,
       from_hash: from_hash,
+      from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, kind),
       to_hash: to_hash,
+      to_display:
+        if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, kind), else: nil),
       amount: value_eth,
       fee: fee,
       is_out: String.downcase(from_hash) == String.downcase(addr_hash),

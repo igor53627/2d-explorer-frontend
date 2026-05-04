@@ -50,14 +50,14 @@
                     <% end %>
                 </td>
                 <td>
-                    <a href="/address/<%= tx.from.hash %>" class="hash hash--truncate hash--sm"><%= tx.from.hash %></a>
+                    <a href="/address/<%= tx.from.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from.display %>"><%= tx.from.display %></a>
                 </td>
                 <td>
                     <span class="badge badge-warning">OUT</span>
                 </td>
                 <td>
                     <%= if tx.to do %>
-                        <a href="/address/<%= tx.to.hash %>" class="hash hash--truncate hash--sm"><%= tx.to.hash %></a>
+                        <a href="/address/<%= tx.to.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.to.display %>"><%= tx.to.display %></a>
                     <% else %>
                         <span class="text-muted">Contract Creation</span>
                     <% end %>

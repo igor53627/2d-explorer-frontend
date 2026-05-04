@@ -146,9 +146,9 @@
                     <% else %>
                         <span class="addr-icon"></span>
                     <% end %>
-                    <a href="/address/<%= @tx.from.hash %>" class="hash"><%= FrontendEx.Format.checksum_eth_address(@tx.from.hash) %></a>
+                    <a href="/address/<%= @tx.from.hash %>" class="hash"><%= @tx.from.display %></a>
                 </span>
-                <button class="copy-btn" data-copy="<%= FrontendEx.Format.checksum_eth_address(@tx.from.hash) %>" title="Copy">
+                <button class="copy-btn" data-copy="<%= @tx.from.display %>" title="Copy">
                     <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                 </button>
                 <%= if @from_is_verified do %>
@@ -181,9 +181,9 @@
                         <% else %>
                             <span class="addr-icon"></span>
                         <% end %>
-                        <a href="/address/<%= @tx.to.hash %>" class="hash"><%= FrontendEx.Format.checksum_eth_address(@tx.to.hash) %></a>
+                        <a href="/address/<%= @tx.to.hash %>" class="hash"><%= @tx.to.display %></a>
                     </span>
-                    <button class="copy-btn" data-copy="<%= FrontendEx.Format.checksum_eth_address(@tx.to.hash) %>" title="Copy">
+                    <button class="copy-btn" data-copy="<%= @tx.to.display %>" title="Copy">
                         <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                     </button>
                     <%= if @to_is_verified do %>

@@ -267,18 +267,41 @@ defmodule FrontendExWeb.BlockController do
         _ -> nil
       end
 
+    # Wallet-native From/To display from broadcast surface (TASK-13.11).
+    kind =
+      case tx["kind"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
     %{
       hash: hash,
       method: method,
-      from: %{hash: from_hash},
-      to: if(to_hash, do: %{hash: to_hash}, else: nil),
+      kind: kind,
+      from: %{
+        hash: from_hash,
+        display: FrontendEx.Tron.Address.display_for_kind(from_hash, kind)
+      },
+      to:
+        if(to_hash,
+          do: %{hash: to_hash, display: FrontendEx.Tron.Address.display_for_kind(to_hash, kind)},
+          else: nil
+        ),
       value: to_string(tx["value"] || "0"),
       fee: if(fee_value, do: %{value: fee_value}, else: nil)
     }
   end
 
   defp display_tx(_),
-    do: %{hash: "", method: nil, from: %{hash: ""}, to: nil, value: "0", fee: nil}
+    do: %{
+      hash: "",
+      method: nil,
+      kind: nil,
+      from: %{hash: "", display: ""},
+      to: nil,
+      value: "0",
+      fee: nil
+    }
 
   defp fee_recipient_in_secs(nil, _cur_ts), do: nil
 

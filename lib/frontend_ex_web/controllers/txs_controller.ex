@@ -294,13 +294,25 @@ defmodule FrontendExWeb.TxsController do
 
     value = Format.format_native_amount(value_raw) <> " " <> native_coin.symbol
 
+    # Pick wallet-native From/To form based on broadcast surface
+    # (TASK-13.11). Link target on /address/… stays canonical 0x.
+    kind =
+      case tx["kind"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
     %{
       hash: hash,
       method: method,
       block_number: block_number,
       age: age,
+      kind: kind,
       from_hash: from_hash,
+      from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, kind),
       to_hash: to_hash,
+      to_display:
+        if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, kind), else: nil),
       value: value,
       has_value: has_value,
       fee: fee
