@@ -195,7 +195,7 @@
                     <% end %>
                 </span>
             <% else %>
-                <span class="text-muted">[Contract Creation]</span>
+                <span class="text-muted">[failed tx]</span>
             <% end %>
         </div>
     </div>

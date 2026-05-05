@@ -301,7 +301,7 @@
                         <% end %>
                         <div class="address-hash"><%= FrontendEx.Format.truncate_hash(@tx.to.hash) %></div>
                     <% else %>
-                        <div class="address-name">Contract Creation</div>
+                        <div class="address-name">failed tx</div>
                     <% end %>
                 </div>
             </div>

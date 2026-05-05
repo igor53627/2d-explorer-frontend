@@ -216,7 +216,7 @@
                             </button>
                         </span>
                     <% _ -> %>
-                        <span class="text-muted">Contract Creation</span>
+                        <span class="text-muted">failed tx</span>
                     <% end %>
                 </td>
                 <td><%= tx.amount %></td>
