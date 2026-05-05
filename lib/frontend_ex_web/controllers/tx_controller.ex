@@ -726,11 +726,15 @@ defmodule FrontendExWeb.TxController do
         _ -> nil
       end
 
-    # Broadcast surface (TASK-13.11) drives wallet-native From/To form:
-    # tron_pb → T-Base58, anything else → EIP-55 checksummed 0x.
+    # Per-address From/To form (TASK-13.13). Each side's display is keyed
+    # off its own primary_kind (account broadcast history); fall back to
+    # this tx's kind when the address has no history. tron_pb → T-Base58,
+    # anything else → EIP-55 checksummed 0x.
     kind = normalize_opt_string(tx_json["kind"])
-    from_display = address_display_for(from_hash, kind)
-    to_display = if to_hash, do: address_display_for(to_hash, kind)
+    from_kind = get_in(tx_json, ["from", "primary_kind"]) || kind
+    to_kind = get_in(tx_json, ["to", "primary_kind"]) || kind
+    from_display = address_display_for(from_hash, from_kind)
+    to_display = if to_hash, do: address_display_for(to_hash, to_kind)
 
     %{
       hash: hash,

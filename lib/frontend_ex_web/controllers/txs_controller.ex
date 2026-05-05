@@ -294,13 +294,18 @@ defmodule FrontendExWeb.TxsController do
 
     value = Format.format_native_amount(value_raw) <> " " <> native_coin.symbol
 
-    # Pick wallet-native From/To form based on broadcast surface
-    # (TASK-13.11). Link target on /address/… stays canonical 0x.
+    # Per-address From/To form: prefer each side's `primary_kind`
+    # (account's broadcast history, TASK-13.13) over the tx-level `kind`
+    # so cross-broadcasts render as `0xAlice → TBob`. Link target on
+    # /address/… stays canonical 0x.
     kind =
       case tx["kind"] do
         v when is_binary(v) -> v
         _ -> nil
       end
+
+    from_kind = get_in(tx, ["from", "primary_kind"]) || kind
+    to_kind = get_in(tx, ["to", "primary_kind"]) || kind
 
     %{
       hash: hash,
@@ -309,10 +314,10 @@ defmodule FrontendExWeb.TxsController do
       age: age,
       kind: kind,
       from_hash: from_hash,
-      from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, kind),
+      from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, from_kind),
       to_hash: to_hash,
       to_display:
-        if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, kind), else: nil),
+        if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, to_kind), else: nil),
       value: value,
       has_value: has_value,
       fee: fee

@@ -154,13 +154,20 @@ defmodule FrontendExWeb.UsdcRenderTest do
           "block_number" => 0,
           "transaction_index" => 0,
           "timestamp" => "2023-11-14T22:13:20Z",
-          "from" => %{"hash" => @addr_with_ts_hash},
-          "to" => %{"hash" => "0x0000000000000000000000000000000000000003"},
+          # Cross-broadcast: tx itself is Tron-broadcasted (kind=tron_pb)
+          # AND the sender's primary surface is also Tron — so From
+          # renders as T…. The recipient (0x…0003) has primary=eth_rlp
+          # in their history, so To renders as 0x… even though *this*
+          # tx was Tron-broadcast. Pins per-address rendering: kind on
+          # its own would force both sides to T.
+          "from" => %{"hash" => @addr_with_ts_hash, "primary_kind" => "tron_pb"},
+          "to" => %{
+            "hash" => "0x0000000000000000000000000000000000000003",
+            "primary_kind" => "eth_rlp"
+          },
           "value" => "100",
           "status" => "ok",
           "transaction_type" => 0,
-          # Tron-broadcasted: From/To columns must render Tron Base58
-          # (T…), not 0x.
           "kind" => "tron_pb"
         }
       ],
@@ -338,11 +345,13 @@ defmodule FrontendExWeb.UsdcRenderTest do
            "expected gas_used / gas_limit to render verbatim from 2d's integer-shaped fields"
   end
 
-  test "GET /address/:hash with tron_pb tx renders From/To in Tron Base58 form",
+  test "GET /address/:hash renders cross-form From/To by per-address primary_kind",
        %{conn: conn} do
-    # The tx fixture has kind=tron_pb. From is 0x…0002 = TLLM…
-    # (independently-verified vector). The From column must render the
-    # T-form, NOT the 0x form.
+    # Fixture: tx kind=tron_pb, from.primary_kind=tron_pb,
+    # to.primary_kind=eth_rlp → expect From rendered as T… (Tron Base58)
+    # and To as 0x… (truncated EIP-55) on the SAME row. This is the
+    # whole point of TASK-13.13 / TASK-55 — kind on its own would force
+    # both sides to T.
     body =
       conn
       |> get("/address/0x0000000000000000000000000000000000000002")
@@ -351,22 +360,31 @@ defmodule FrontendExWeb.UsdcRenderTest do
     expected_from_tron =
       FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000002")
 
-    expected_to_tron =
-      FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000003")
-
     assert is_binary(expected_from_tron) and String.starts_with?(expected_from_tron, "T")
-    assert is_binary(expected_to_tron) and String.starts_with?(expected_to_tron, "T")
 
-    # Truncated form appears in the table cell.
+    # From column: truncated T-form (Tron Base58, sender's primary).
     assert body =~ FrontendEx.Format.truncate_addr_classic(expected_from_tron),
-           "expected truncated Tron-form for From column"
+           "expected truncated Tron-form for From column (sender primary=tron_pb)"
 
-    assert body =~ FrontendEx.Format.truncate_addr_classic(expected_to_tron),
-           "expected truncated Tron-form for To column"
+    # To column: truncated 0x-form (recipient's primary=eth_rlp), NOT
+    # the Tron derivation of 0x…0003. If per-address rendering ever
+    # regresses to per-tx kind, this assertion catches it.
+    truncated_to_eth =
+      FrontendEx.Format.truncate_addr_classic("0x0000000000000000000000000000000000000003")
 
-    # Link target stays on the canonical 0x address — both surfaces
-    # resolve to the same internal account, but the router only knows
-    # /address/0x….
+    assert body =~ truncated_to_eth,
+           "expected truncated 0x-form for To column (recipient primary=eth_rlp)"
+
+    truncated_to_tron =
+      FrontendEx.Format.truncate_addr_classic(
+        FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000003")
+      )
+
+    refute body =~ truncated_to_tron,
+           "To column must NOT render the Tron-form when recipient primary=eth_rlp " <>
+             "(would mean per-tx kind is still driving both sides — regression of TASK-13.13)"
+
+    # Link target stays on canonical 0x regardless of display surface.
     assert body =~ ~s{href="/address/0x0000000000000000000000000000000000000002"},
            "row link must still point at the canonical /address/0x…"
   end

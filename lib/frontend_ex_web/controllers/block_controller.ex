@@ -267,12 +267,16 @@ defmodule FrontendExWeb.BlockController do
         _ -> nil
       end
 
-    # Wallet-native From/To display from broadcast surface (TASK-13.11).
+    # Per-address From/To form (TASK-13.13): prefer each side's
+    # primary_kind, fall back to tx.kind for fresh recipients.
     kind =
       case tx["kind"] do
         v when is_binary(v) -> v
         _ -> nil
       end
+
+    from_kind = get_in(tx, ["from", "primary_kind"]) || kind
+    to_kind = get_in(tx, ["to", "primary_kind"]) || kind
 
     %{
       hash: hash,
@@ -280,11 +284,14 @@ defmodule FrontendExWeb.BlockController do
       kind: kind,
       from: %{
         hash: from_hash,
-        display: FrontendEx.Tron.Address.display_for_kind(from_hash, kind)
+        display: FrontendEx.Tron.Address.display_for_kind(from_hash, from_kind)
       },
       to:
         if(to_hash,
-          do: %{hash: to_hash, display: FrontendEx.Tron.Address.display_for_kind(to_hash, kind)},
+          do: %{
+            hash: to_hash,
+            display: FrontendEx.Tron.Address.display_for_kind(to_hash, to_kind)
+          },
           else: nil
         ),
       value: to_string(tx["value"] || "0"),

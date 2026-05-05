@@ -205,13 +205,20 @@ defmodule FrontendExWeb.AddressController do
 
     value_eth = Format.format_native_amount(value) <> " " <> native_coin.symbol
 
-    # Broadcast surface (TASK-13.11). nil → unknown shape; "eth_rlp" /
-    # "tron_pb" picks the wallet-native display form for from/to.
+    # Per-address From/To form (TASK-13.13). Each side's display is keyed
+    # off its own `primary_kind` (account's broadcast history) so a cross-
+    # broadcast like Alice (eth) → Bob (tron) renders as `0xAlice → TBob`
+    # instead of both sides matching this single tx's broadcast surface.
+    # Falls back to tx.kind when an account has no broadcast history yet
+    # (e.g. a fresh recipient).
     kind =
       case tx["kind"] do
         v when is_binary(v) -> v
         _ -> nil
       end
+
+    from_kind = get_in(tx, ["from", "primary_kind"]) || kind
+    to_kind = get_in(tx, ["to", "primary_kind"]) || kind
 
     %{
       hash: hash,
@@ -221,10 +228,10 @@ defmodule FrontendExWeb.AddressController do
       timestamp_raw: timestamp_raw,
       kind: kind,
       from_hash: from_hash,
-      from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, kind),
+      from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, from_kind),
       to_hash: to_hash,
       to_display:
-        if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, kind), else: nil),
+        if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, to_kind), else: nil),
       amount: value_eth,
       fee: fee,
       is_out: String.downcase(from_hash) == String.downcase(addr_hash),
