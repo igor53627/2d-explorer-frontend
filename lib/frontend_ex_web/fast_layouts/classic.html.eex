@@ -13,37 +13,6 @@
 </head>
 <body>
     <header class="header">
-        <div class="topbar">
-            <div class="container topbar-inner">
-                <div class="topbar-left">
-                    <span class="topbar-badge">2D</span>
-                </div>
-                <div class="topbar-right">
-                    <form class="topbar-search" action="/search" method="get">
-                        <span class="topbar-search-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24">
-                                <circle cx="11" cy="11" r="7"></circle>
-                                <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </span>
-                        <input type="text" name="q" class="topbar-search-input" placeholder="Search by Address / Txn Hash / Block / Token" aria-label="Search by Address / Txn Hash / Block / Token">
-                        <span class="topbar-search-shortcut" aria-hidden="true"><kbd>/</kbd></span>
-                    </form>
-                    <a class="topbar-icon-btn" href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener" aria-label="2D Docs" title="2D Docs">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M4 5h6a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3V5z"></path>
-                            <path d="M20 5h-6a3 3 0 0 0-3 3v11h6a3 3 0 0 1 3 3V5z"></path>
-                        </svg>
-                    </a>
-                    <%!-- 2d-fork: Theme toggle / Network selector buttons
-                        removed — both were upstream Blockscout placeholders
-                        with no handler. Theme toggle was never wired; the
-                        network/chain selector doesn't apply (2d is its own
-                        chain, no multichain switcher). --%>
-                </div>
-            </div>
-        </div>
-
         <div class="header-main">
             <div class="container header-top">
                 <a href="/" class="logo">
@@ -56,30 +25,31 @@
                     <span class="logo-title">2D Explorer</span>
                 </a>
 
+                <form class="global-search" action="/search" method="get">
+                    <span class="global-search-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
+                    <input id="global-search-input" type="text" name="q" class="global-search-input"
+                           placeholder="Search address, tx hash, or block"
+                           aria-label="Search address, tx hash, or block">
+                    <span class="global-search-shortcut" aria-hidden="true"><kbd>/</kbd></span>
+                </form>
+
                 <nav class="nav" aria-label="Primary">
                     <a href="/" class="nav-link <%= assigns[:nav_home] || "" %>">Home</a>
-
-                    <div class="nav-dropdown">
-                        <button class="nav-link nav-dropdown-toggle <%= assigns[:nav_blocks] || "" %> <%= assigns[:nav_txs] || "" %>" type="button" aria-haspopup="true" aria-expanded="false">
-                            Blockchain
-                            <svg class="nav-caret" viewBox="0 0 12 12" aria-hidden="true">
-                                <path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </button>
-                        <div class="nav-menu">
-                            <div class="nav-menu-inner">
-                                <a href="/txs" class="nav-menu-item">Transactions</a>
-                                <a href="/blocks" class="nav-menu-item">View Blocks</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <%!-- 2d-fork: Tokens / NFTs / More-dropdown nav links
-                        removed — none of /tokens, /nft-*, /api-docs exist
-                        on 2d, so they'd 404. --%>
+                    <a href="/txs" class="nav-link <%= assigns[:nav_txs] || "" %>">Transactions</a>
+                    <a href="/blocks" class="nav-link <%= assigns[:nav_blocks] || "" %>">Blocks</a>
+                    <a class="nav-link" href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener" aria-label="2D Docs" title="2D Docs">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 5h6a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3V5z"></path>
+                            <path d="M20 5h-6a3 3 0 0 0-3 3v11h6a3 3 0 0 1 3 3V5z"></path>
+                        </svg>
+                        Docs
+                    </a>
                 </nav>
-
-                <span class="topbar-badge mobile-badge">2D</span>
 
                 <button class="mobile-menu-btn" type="button" aria-label="Open menu" title="Menu">
                     <svg viewBox="0 0 24 24">
@@ -159,30 +129,21 @@
         });
     });
 
-    // Dropdown menu hover handling
-    document.querySelectorAll('.nav-dropdown').forEach(function(dropdown) {
-        var menu = dropdown.querySelector('.nav-menu-inner');
-        var timeout;
-        
-        function showMenu() {
-            clearTimeout(timeout);
-            menu.classList.add('is-open');
+    // "/" key focuses the global search input — standard pattern.
+    // Skipped if the user is already typing in a form field, or if a
+    // modifier key is held.
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+        var target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' ||
+                       target.isContentEditable)) {
+            return;
         }
-        
-        function hideMenu(e) {
-            var related = e.relatedTarget;
-            if (related && dropdown.contains(related)) {
-                return;
-            }
-            menu.classList.remove('is-open');
-        }
-        
-        dropdown.addEventListener('mouseenter', showMenu);
-        dropdown.addEventListener('mouseleave', hideMenu);
-        
-        var menuWrapper = dropdown.querySelector('.nav-menu');
-        if (menuWrapper) {
-            menuWrapper.addEventListener('mouseenter', showMenu);
+        var input = document.getElementById('global-search-input');
+        if (input) {
+            e.preventDefault();
+            input.focus();
+            input.select();
         }
     });
     </script>

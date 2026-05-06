@@ -949,6 +949,24 @@ th[data-sort-dir="desc"] .th-sort-arrow{transform:rotate(0deg);}
   border-radius:4px;
   font-family:inherit;
 }
+/* Global-search inline shortcut hint (kbd badge inside the search bar) */
+.global-search-shortcut{
+  display:flex;
+  align-items:center;
+  pointer-events:none;
+  flex-shrink:0;
+}
+.global-search-shortcut kbd{
+  background:rgba(0,0,0,.07);
+  color:var(--text-muted);
+  font-size:11px;
+  font-weight:600;
+  padding:2px 6px;
+  border-radius:4px;
+  font-family:inherit;
+  line-height:1;
+}
+
 .topbar-icon-btn{
   width:38px;
   height:38px;
