@@ -49,8 +49,18 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "block_number" => 0,
       "transaction_index" => 0,
       "timestamp" => "2023-11-14T22:13:20Z",
-      "from" => %{"hash" => "0x0000000000000000000000000000000000000001"},
-      "to" => %{"hash" => "0x0000000000000000000000000000000000000002"},
+      # Cross-form pair: this single fixture is reused on /, /txs, and
+      # /block/:id/txs renderings, so making it cross-broadcast lets each
+      # of those surfaces assert per-address primary_kind rendering
+      # without dragging in a second fixture wiring.
+      "from" => %{
+        "hash" => "0x0000000000000000000000000000000000000001",
+        "primary_kind" => "eth_rlp"
+      },
+      "to" => %{
+        "hash" => "0x0000000000000000000000000000000000000002",
+        "primary_kind" => "tron_pb"
+      },
       "value" => "100",
       "status" => "ok",
       # gas_used / gas_limit ship as JSON integers in 2d's API (vs. strings
@@ -196,7 +206,9 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "state_root" => "0x" <> String.duplicate("0", 64)
     }
 
-    @block_txs %{"items" => [], "next_page_params" => nil}
+    # Block 0 transactions list reuses @tx_detail (cross-form) so the
+    # /block/:id/txs rendering can assert per-address primary_kind.
+    @block_txs %{"items" => [@tx_detail], "next_page_params" => nil}
 
     @addr_hash "0x0000000000000000000000000000000000000001"
 
@@ -564,6 +576,63 @@ defmodule FrontendExWeb.UsdcRenderTest do
     # fallback (a "-" label).
     assert body =~ "EIP-4844 Blob",
            "expected /tx/:hash with transaction_type=3 to render the EIP-4844 commit-tx label"
+  end
+
+  describe "per-address primary_kind cross-form across listing surfaces (roborev)" do
+    # /address has its own dedicated test above. roborev flagged that
+    # the home tile, /txs list, and /block/:id/txs surfaces went
+    # uncovered. The same @tx_detail fixture (from.primary=eth_rlp,
+    # to.primary=tron_pb) is reused on all three so the assertions just
+    # need to verify the rendered HTML carries the expected mix.
+
+    @cross_from "0x0000000000000000000000000000000000000001"
+    @cross_to "0x0000000000000000000000000000000000000002"
+
+    test "GET /  renders cross-form on the home tx tile", %{conn: conn} do
+      body = conn |> get("/") |> html_response(200)
+
+      to_tron_truncated =
+        FrontendEx.Format.truncate_addr(
+          FrontendEx.Tron.Address.from_eth_hex(@cross_to)
+        )
+
+      from_eth_truncated = FrontendEx.Format.truncate_addr(@cross_from)
+
+      assert body =~ from_eth_truncated,
+             "home tile must render From in 0x form (from.primary=eth_rlp)"
+
+      assert body =~ to_tron_truncated,
+             "home tile must render To in T form (to.primary=tron_pb)"
+    end
+
+    test "GET /txs renders cross-form on the list rows", %{conn: conn} do
+      body = conn |> get("/txs") |> html_response(200)
+
+      to_tron_truncated =
+        FrontendEx.Format.truncate_addr_classic(
+          FrontendEx.Tron.Address.from_eth_hex(@cross_to)
+        )
+
+      from_eth_truncated = FrontendEx.Format.truncate_addr_classic(@cross_from)
+
+      assert body =~ from_eth_truncated,
+             "/txs row must render From in 0x form"
+
+      assert body =~ to_tron_truncated,
+             "/txs row must render To in T form"
+    end
+
+    test "GET /block/:id/txs renders cross-form in the block-tx list", %{conn: conn} do
+      body = conn |> get("/block/0/txs") |> html_response(200)
+
+      to_tron = FrontendEx.Tron.Address.from_eth_hex(@cross_to)
+
+      assert body =~ @cross_from,
+             "/block/:id/txs From cell must contain the 0x form"
+
+      assert body =~ to_tron,
+             "/block/:id/txs To cell must contain the T form"
+    end
   end
 
   describe "GET /tx/:hash — per-address primary_kind cross-form (TASK-13.13)" do

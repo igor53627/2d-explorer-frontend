@@ -354,6 +354,11 @@ defmodule FrontendExWeb.TxController do
   defp address_display_for(eth_hex, _kind) when is_binary(eth_hex),
     do: Format.checksum_eth_address(eth_hex)
 
+  # Defensive fallback: if upstream ever returns from/to as nil or any
+  # non-binary, render an empty string instead of raising
+  # FunctionClauseError and 500-ing the tx-detail page.
+  defp address_display_for(_eth_hex, _kind), do: ""
+
   defp send_tx_not_found(conn) do
     conn
     |> put_resp_content_type("text/plain")
