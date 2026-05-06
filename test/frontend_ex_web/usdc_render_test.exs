@@ -79,8 +79,34 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "kind" => "eth_rlp"
     }
 
+    # Failed-tx fixture: status=error, to=null (mirrors what 2d emits for
+    # failed Tron broadcasts pre-TASK-56). Defined here (before
+    # @transactions_list) so list endpoints can include it without a
+    # forward-reference.
+    @tx_failed_hash "0xfa11ed000000000000000000000000000000000000000000000000000000fa11"
+    @tx_failed_detail %{
+      "hash" => @tx_failed_hash,
+      "block_number" => 0,
+      "transaction_index" => 2,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{
+        "hash" => "0x0000000000000000000000000000000000000001",
+        "primary_kind" => "tron_pb"
+      },
+      "to" => nil,
+      "value" => "0",
+      "status" => "error",
+      "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
+      "gas_price" => "0",
+      "fee" => %{"value" => "0"},
+      "transaction_type" => 0,
+      "kind" => "tron_pb"
+    }
+    @tx_failed_logs %{"items" => [], "next_page_params" => nil}
+
     @transactions_list %{
-      "items" => [@tx_detail],
+      "items" => [@tx_detail, @tx_failed_detail],
       "next_page_params" => nil
     }
 
@@ -137,31 +163,6 @@ defmodule FrontendExWeb.UsdcRenderTest do
     }
     @tx_cross_logs %{"items" => [], "next_page_params" => nil}
 
-    # Failed-tx fixture: status=error, to=null (mirrors what 2d emits for
-    # failed Tron broadcasts pre-TASK-56). Pins that the "failed tx"
-    # label is gated on status=="error", not just on to=null.
-    @tx_failed_hash "0xfa11ed000000000000000000000000000000000000000000000000000000fa11"
-    @tx_failed_detail %{
-      "hash" => @tx_failed_hash,
-      "block_number" => 0,
-      "transaction_index" => 2,
-      "timestamp" => "2023-11-14T22:13:20Z",
-      "from" => %{
-        "hash" => "0x0000000000000000000000000000000000000001",
-        "primary_kind" => "tron_pb"
-      },
-      "to" => nil,
-      "value" => "0",
-      "status" => "error",
-      "gas_used" => 21_000,
-      "gas_limit" => 30_000_000,
-      "gas_price" => "0",
-      "fee" => %{"value" => "0"},
-      "transaction_type" => 0,
-      "kind" => "tron_pb"
-    }
-    @tx_failed_logs %{"items" => [], "next_page_params" => nil}
-
     # to=null + status=ok fixture: hypothetical edge case (2d empirically
     # never produces this today, but we shouldn't mislabel it as failed).
     @tx_orphan_hash "0x0177ba0000000000000000000000000000000000000000000000000000000077"
@@ -207,8 +208,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
     }
 
     # Block 0 transactions list reuses @tx_detail (cross-form) so the
-    # /block/:id/txs rendering can assert per-address primary_kind.
-    @block_txs %{"items" => [@tx_detail], "next_page_params" => nil}
+    # /block/:id/txs rendering can assert per-address primary_kind. Also
+    # includes @tx_failed_detail so the same surface can pin the
+    # status-gated "failed tx" label.
+    @block_txs %{"items" => [@tx_detail, @tx_failed_detail], "next_page_params" => nil}
 
     @addr_hash "0x0000000000000000000000000000000000000001"
 
@@ -660,6 +663,28 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       assert body =~ expected_to_tron,
              "expected Tron Base58 for To (to.primary=tron_pb)"
+    end
+  end
+
+  describe "failed-tx label on listing surfaces (roborev)" do
+    # @transactions_list and @block_txs include @tx_failed_detail
+    # (status=error, to=null). Each listing must render "failed tx"
+    # text-muted in the corresponding To column.
+
+    test "GET /txs renders 'failed tx' for status=error tx with to=null",
+         %{conn: conn} do
+      body = conn |> get("/txs") |> html_response(200)
+
+      assert body =~ "failed tx",
+             "/txs row with status=error+to=null must render the 'failed tx' label"
+    end
+
+    test "GET /block/:id/txs renders 'failed tx' for status=error tx with to=null",
+         %{conn: conn} do
+      body = conn |> get("/block/0/txs") |> html_response(200)
+
+      assert body =~ "failed tx",
+             "/block/:id/txs row with status=error+to=null must render the 'failed tx' label"
     end
   end
 
