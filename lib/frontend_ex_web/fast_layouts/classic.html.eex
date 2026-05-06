@@ -25,6 +25,11 @@
                     <span class="logo-title">2D Explorer</span>
                 </a>
 
+                <%!-- Header search is hidden on the home page — the hero
+                    already has its own prominent search, no need to
+                    duplicate. On every other page the hero is absent and
+                    the header search is the single discoverable entry. --%>
+                <%= if assigns[:nav_home] != "active" do %>
                 <form class="global-search" action="/search" method="get">
                     <span class="global-search-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -37,6 +42,7 @@
                            aria-label="Search address, tx hash, or block">
                     <span class="global-search-shortcut" aria-hidden="true"><kbd>/</kbd></span>
                 </form>
+                <% end %>
 
                 <nav class="nav" aria-label="Primary">
                     <a href="/" class="nav-link <%= assigns[:nav_home] || "" %>">Home</a>
