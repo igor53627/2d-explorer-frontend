@@ -41,7 +41,10 @@
                     <a href="/block/<%= block.height %>" class="hash"><%= block.height %></a>
                 </td>
                 <td>
-                    <span class="time-ago"><%= block.time_ago %></span>
+                    <span class="time-ago" title="<%= block.timestamp_readable %>"><%= block.time_ago %></span>
+                    <%= if block.timestamp_readable do %>
+                        <span class="text-muted block-timestamp-readable"><%= block.timestamp_readable %></span>
+                    <% end %>
                 </td>
                 <td>
                     <a href="/block/<%= block.height %>/txs"><%= block.tx_count %></a>
