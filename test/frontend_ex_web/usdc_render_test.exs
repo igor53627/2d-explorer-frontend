@@ -745,6 +745,12 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       refute body =~ "failed tx",
              "share-card must NOT label as 'failed tx' when status is not error"
+
+      # Positive: neutral placeholder is what actually renders inside
+      # the address-name slot. Anchored to that class so we don't match
+      # "—" appearing elsewhere on the card (e.g. timestamp fallback).
+      assert body =~ ~r{<div class="address-name">\s*—\s*</div>},
+             "share-card 'address-name' must render neutral '—' for status=ok+to=null"
     end
 
     test "GET /tx/:hash OG meta description includes 'failed tx' when status=error",
@@ -763,7 +769,7 @@ defmodule FrontendExWeb.UsdcRenderTest do
              "twitter:description must include 'failed tx' for status=error+to=null"
     end
 
-    test "GET /tx/:hash OG meta description has neutral em-dash when status=ok+to=null",
+    test "GET /tx/:hash OG/Twitter meta has neutral em-dash when status=ok+to=null",
          %{conn: conn} do
       body =
         conn
@@ -772,6 +778,16 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       refute body =~ ~r{<meta property="og:description" content="[^"]*failed tx},
              "og:description must NOT label as 'failed tx' when status is not error"
+
+      refute body =~ ~r{<meta name="twitter:description" content="[^"]*failed tx},
+             "twitter:description must NOT label as 'failed tx' when status is not error"
+
+      # Positive: both meta tags render the neutral em-dash.
+      assert body =~ ~r{<meta property="og:description" content="[^"]*—},
+             "og:description must contain neutral '—' for status=ok+to=null"
+
+      assert body =~ ~r{<meta name="twitter:description" content="[^"]*—},
+             "twitter:description must contain neutral '—' for status=ok+to=null"
     end
   end
 
