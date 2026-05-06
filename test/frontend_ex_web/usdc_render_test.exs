@@ -105,8 +105,33 @@ defmodule FrontendExWeb.UsdcRenderTest do
     }
     @tx_failed_logs %{"items" => [], "next_page_params" => nil}
 
+    # Second normal-tx fixture (status=ok, to=set). Two normal rows
+    # alongside one failed row in the listing means a regression that
+    # inverts the to=null condition (label rendered on `to`-set rows
+    # instead of `to=nil` rows) bumps occurrences of "failed tx" from
+    # 1 → 2, tripping the count==1 assertion. With a single normal row
+    # the count would silently match either branch.
+    @tx_detail_alt %{
+      "hash" => "0xa17e7" <> String.duplicate("0", 59),
+      "block_number" => 0,
+      "transaction_index" => 1,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{
+        "hash" => "0x0000000000000000000000000000000000000006",
+        "primary_kind" => "eth_rlp"
+      },
+      "to" => %{
+        "hash" => "0x0000000000000000000000000000000000000007",
+        "primary_kind" => "eth_rlp"
+      },
+      "value" => "200",
+      "status" => "ok",
+      "transaction_type" => 0,
+      "kind" => "eth_rlp"
+    }
+
     @transactions_list %{
-      "items" => [@tx_detail, @tx_failed_detail],
+      "items" => [@tx_detail, @tx_detail_alt, @tx_failed_detail],
       "next_page_params" => nil
     }
 
@@ -207,11 +232,14 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "state_root" => "0x" <> String.duplicate("0", 64)
     }
 
-    # Block 0 transactions list reuses @tx_detail (cross-form) so the
-    # /block/:id/txs rendering can assert per-address primary_kind. Also
-    # includes @tx_failed_detail so the same surface can pin the
-    # status-gated "failed tx" label.
-    @block_txs %{"items" => [@tx_detail, @tx_failed_detail], "next_page_params" => nil}
+    # Block 0 transactions list — three items (two normal + one failed)
+    # so a regression that inverts the to=null condition trips count==1
+    # (would render "failed tx" on the two normal rows). Same defensive
+    # rationale as @transactions_list.
+    @block_txs %{
+      "items" => [@tx_detail, @tx_detail_alt, @tx_failed_detail],
+      "next_page_params" => nil
+    }
 
     @addr_hash "0x0000000000000000000000000000000000000001"
 
@@ -237,10 +265,13 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "coin_balance" => "500000",
       "is_contract" => false,
       "is_verified" => false,
-      # 2 outbound txs in @addr_with_ts_txs (cross-form + failed); the
+      # 3 outbound txs in @addr_with_ts_txs (cross-form + normal-2 +
+      # failed). 3 rows means a regression that inverts the to=null
+      # condition mislabels the two non-failed rows, bumping count to 2
+      # — caught by the count==1 assertion. The
       # `derive_tx_time_window/2` "First exact" branch keys off
-      # length(preview) == transactions_count.
-      "transactions_count" => 2
+      # length(preview) == transactions_count, so this stays in lockstep.
+      "transactions_count" => 3
     }
     @addr_with_ts_txs %{
       "items" => [
@@ -265,12 +296,29 @@ defmodule FrontendExWeb.UsdcRenderTest do
           "transaction_type" => 0,
           "kind" => "tron_pb"
         },
+        # Second normal-tx so the listing has 2 normal + 1 failed —
+        # makes count==1 catch the inverted-conditional regression.
+        %{
+          "hash" => "0xa2" <> String.duplicate("0", 62),
+          "block_number" => 0,
+          "transaction_index" => 1,
+          "timestamp" => "2023-11-14T22:13:20Z",
+          "from" => %{"hash" => @addr_with_ts_hash, "primary_kind" => "tron_pb"},
+          "to" => %{
+            "hash" => "0x0000000000000000000000000000000000000008",
+            "primary_kind" => "eth_rlp"
+          },
+          "value" => "50",
+          "status" => "ok",
+          "transaction_type" => 0,
+          "kind" => "tron_pb"
+        },
         # Failed tx in this address's list — pins the "failed tx" label
         # rendering on the /address row surface.
         %{
           "hash" => "0xfa" <> String.duplicate("0", 62),
           "block_number" => 0,
-          "transaction_index" => 1,
+          "transaction_index" => 2,
           "timestamp" => "2023-11-14T22:13:20Z",
           "from" => %{"hash" => @addr_with_ts_hash, "primary_kind" => "tron_pb"},
           "to" => nil,
