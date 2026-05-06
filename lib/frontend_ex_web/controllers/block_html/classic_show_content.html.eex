@@ -37,7 +37,7 @@
 <div class="detail-card">
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Block Height:
         </div>
         <div class="detail-value">
@@ -57,7 +57,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Status:
         </div>
         <div class="detail-value">
@@ -70,7 +70,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Timestamp:
         </div>
         <div class="detail-value">
@@ -92,7 +92,7 @@
 
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Transactions:
         </div>
         <div class="detail-value">
@@ -104,7 +104,7 @@
     <%= if @block.miner do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Proposer:
         </div>
         <div class="detail-value">
@@ -124,7 +124,7 @@
     <%= if @block.size do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Size:
         </div>
         <div class="detail-value">
@@ -140,7 +140,7 @@
     <%= if @block.hash do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Block Hash:
         </div>
         <div class="detail-value">
@@ -155,7 +155,7 @@
     <%= if @block.parent_hash do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Parent Hash:
         </div>
         <div class="detail-value">
@@ -170,7 +170,7 @@
     <%= if @block.state_root do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             State Root:
         </div>
         <div class="detail-value">

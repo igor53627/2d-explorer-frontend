@@ -54,7 +54,7 @@
 <div class="detail-card">
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Transaction Hash:
         </div>
         <div class="detail-value">
@@ -69,7 +69,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Status:
         </div>
         <div class="detail-value">
@@ -92,7 +92,7 @@
     <%= if @tx.block_number do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Block:
         </div>
         <div class="detail-value">
@@ -111,7 +111,7 @@
     <%= if @timestamp_relative do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Timestamp:
         </div>
         <div class="detail-value">
@@ -126,7 +126,7 @@
     
 <%= if is_nil(@tx.block_number) and is_nil(@timestamp_relative), do: "    \n    \n", else: "" %>    <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             From:
         </div>
         <div class="detail-value">
@@ -160,7 +160,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             To:
         </div>
         <div class="detail-value">
@@ -202,7 +202,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Value:
         </div>
         <div class="detail-value">
@@ -216,7 +216,7 @@
     <%= if @fee_eth do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Transaction Fee:
         </div>
         <div class="detail-value">
@@ -228,7 +228,7 @@
     <%= if @gas_price_native do %>
 <%= if is_nil(@fee_eth), do: "    \n", else: "" %>    <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Gas Price:
         </div>
         <div class="detail-value">
@@ -259,7 +259,7 @@
         <%= if @gas_display do %>
         <div class="detail-row">
             <div class="detail-label">
-                <span class="help-icon">?</span>
+                
                 Gas Limit & Usage by Txn:
             </div>
             <div class="detail-value">
@@ -281,7 +281,7 @@
         <%= if @base_fee_native || @max_fee_native || @max_priority_fee_native do %>
         <div class="detail-row">
             <div class="detail-label">
-                <span class="help-icon">?</span>
+                
                 Gas Fees:
             </div>
             <div class="detail-value">
@@ -301,7 +301,7 @@
         <%= if @method_id do %>
         <div class="detail-row">
             <div class="detail-label">
-                <span class="help-icon">?</span>
+                
                 Input Data:
             </div>
             <div class="detail-value">
