@@ -22,7 +22,9 @@
                 <th>Txn Hash</th>
                 <th>Method</th>
                 <th>From</th>
-                <th></th>
+                <%!-- 2d-fork: dropped the bare OUT badge column — IN/OUT is
+                    a per-address-scoped concept and nonsensical on a
+                    block-tx listing (no referent address). --%>
                 <th>To</th>
                 <th>Value</th>
                 <th>Fee</th>
@@ -49,9 +51,6 @@
                     <a href="/address/<%= tx.from.hash %>" class="hash" title="<%= tx.from.display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from.display) %></a>
                 </td>
                 <td>
-                    <span class="badge badge-warning">OUT</span>
-                </td>
-                <td>
                     <%= if tx.to do %>
                         <a href="/address/<%= tx.to.hash %>" class="hash" title="<%= tx.to.display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.to.display) %></a>
                     <% else %>
@@ -64,7 +63,14 @@
                 </td>
                 <td><%= FrontendEx.Format.format_native_amount(tx.value) %> <%= @native_coin.symbol %></td>
                 <td class="text-muted">
-                    <%= if tx.fee do %><%= FrontendEx.Format.format_native_amount(tx.fee.value) %><% else %>-<% end %>
+                    <%= cond do %>
+                    <% tx.fee && is_binary(tx.fee.value) -> %>
+                        <%= FrontendEx.Format.format_native_amount(tx.fee.value) %>
+                    <% is_binary(tx.fee_raw) -> %>
+                        <%= FrontendEx.Format.format_native_amount(tx.fee_raw) %>
+                    <% true -> %>
+                        -
+                    <% end %>
                 </td>
             </tr>
             <% end %>

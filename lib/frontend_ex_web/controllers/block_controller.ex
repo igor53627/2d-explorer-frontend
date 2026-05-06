@@ -267,6 +267,11 @@ defmodule FrontendExWeb.BlockController do
         _ -> nil
       end
 
+    # 2d's API doesn't ship a `fee` object (gasless chain). Same
+    # fallback as txs_controller / address_controller: compute
+    # gas_price * gas_used → "0" on 2d, real value upstream.
+    fee_raw = fee_value || compute_fee_raw(tx)
+
     # Per-address From/To form (TASK-13.13): prefer each side's
     # primary_kind, fall back to tx.kind for fresh recipients.
     kind =
@@ -302,7 +307,8 @@ defmodule FrontendExWeb.BlockController do
           else: nil
         ),
       value: to_string(tx["value"] || "0"),
-      fee: if(fee_value, do: %{value: fee_value}, else: nil)
+      fee: if(fee_value, do: %{value: fee_value}, else: nil),
+      fee_raw: fee_raw
     }
   end
 
@@ -315,8 +321,29 @@ defmodule FrontendExWeb.BlockController do
       from: %{hash: "", display: ""},
       to: nil,
       value: "0",
-      fee: nil
+      fee: nil,
+      fee_raw: nil
     }
+
+  defp compute_fee_raw(%{} = tx) do
+    with gp when is_integer(gp) and gp >= 0 <- normalize_int(tx["gas_price"]),
+         gu when is_integer(gu) and gu >= 0 <- normalize_int(tx["gas_used"]) do
+      Integer.to_string(gp * gu)
+    else
+      _ -> nil
+    end
+  end
+
+  defp normalize_int(v) when is_integer(v), do: v
+
+  defp normalize_int(v) when is_binary(v) do
+    case Integer.parse(String.trim(v)) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp normalize_int(_), do: nil
 
   defp fee_recipient_in_secs(nil, _cur_ts), do: nil
 
