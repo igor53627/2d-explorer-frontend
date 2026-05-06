@@ -7,10 +7,6 @@
     </div>
 </div>
 
-<div class="testnet-banner">
-    This is a 2D block only
-</div>
-
 <div class="tabs">
     <a href="/block/<%= @block_height %>" class="tab">Overview</a>
     <a href="/block/<%= @block_height %>/txs" class="tab active">Transactions</a>

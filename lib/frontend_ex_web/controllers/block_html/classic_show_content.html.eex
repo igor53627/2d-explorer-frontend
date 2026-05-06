@@ -38,9 +38,6 @@
 </div>
 
 <div class="detail-card">
-    <div class="detail-banner">
-        This is a 2D block only
-    </div>
     <div class="detail-row">
         <div class="detail-label">
             <span class="help-icon">?</span>
