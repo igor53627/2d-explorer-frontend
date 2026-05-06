@@ -32,7 +32,7 @@
             <%= for tx <- @transactions do %>
             <tr>
                 <td>
-                    <a href="/tx/<%= tx.hash %>" class="hash hash--truncate"><%= tx.hash %></a>
+                    <a href="/tx/<%= tx.hash %>" class="hash" title="<%= tx.hash %>"><%= FrontendEx.Format.truncate_hash(tx.hash) %></a>
                 </td>
                 <td>
                     <%= if tx.method do %>
@@ -46,14 +46,14 @@
                     <% end %>
                 </td>
                 <td>
-                    <a href="/address/<%= tx.from.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from.display %>"><%= tx.from.display %></a>
+                    <a href="/address/<%= tx.from.hash %>" class="hash" title="<%= tx.from.display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from.display) %></a>
                 </td>
                 <td>
                     <span class="badge badge-warning">OUT</span>
                 </td>
                 <td>
                     <%= if tx.to do %>
-                        <a href="/address/<%= tx.to.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.to.display %>"><%= tx.to.display %></a>
+                        <a href="/address/<%= tx.to.hash %>" class="hash" title="<%= tx.to.display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.to.display) %></a>
                     <% else %>
                         <%= if tx.status == "error" do %>
                             <span class="text-muted">failed tx</span>

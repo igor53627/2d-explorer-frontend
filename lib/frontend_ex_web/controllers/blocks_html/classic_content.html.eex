@@ -48,7 +48,7 @@
                 </td>
                 <td>
                     <%= if block.miner_hash do %>
-                        <a href="/address/<%= block.miner_hash %>" class="hash hash--truncate"><%= block.miner_hash %></a>
+                        <a href="/address/<%= block.miner_hash %>" class="hash" title="<%= block.miner_hash %>"><%= FrontendEx.Format.truncate_addr_classic(block.miner_hash) %></a>
                     <% else %>
                         <span class="text-muted">-</span>
                     <% end %>
