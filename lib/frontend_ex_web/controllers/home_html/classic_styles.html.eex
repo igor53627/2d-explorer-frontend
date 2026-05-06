@@ -4,7 +4,11 @@
 .hero {
     background: linear-gradient(135deg, #21325b 0%, #0d1f3c 100%);
     padding: 32px 20px 24px;
-    margin: -20px -20px 24px -20px;
+    /* Negative left/right margins still bleed the hero past `.main`'s
+       container padding, but vertical 0 lets `.main { padding-top: 24px }`
+       give the hero a top gap matching its 24px margin-bottom. */
+    margin: 0 -20px 24px;
+    border-radius: 8px;
 }
 .hero-inner {
     max-width: 1400px;
