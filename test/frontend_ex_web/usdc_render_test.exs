@@ -237,7 +237,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
       "coin_balance" => "500000",
       "is_contract" => false,
       "is_verified" => false,
-      "transactions_count" => 1
+      # 2 outbound txs in @addr_with_ts_txs (cross-form + failed); the
+      # `derive_tx_time_window/2` "First exact" branch keys off
+      # length(preview) == transactions_count.
+      "transactions_count" => 2
     }
     @addr_with_ts_txs %{
       "items" => [
@@ -259,6 +262,20 @@ defmodule FrontendExWeb.UsdcRenderTest do
           },
           "value" => "100",
           "status" => "ok",
+          "transaction_type" => 0,
+          "kind" => "tron_pb"
+        },
+        # Failed tx in this address's list — pins the "failed tx" label
+        # rendering on the /address row surface.
+        %{
+          "hash" => "0xfa" <> String.duplicate("0", 62),
+          "block_number" => 0,
+          "transaction_index" => 1,
+          "timestamp" => "2023-11-14T22:13:20Z",
+          "from" => %{"hash" => @addr_with_ts_hash, "primary_kind" => "tron_pb"},
+          "to" => nil,
+          "value" => "0",
+          "status" => "error",
           "transaction_type" => 0,
           "kind" => "tron_pb"
         }
@@ -667,9 +684,9 @@ defmodule FrontendExWeb.UsdcRenderTest do
   end
 
   describe "failed-tx label on listing surfaces (roborev)" do
-    # @transactions_list and @block_txs include @tx_failed_detail
-    # (status=error, to=null). Each listing must render "failed tx"
-    # text-muted in the corresponding To column.
+    # @transactions_list, @block_txs, @addr_with_ts_txs each include a
+    # failed (status=error, to=null) item. Each listing must render
+    # "failed tx" text-muted in the corresponding To column.
 
     test "GET /txs renders 'failed tx' for status=error tx with to=null",
          %{conn: conn} do
@@ -685,6 +702,68 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       assert body =~ "failed tx",
              "/block/:id/txs row with status=error+to=null must render the 'failed tx' label"
+    end
+
+    test "GET /address/:hash renders 'failed tx' for status=error tx with to=null",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/address/0x0000000000000000000000000000000000000002")
+        |> html_response(200)
+
+      assert body =~ "failed tx",
+             "/address row with status=error+to=null must render the 'failed tx' label"
+    end
+  end
+
+  describe "failed-tx label on /tx/:hash share-card and OG meta (roborev)" do
+    test "GET /tx/:hash share-card renders 'failed tx' when status=error+to=null",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0xfa11ed000000000000000000000000000000000000000000000000000000fa11/card")
+        |> html_response(200)
+
+      assert body =~ "failed tx",
+             "share-card 'address-name' must show 'failed tx' for status=error+to=null"
+    end
+
+    test "GET /tx/:hash share-card renders neutral '—' when status=ok+to=null",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0x0177ba0000000000000000000000000000000000000000000000000000000077/card")
+        |> html_response(200)
+
+      refute body =~ "failed tx",
+             "share-card must NOT label as 'failed tx' when status is not error"
+    end
+
+    test "GET /tx/:hash OG meta description includes 'failed tx' when status=error",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0xfa11ed000000000000000000000000000000000000000000000000000000fa11")
+        |> html_response(200)
+
+      # og:description and twitter:description both go through the same
+      # status-gated label.
+      assert body =~ ~r{<meta property="og:description" content="[^"]*failed tx},
+             "og:description must include 'failed tx' for status=error+to=null"
+
+      assert body =~ ~r{<meta name="twitter:description" content="[^"]*failed tx},
+             "twitter:description must include 'failed tx' for status=error+to=null"
+    end
+
+    test "GET /tx/:hash OG meta description has neutral em-dash when status=ok+to=null",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0x0177ba0000000000000000000000000000000000000000000000000000000077")
+        |> html_response(200)
+
+      refute body =~ ~r{<meta property="og:description" content="[^"]*failed tx},
+             "og:description must NOT label as 'failed tx' when status is not error"
     end
   end
 
