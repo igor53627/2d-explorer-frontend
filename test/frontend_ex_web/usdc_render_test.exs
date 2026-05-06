@@ -684,35 +684,43 @@ defmodule FrontendExWeb.UsdcRenderTest do
   end
 
   describe "failed-tx label on listing surfaces (roborev)" do
-    # @transactions_list, @block_txs, @addr_with_ts_txs each include a
-    # failed (status=error, to=null) item. Each listing must render
-    # "failed tx" text-muted in the corresponding To column.
+    # @transactions_list, @block_txs, @addr_with_ts_txs each include
+    # exactly ONE failed (status=error, to=null) item alongside ≥1
+    # normal item. We assert occurrence-count == 1, not just presence,
+    # so a regression that accidentally labels every row as "failed tx"
+    # (e.g. the conditional moving outside the to=null branch) gets
+    # caught — substring-match would happily pass with the leak.
 
-    test "GET /txs renders 'failed tx' for status=error tx with to=null",
+    defp count_occurrences(haystack, needle) when is_binary(haystack) and is_binary(needle) do
+      haystack |> String.split(needle) |> length() |> Kernel.-(1)
+    end
+
+    test "GET /txs renders 'failed tx' on exactly the failed row",
          %{conn: conn} do
       body = conn |> get("/txs") |> html_response(200)
 
-      assert body =~ "failed tx",
-             "/txs row with status=error+to=null must render the 'failed tx' label"
+      assert count_occurrences(body, "failed tx") == 1,
+             "/txs must render 'failed tx' on exactly one row " <>
+               "(label leaking onto normal rows is a regression)"
     end
 
-    test "GET /block/:id/txs renders 'failed tx' for status=error tx with to=null",
+    test "GET /block/:id/txs renders 'failed tx' on exactly the failed row",
          %{conn: conn} do
       body = conn |> get("/block/0/txs") |> html_response(200)
 
-      assert body =~ "failed tx",
-             "/block/:id/txs row with status=error+to=null must render the 'failed tx' label"
+      assert count_occurrences(body, "failed tx") == 1,
+             "/block/:id/txs must render 'failed tx' on exactly one row"
     end
 
-    test "GET /address/:hash renders 'failed tx' for status=error tx with to=null",
+    test "GET /address/:hash renders 'failed tx' on exactly the failed row",
          %{conn: conn} do
       body =
         conn
         |> get("/address/0x0000000000000000000000000000000000000002")
         |> html_response(200)
 
-      assert body =~ "failed tx",
-             "/address row with status=error+to=null must render the 'failed tx' label"
+      assert count_occurrences(body, "failed tx") == 1,
+             "/address row must render 'failed tx' on exactly one row"
     end
   end
 
