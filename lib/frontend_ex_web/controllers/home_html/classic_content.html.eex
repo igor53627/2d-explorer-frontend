@@ -86,12 +86,12 @@
                 </div>
                 <div class="block-meta">
                     <div class="block-miner">
-                        Miner <%= if block.miner do %><a href="/address/<%= block.miner.hash %>"><%= block.miner.display %></a><% else %>-<% end %>
+                        Proposer <%= if block.miner do %><a href="/address/<%= block.miner.hash %>"><%= block.miner.display %></a><% else %>-<% end %>
                     </div>
                     <div class="block-txns">
                         <a href="/block/<%= block.height %>/txs"><%= block.tx_count || 0 %> txns</a>
                     </div>
-                    <div class="block-reward">0 <%= @native_coin.symbol %></div>
+                    <div class="block-reward">Fees 0 <%= @native_coin.symbol %></div>
                 </div>
             </div>
             <% end %>

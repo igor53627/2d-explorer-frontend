@@ -13,7 +13,7 @@
                 <th>Block</th>
                 <th>Age</th>
                 <th>Txn</th>
-                <th>Fee Recipient</th>
+                <th>Proposer</th>
                 <th>Gas Used</th>
                 <th>Gas Limit</th>
             </tr>

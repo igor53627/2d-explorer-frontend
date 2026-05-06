@@ -127,7 +127,7 @@
     <div class="detail-row">
         <div class="detail-label">
             <span class="help-icon">?</span>
-            Fee Recipient:
+            Proposer:
         </div>
         <div class="detail-value">
             <span class="hash-inline">
