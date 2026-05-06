@@ -805,6 +805,57 @@ defmodule FrontendExWeb.UsdcRenderTest do
     end
   end
 
+  describe "client-side sort + CSV export attributes (roborev)" do
+    # Pin the data-* hooks the inline JS depends on. Logic itself
+    # (sort comparator, CSV serialization) isn't unit-tested — those
+    # live in the layout's inline <script> and a JS-level harness
+    # would be heavier than the surface justifies. Attributes are the
+    # contract between server and JS, so attribute drift is the
+    # realistic regression class to catch.
+
+    test "GET /txs has sortable-table + sort-key headers + per-row data attrs",
+         %{conn: conn} do
+      body = conn |> get("/txs") |> html_response(200)
+
+      assert body =~ ~s|data-sortable-table|,
+             "txs table must opt into sort with data-sortable-table"
+
+      for key <- ~w(block age fee) do
+        assert body =~ ~s|data-sort-key="#{key}"|,
+               "expected sortable header for #{key}"
+      end
+
+      # Every tr should carry data-block / data-age / data-fee for the
+      # JS comparator to read.
+      assert body =~ ~r/<tr data-block="\d+" data-age="[^"]*" data-fee="[^"]*"/,
+             "tx rows must carry data-block/data-age/data-fee for sorting"
+    end
+
+    test "GET /txs has Download Page Data button targeting #txs-table",
+         %{conn: conn} do
+      body = conn |> get("/txs") |> html_response(200)
+
+      assert body =~ ~s|data-csv-export="#txs-table"|,
+             "Download button must target the txs table"
+
+      assert body =~ ~s|data-csv-filename="2d-txs-page.csv"|,
+             "CSV filename hook must be set"
+
+      # Header cells excluded from CSV (Preview eye-icon column,
+      # direction-icon column) carry data-csv-skip.
+      assert body =~ ~s|data-csv-skip|,
+             "preview/dir cells must opt out of CSV via data-csv-skip"
+    end
+
+    test "GET /blocks has Download Page Data button targeting #blocks-table",
+         %{conn: conn} do
+      body = conn |> get("/blocks") |> html_response(200)
+
+      assert body =~ ~s|data-csv-export="#blocks-table"|,
+             "blocks Download button must target the blocks table"
+    end
+  end
+
   describe "failed-tx label on listing surfaces (roborev)" do
     # @transactions_list, @block_txs, @addr_with_ts_txs each include
     # exactly ONE failed (status=error, to=null) item alongside ≥1

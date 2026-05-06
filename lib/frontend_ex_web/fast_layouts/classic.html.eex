@@ -96,6 +96,11 @@
     // Cells (th/td) marked with data-csv-skip are omitted.
     function csvCell(s) {
         s = (s || '').replace(/\s+/g, ' ').trim();
+        // CSV-injection guard: Excel / Sheets / LibreOffice interpret
+        // a leading =/+/-/@/tab/CR as a formula trigger. Prefix with a
+        // single-quote so the cell renders literally instead of
+        // executing a formula sourced from on-chain data.
+        if (s && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
         if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
         return s;
     }
