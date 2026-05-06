@@ -22,8 +22,9 @@
 <div class="block-tabbar">
     <div class="tabs">
         <a href="/block/<%= @block.height %>" class="tab active">Overview</a>
-        <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Consensus Info</a>
-        <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blob Info</a>
+        <%!-- 2d-fork: Consensus Info / Blob Info tabs removed — 2d has
+            single-block finality (no consensus layer to inspect) and no
+            EIP-4844 blobs. --%>
     </div>
     <div class="block-tabbar-actions">
         <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/blocks/<%= @block.height %>" target="_blank" rel="noopener">
@@ -286,6 +287,6 @@
     </svg>
     <div>
         Blocks are batches of transactions linked via cryptographic hashes. Any tampering of a block would invalidate all following blocks.
-        Learn more about this page in our <a href="#" aria-disabled="true" tabindex="-1">Knowledge Base</a>.
+        Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.
     </div>
 </div>

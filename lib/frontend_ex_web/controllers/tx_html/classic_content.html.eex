@@ -18,7 +18,7 @@
         <a href="/tx/<%= @tx.hash %>" class="tab active">Overview</a>
         <a href="/tx/<%= @tx.hash %>/logs" class="tab">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
         <a href="/tx/<%= @tx.hash %>/state" class="tab">State</a>
-        <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blobs</a>
+        <%!-- 2d-fork: Blobs tab removed — 2d has no EIP-4844 blob data. --%>
     </div>
     <div class="tx-tabbar-actions">
         <button class="btn btn-sm" type="button" aria-label="API" disabled>
@@ -325,6 +325,6 @@
         <path d="M12 8h.01"></path>
     </svg>
     <span>
-        A transaction is a cryptographically signed instruction that changes the blockchain state. Block explorers track the details of all transactions in the network. Learn more about transactions in our <a href="#" class="link">Knowledge Base</a>.
+        A transaction is a cryptographically signed instruction that changes the blockchain state. Block explorers track the details of all transactions in the network. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener" class="link">2D docs</a>.
     </span>
 </div>
