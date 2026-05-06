@@ -677,12 +677,15 @@ defmodule FrontendExWeb.UsdcRenderTest do
       assert body =~ truncated_to,
              "share-card To column must show truncated Tron-form when to.primary=tron_pb"
 
-      # From: truncated EIP-55 0x form. Format.checksum_eth_address
-      # produces a mixed-case hex; truncate_hash takes the first 6/last
-      # 4 bytes of that string. Just assert any 0x-prefixed truncation
-      # of the From address is present.
-      assert body =~ "0x0000",
-             "share-card From column must show 0x form (from.primary=eth_rlp)"
+      # From: EIP-55 checksum on all-zeros+4 is identical to lowercase
+      # (no a-f digits to flip). truncate_hash → "0x0000...0004".
+      truncated_from =
+        FrontendEx.Format.truncate_hash(
+          FrontendEx.Format.checksum_eth_address("0x0000000000000000000000000000000000000004")
+        )
+
+      assert body =~ truncated_from,
+             "share-card From column must show truncated 0x form (from.primary=eth_rlp)"
     end
 
     test "GET /tx/:hash/og-image.svg renders cross-form display",
@@ -701,6 +704,14 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       assert body =~ truncated_to,
              "OG SVG To text must render truncated Tron-form when to.primary=tron_pb"
+
+      truncated_from =
+        FrontendEx.Format.truncate_hash(
+          FrontendEx.Format.checksum_eth_address("0x0000000000000000000000000000000000000004")
+        )
+
+      assert body =~ truncated_from,
+             "OG SVG From text must render truncated 0x form (from.primary=eth_rlp)"
     end
   end
 
