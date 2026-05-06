@@ -163,8 +163,14 @@
                 <%!-- Link via parent hash directly — router accepts both
                     decimal height and 32-byte hash. height-1 arithmetic
                     is brittle on chains where canonical-continuity isn't
-                    guaranteed. --%>
-                <a class="hash" href="/block/<%= @block.parent_hash %>"><%= @block.parent_hash %></a>
+                    guaranteed. Genesis (height 0) carries an all-zero
+                    sentinel parent_hash that has no corresponding block,
+                    so render plain text instead of a 404'ing link. --%>
+                <%= if @block.height > 0 do %>
+                    <a class="hash" href="/block/<%= @block.parent_hash %>"><%= @block.parent_hash %></a>
+                <% else %>
+                    <span class="hash"><%= @block.parent_hash %></span>
+                <% end %>
                 <button class="copy-btn" data-copy="<%= @block.parent_hash %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
             </span>
         </div>

@@ -639,9 +639,12 @@ defmodule FrontendExWeb.UsdcRenderTest do
       |> html_response(200)
 
     # @tx_detail has value=100 (= 0.0001 USDC at 6 decimals), to=set,
-    # method=nil, tx_type=2. Action row should describe the transfer
-    # Etherscan-style: "Transfer 0.0001 USDC to 0x…0002".
-    assert body =~ ~r{Transfer\s+0\.000100\s+USDC\s+to\s+<a},
+    # method=nil, tx_type=2, to.is_contract=false. Action row should
+    # describe the transfer Etherscan-style: "Transfer 0.0001 USDC to
+    # 0x…0002". Use the same exact-decimals formatter as the Value row
+    # below — the two surfaces would otherwise drift on the same number
+    # ("0.000100" vs "0.0001"), which reads like two different values.
+    assert body =~ ~r{Transfer\s+0\.0001\s+USDC\s+to\s+<a},
            "expected Etherscan-style 'Transfer N USDC to ADDR' Transaction Action"
   end
 
@@ -1082,6 +1085,80 @@ defmodule FrontendExWeb.UsdcRenderTest do
         refute body =~ ~s|href="#{route}|,
                "tx detail page links to deleted route #{route}"
       end
+    end
+  end
+
+  describe "ultrareview round 2 nit fixes" do
+    test "GET /block/0 — genesis parent_hash renders as plain text, not a 404'ing link",
+         %{conn: conn} do
+      body = conn |> get("/block/0") |> html_response(200)
+
+      # Genesis carries the all-zero sentinel parent_hash (0x000…000).
+      # The router accepts it as a 32-byte hash, but no upstream block
+      # exists at that hash, so a link 404s. Pin: the parent_hash row
+      # still shows the hash text but does NOT wrap it in an anchor.
+      zero_hash = "0x" <> String.duplicate("0", 64)
+
+      assert body =~ zero_hash,
+             "expected /block/0 to render the parent_hash text"
+
+      refute body =~ ~s|href="/block/#{zero_hash}"|,
+             "expected /block/0 to NOT link the genesis parent_hash (would 404)"
+    end
+
+    test "GET /tx/:hash/logs — Logs tab hidden when logs_count == 0",
+         %{conn: conn} do
+      # FakeClient @tx_failed_hash; inlined here because module attrs
+      # don't cross the FakeClient → test-module boundary. @tx_failed_logs
+      # has empty items (logs_count=0). All three tx-detail surfaces
+      # (Overview / State / Logs) must agree on tab gating — landing on
+      # /logs directly with 0 logs shouldn't render a self-referential
+      # Logs tab that the other surfaces hide.
+      hash = "0xfa11ed000000000000000000000000000000000000000000000000000000fa11"
+
+      body =
+        conn
+        |> get("/tx/#{hash}/logs")
+        |> html_response(200)
+
+      refute body =~ ~r{<a[^>]*href="/tx/#{hash}/logs"[^>]*class="tab[^"]*"},
+             "expected /tx/:hash/logs to hide the Logs tab when logs_count == 0"
+    end
+
+    test "/blocks Age cell carries data-csv-value with the relative-time string" do
+      template_path =
+        Path.join([
+          File.cwd!(),
+          "lib/frontend_ex_web/controllers/blocks_html/classic_content.html.eex"
+        ])
+
+      template = File.read!(template_path)
+
+      # csvCellText prefers data-csv-value > [title] > textContent. The
+      # Age cell has [title]=readable on time-ago, which would shadow
+      # textContent on the CSV path; data-csv-value pins the visible
+      # relative-time string explicitly.
+      assert template =~ ~s|data-csv-value="<%= block.time_ago %>"|,
+             "expected /blocks Age td to carry data-csv-value=block.time_ago"
+    end
+
+    test "home realtime createBlockRow links to /block/:id/txs (not /transactions)" do
+      # Server-side block tiles use /txs (the only route the router
+      # defines). The realtime-injected row's URL must agree, or every
+      # tile prepended after a WS new_block event 404s on click.
+      template_path =
+        Path.join([
+          File.cwd!(),
+          "lib/frontend_ex_web/controllers/home_html/classic_scripts.html.eex"
+        ])
+
+      template = File.read!(template_path)
+
+      refute template =~ "/block/${height}/transactions",
+             "expected createBlockRow to NOT link to deleted /block/:id/transactions route"
+
+      assert template =~ "/block/${height}/txs",
+             "expected createBlockRow to link to /block/:id/txs (the live route)"
     end
   end
 end

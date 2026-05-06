@@ -37,9 +37,15 @@
                     <span class="fw-medium">Commit EIP-4844 Blob</span>
                 <% is_binary(@tx.method) and String.trim(@tx.method) not in ["", "-"] -> %>
                     <span class="fw-medium"><%= @tx.method %></span>
-                <% @tx.to && FrontendExWeb.Parsers.parse_int_or(@tx.value, 0) > 0 -> %>
+                <% @tx.to && FrontendExWeb.Parsers.parse_int_or(@tx.value, 0) > 0 && not @to_is_contract_like -> %>
+                    <%!-- Etherscan-style "Transfer N USDC to ADDR" only for
+                        EOA recipients. Payable contract calls (to is a
+                        contract, value > 0, no decoded method) shouldn't be
+                        labeled "Transfer" — they're invocations, not plain
+                        payments. Format with the same exact-decimals helper
+                        the Value row below uses, so the two surfaces agree. --%>
                     <span class="fw-medium">Transfer
-                        <%= FrontendEx.Format.format_native_amount(@tx.value) %>
+                        <%= FrontendEx.Format.format_native_amount_exact(@tx.value) %>
                         <%= @native_coin.symbol %>
                         to
                         <a class="link" href="/address/<%= @tx.to.hash %>" title="<%= @tx.to.display %>"><%= FrontendEx.Format.truncate_addr_classic(@tx.to.display) %></a>

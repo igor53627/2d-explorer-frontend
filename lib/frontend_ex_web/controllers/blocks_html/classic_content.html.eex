@@ -40,7 +40,13 @@
                 <td>
                     <a href="/block/<%= block.height %>" class="hash"><%= block.height %></a>
                 </td>
-                <td>
+                <td data-csv-value="<%= block.time_ago %>">
+                    <%!-- data-csv-value pins the relative-time string for
+                        CSV export. Without it, csvCellText prefers the
+                        nearest [title] (the readable timestamp on the
+                        time-ago span), which is the wrong column for the
+                        Age cell — that pattern exists for truncated
+                        hashes, not for hover tooltips. --%>
                     <span class="time-ago" title="<%= block.timestamp_readable %>"><%= block.time_ago %></span>
                     <%= if is_binary(block.timestamp_readable) and String.trim(block.timestamp_readable) != "" do %>
                         <span class="text-muted block-timestamp-readable"><%= block.timestamp_readable %></span>

@@ -103,7 +103,7 @@ function createBlockRow(block) {
                 Proposer ${miner ? `<a href="/address/${miner}">${truncateAddr(miner)}</a>` : '-'}
             </div>
             <div class="block-txns">
-                <a href="/block/${height}/transactions">${txCount} txns</a>
+                <a href="/block/${height}/txs">${txCount} txns</a>
             </div>
             <div class="block-reward">Fees 0 <%= @native_coin.symbol %></div>
         </div>
