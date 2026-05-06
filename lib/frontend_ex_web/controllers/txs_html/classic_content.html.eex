@@ -72,13 +72,9 @@
                     <tr>
                         <th class="dir-cell preview-cell" data-csv-skip>
                             <span class="sr-only">Preview</span>
-                            <button class="help-icon" type="button" aria-label="Help: Preview column" title="See preview of the transaction details.">?</button>
                         </th>
                         <th>Transaction Hash</th>
-                        <th>
-                            Method
-                            <button class="help-icon" type="button" aria-label="Help: Method column" title="Function executed based on decoded input data. For unidentified functions, method ID is displayed instead.">?</button>
-                        </th>
+                        <th>Method</th>
                         <th data-sort-key="block" data-sort-type="number"><button type="button" class="th-sort-btn">Block<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
                         <th data-sort-key="age" data-sort-type="number"><button type="button" class="th-sort-btn">Age<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
                         <th>From</th>

@@ -129,13 +129,9 @@
             <tr>
                 <th class="dir-cell preview-cell" data-csv-skip>
                     <span class="sr-only">Preview</span>
-                    <button class="help-icon" type="button" aria-label="Help: Preview column" title="See preview of the transaction details.">?</button>
                 </th>
                 <th>Transaction Hash</th>
-                <th>
-                    Method
-                    <button class="help-icon" type="button" aria-label="Help" title="The decoded contract method name called by this transaction, if available.">?</button>
-                </th>
+                <th>Method</th>
                 <th>Block</th>
                 <th>Age</th>
                 <th>From</th>
