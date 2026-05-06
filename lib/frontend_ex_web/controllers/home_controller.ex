@@ -5,8 +5,8 @@ defmodule FrontendExWeb.HomeController do
   alias FrontendEx.Format
   alias FrontendExWeb.HomeHTML
 
-  @blocks_limit 6
-  @txs_limit 6
+  @blocks_limit 10
+  @txs_limit 10
 
   def index(conn, _params) do
     explorer_url = explorer_url()
