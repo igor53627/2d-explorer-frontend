@@ -11,7 +11,9 @@
 <div class="tx-tabbar">
     <div class="tabs">
         <a href="/tx/<%= @tx.hash %>" class="tab active">Overview</a>
-        <a href="/tx/<%= @tx.hash %>/logs" class="tab">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
+        <%= if @logs_count > 0 do %>
+            <a href="/tx/<%= @tx.hash %>/logs" class="tab">Logs (<%= @logs_count %>)</a>
+        <% end %>
         <a href="/tx/<%= @tx.hash %>/state" class="tab">State</a>
         <%!-- 2d-fork: Blobs tab removed — 2d has no EIP-4844 blob data. --%>
     </div>

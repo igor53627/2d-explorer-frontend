@@ -5,7 +5,9 @@
 
 <div class="tabs">
     <a href="/tx/<%= @tx_hash %>" class="tab">Overview</a>
-    <a href="/tx/<%= @tx_hash %>/logs" class="tab">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
+    <%= if @logs_count > 0 do %>
+        <a href="/tx/<%= @tx_hash %>/logs" class="tab">Logs (<%= @logs_count %>)</a>
+    <% end %>
     <a href="/tx/<%= @tx_hash %>/state" class="tab active">State</a>
 </div>
 
