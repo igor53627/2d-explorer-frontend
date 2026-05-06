@@ -99,6 +99,16 @@
         if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
         return s;
     }
+    function csvCellText(cell) {
+        if (!cell) return '';
+        // Prefer canonical values (data-csv-value, then a [title] inside
+        // the cell — used by truncated hashes/addresses to expose the
+        // full value on hover). Fall back to visible text.
+        if (cell.dataset && cell.dataset.csvValue) return cell.dataset.csvValue;
+        var titled = cell.querySelector('[title]');
+        if (titled && titled.getAttribute('title')) return titled.getAttribute('title');
+        return cell.textContent;
+    }
     document.querySelectorAll('button[data-csv-export]').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var table = document.querySelector(btn.dataset.csvExport);
@@ -113,7 +123,7 @@
             table.querySelectorAll('tbody tr').forEach(function(tr) {
                 var cells = tr.children;
                 rows.push(keep.map(function(i) {
-                    return csvCell(cells[i] ? cells[i].textContent : '');
+                    return csvCell(csvCellText(cells[i]));
                 }));
             });
             var csv = rows.map(function(r) { return r.join(','); }).join('\r\n');

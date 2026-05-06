@@ -36,6 +36,8 @@
                     <%= case Map.get(sc, "balance_diff") do %>
                     <% "-" <> rest -> %>
                         <span class="change-negative">-<%= FrontendEx.Format.format_native_amount(rest) %> <%= @native_coin.symbol %></span>
+                    <% "+" <> rest -> %>
+                        <span class="change-positive">+<%= FrontendEx.Format.format_native_amount(rest) %> <%= @native_coin.symbol %></span>
                     <% v when is_binary(v) and v != "0" -> %>
                         <span class="change-positive">+<%= FrontendEx.Format.format_native_amount(v) %> <%= @native_coin.symbol %></span>
                     <% "0" -> %>

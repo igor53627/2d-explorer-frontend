@@ -35,7 +35,7 @@
             <%= cond do %>
                 <% @tx.tx_type == 3 -> %>
                     <span class="fw-medium">Commit EIP-4844 Blob</span>
-                <% is_binary(@tx.method) -> %>
+                <% is_binary(@tx.method) and String.trim(@tx.method) != "" -> %>
                     <span class="fw-medium"><%= @tx.method %></span>
                 <% @tx.to && FrontendExWeb.Parsers.parse_int_or(@tx.value, 0) > 0 -> %>
                     <span class="fw-medium">Transfer

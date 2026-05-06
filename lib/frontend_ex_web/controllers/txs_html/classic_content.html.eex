@@ -247,10 +247,17 @@
             rows.sort(function(a, b) {
                 var av = a.dataset[key] || '';
                 var bv = b.dataset[key] || '';
-                // Block / fee are numeric; age is ISO timestamp — string
-                // compare equals chronological order, so sign suffices.
+                // Block / fee are numeric; can exceed Number.MAX_SAFE_INTEGER
+                // for blockchain-scale fees, so compare as BigInt with a
+                // safe parse. Age is ISO timestamp — string compare equals
+                // chronological order at this precision, sign suffices.
                 if (key === 'block' || key === 'fee') {
-                    return sign * (Number(av) - Number(bv));
+                    var ai, bi;
+                    try { ai = BigInt(av || '0'); } catch (_) { ai = 0n; }
+                    try { bi = BigInt(bv || '0'); } catch (_) { bi = 0n; }
+                    if (ai < bi) return -1 * sign;
+                    if (ai > bi) return 1 * sign;
+                    return 0;
                 }
                 return sign * av.localeCompare(bv);
             });
