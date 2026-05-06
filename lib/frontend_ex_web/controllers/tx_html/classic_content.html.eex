@@ -2,14 +2,9 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1 class="page-title">Transaction Details</h1>
-        <div class="page-nav">
-            <button class="btn btn-icon" type="button" aria-label="Previous transaction" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button class="btn btn-icon" type="button" aria-label="Next transaction" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
-        </div>
+        <%!-- 2d-fork: Previous/Next transaction buttons removed — there is
+            no canonical "previous tx" globally on a chain (txs aren't
+            linearly ordered like blocks). --%>
     </div>
 </div>
 
@@ -21,14 +16,10 @@
         <%!-- 2d-fork: Blobs tab removed — 2d has no EIP-4844 blob data. --%>
     </div>
     <div class="tx-tabbar-actions">
-        <button class="btn btn-sm" type="button" aria-label="API" disabled>
+        <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/transactions/<%= @tx.hash %>" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 7l-4 10"/></svg>
             API
-            <svg class="btn-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>
-        </button>
-        <button class="btn btn-icon" type="button" aria-label="More actions" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9h12M6 12h12M6 15h12"/></svg>
-        </button>
+        </a>
     </div>
 </div>
 
