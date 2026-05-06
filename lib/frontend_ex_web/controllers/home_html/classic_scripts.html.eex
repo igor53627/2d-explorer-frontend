@@ -112,6 +112,11 @@ function createBlockRow(block) {
 }
 
 function createTxRow(tx) {
+    // TODO(2d TASK-13.15): when 2d embeds `display` into from/to, switch
+    // to `tx.from?.display ?? tx.from?.hash` so realtime-injected rows
+    // render the wallet-native form (T-Base58 for tron_pb) consistent
+    // with SSR. Until then this path always shows 0x; the divergence is
+    // only visible on home banner-refresh, not initial page load.
     const hash = tx.hash;
     const from = tx.from?.hash || '';
     const to = tx.to?.hash;
