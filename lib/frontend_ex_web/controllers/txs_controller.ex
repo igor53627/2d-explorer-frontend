@@ -272,11 +272,13 @@ defmodule FrontendExWeb.TxsController do
     value_raw = to_string(tx["value"] || "0")
     has_value = String.match?(value_raw, ~r/[1-9]/)
 
-    fee =
+    fee_raw =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_native_amount(v)
+        v when is_binary(v) -> v
         _ -> nil
       end
+
+    fee = if fee_raw, do: Format.format_native_amount(fee_raw), else: nil
 
     method =
       case tx["method"] do
@@ -286,8 +288,14 @@ defmodule FrontendExWeb.TxsController do
 
     block_number = parse_u64(tx["block_number"])
 
-    age =
+    timestamp_raw =
       case tx["timestamp"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
+    age =
+      case timestamp_raw do
         v when is_binary(v) -> Format.format_relative_time(v)
         _ -> "-"
       end
@@ -318,6 +326,7 @@ defmodule FrontendExWeb.TxsController do
       method: method,
       block_number: block_number,
       age: age,
+      timestamp_raw: timestamp_raw,
       kind: kind,
       status: status,
       from_hash: from_hash,
@@ -327,7 +336,8 @@ defmodule FrontendExWeb.TxsController do
         if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, to_kind), else: nil),
       value: value,
       has_value: has_value,
-      fee: fee
+      fee: fee,
+      fee_raw: fee_raw
     }
   end
 end

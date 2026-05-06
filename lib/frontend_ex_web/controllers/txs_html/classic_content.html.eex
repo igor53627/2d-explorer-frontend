@@ -67,7 +67,7 @@
         </div>
     <% else %>
         <div class="table-responsive">
-            <table class="txs-table">
+            <table class="txs-table" data-sortable-table>
                 <thead>
                     <tr>
                         <th class="dir-cell preview-cell">
@@ -79,18 +79,18 @@
                             Method
                             <button class="help-icon" type="button" aria-label="Help: Method column" title="Function executed based on decoded input data. For unidentified functions, method ID is displayed instead.">?</button>
                         </th>
-                        <th>Block</th>
-                        <th><a href="#" class="link">Age</a></th>
+                        <th data-sort-key="block" data-sort-type="number"><button type="button" class="th-sort-btn">Block<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
+                        <th data-sort-key="age" data-sort-type="number"><button type="button" class="th-sort-btn">Age<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
                         <th>From</th>
                         <th class="dir-cell dir-col">&nbsp;</th>
                         <th>To</th>
                         <th>Amount</th>
-                        <th><a href="#" class="link">Txn Fee</a></th>
+                        <th data-sort-key="fee" data-sort-type="number"><button type="button" class="th-sort-btn">Txn Fee<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
                     </tr>
                 </thead>
                 <tbody>
                     <%= for tx <- @transactions do %>
-                    <tr>
+                    <tr data-block="<%= tx.block_number || 0 %>" data-age="<%= tx.timestamp_raw || "" %>" data-fee="<%= tx.fee_raw || 0 %>">
                         <td class="dir-cell preview-cell">
                             <a href="/tx/<%= tx.hash %>" class="btn preview-btn" aria-label="Preview transaction">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -220,5 +220,62 @@
         <path d="M10 22h4"/>
         <path d="M12 2a7 7 0 0 0-4 12c.5.5 1 1.5 1 2v1h6v-1c0-.5.5-1.5 1-2a7 7 0 0 0-4-12z"/>
     </svg>
-    <span>A transaction is a cryptographically signed instruction that changes the blockchain state. Block explorers track the details of all transactions in the network. Learn more about transactions in our <a target="_blank" href="https://info.classic.com/understanding-an-ethereum-transaction/">Knowledge Base</a>.</span>
+    <span>A transaction is a cryptographically signed instruction that changes the blockchain state. Block explorers track the details of all transactions in the network. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.</span>
 </p>
+
+<script>
+(function() {
+    // Client-side sort for the current /txs page. Three sortable columns
+    // (Block, Age, Txn Fee) read raw values from data-* on each <tr>.
+    // Click cycles asc → desc → off (server order). Pagination is
+    // server-driven, so this only sorts the visible page.
+    var table = document.querySelector('table[data-sortable-table]');
+    if (!table) return;
+    var tbody = table.tBodies[0];
+    if (!tbody) return;
+
+    var initialOrder = Array.from(tbody.rows);
+    var state = { key: null, dir: null };  // dir: 'asc' | 'desc' | null
+
+    function sortBy(key) {
+        var nextDir = state.key === key
+            ? (state.dir === 'asc' ? 'desc' : state.dir === 'desc' ? null : 'asc')
+            : 'asc';
+        state = { key: nextDir ? key : null, dir: nextDir };
+
+        if (!nextDir) {
+            initialOrder.forEach(function(r) { tbody.appendChild(r); });
+        } else {
+            var sign = nextDir === 'asc' ? 1 : -1;
+            var rows = Array.from(tbody.rows);
+            rows.sort(function(a, b) {
+                var av = a.dataset[key] || '';
+                var bv = b.dataset[key] || '';
+                // Block / fee are numeric; age is ISO timestamp — string
+                // compare equals chronological order, so sign suffices.
+                if (key === 'block' || key === 'fee') {
+                    return sign * (Number(av) - Number(bv));
+                }
+                return sign * av.localeCompare(bv);
+            });
+            rows.forEach(function(r) { tbody.appendChild(r); });
+        }
+
+        table.querySelectorAll('th[data-sort-key]').forEach(function(th) {
+            th.removeAttribute('data-sort-active');
+            th.removeAttribute('data-sort-dir');
+        });
+        if (state.key) {
+            var th = table.querySelector('th[data-sort-key="' + state.key + '"]');
+            if (th) {
+                th.setAttribute('data-sort-active', '');
+                th.setAttribute('data-sort-dir', state.dir);
+            }
+        }
+    }
+
+    table.querySelectorAll('th[data-sort-key]').forEach(function(th) {
+        th.addEventListener('click', function() { sortBy(th.dataset.sortKey); });
+    });
+})();
+</script>

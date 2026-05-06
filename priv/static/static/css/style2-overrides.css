@@ -657,6 +657,35 @@ main{
   font-size:13px;
   line-height:1.3;
 }
+
+/* Sortable column headers: button-styled <th> with a small chevron that
+   rotates / fills based on data-sort-dir set by JS. */
+.th-sort-btn{
+  background:transparent;
+  border:0;
+  padding:0;
+  margin:0;
+  font:inherit;
+  color:inherit;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+.th-sort-btn:hover{color:var(--text);}
+.th-sort-arrow{
+  display:inline-block;
+  width:0;
+  height:0;
+  border-left:4px solid transparent;
+  border-right:4px solid transparent;
+  border-top:5px solid currentColor;
+  opacity:0.25;
+  transition:transform .1s;
+}
+th[data-sort-active] .th-sort-arrow{opacity:1;}
+th[data-sort-dir="asc"] .th-sort-arrow{transform:rotate(180deg);}
+th[data-sort-dir="desc"] .th-sort-arrow{transform:rotate(0deg);}
 .txs-info-title{
   font-size:13px;
   color:var(--text);
