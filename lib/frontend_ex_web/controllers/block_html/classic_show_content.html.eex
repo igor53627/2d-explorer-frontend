@@ -132,16 +132,55 @@
         </div>
     </div>
     <% end %>
-    <%!-- 2d-fork: Extra Data row dropped — always empty on 2d blocks. --%>
+    <%!-- 2d-fork: dropped the upstream "+ Click to show more" fold —
+        it never had a click handler or hidden content. The hashes it
+        was supposed to gate (block / parent / state root) are useful
+        and short, so render them inline instead. --%>
 
+    <%= if @block.hash do %>
     <div class="detail-row">
         <div class="detail-label">
-            More Details:
+            <span class="help-icon">?</span>
+            Block Hash:
         </div>
         <div class="detail-value">
-            <span style="color:#0d6efd; font-weight:500;">+ Click to show more</span>
+            <span class="hash-inline">
+                <span class="hash"><%= @block.hash %></span>
+                <button class="copy-btn" data-copy="<%= @block.hash %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+            </span>
         </div>
     </div>
+    <% end %>
+
+    <%= if @block.parent_hash do %>
+    <div class="detail-row">
+        <div class="detail-label">
+            <span class="help-icon">?</span>
+            Parent Hash:
+        </div>
+        <div class="detail-value">
+            <span class="hash-inline">
+                <a class="hash" href="/block/<%= max(@block.height - 1, 0) %>"><%= @block.parent_hash %></a>
+                <button class="copy-btn" data-copy="<%= @block.parent_hash %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+            </span>
+        </div>
+    </div>
+    <% end %>
+
+    <%= if @block.state_root do %>
+    <div class="detail-row">
+        <div class="detail-label">
+            <span class="help-icon">?</span>
+            State Root:
+        </div>
+        <div class="detail-value">
+            <span class="hash-inline">
+                <span class="hash"><%= @block.state_root %></span>
+                <button class="copy-btn" data-copy="<%= @block.state_root %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+            </span>
+        </div>
+    </div>
+    <% end %>
 </div>
 
 <div class="block-footnote">
