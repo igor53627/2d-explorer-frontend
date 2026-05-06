@@ -46,10 +46,10 @@
   width:44px;
 }
 .dir-cell.dir-col{
-  width:32px;
+  width:56px;
 }
 .dir-cell.internal-dir-cell{
-  width:32px;
+  width:56px;
 }
 
 .hash--tx{
@@ -347,10 +347,11 @@
   align-items:center;
   justify-content:center;
   width:100%;
-  padding:3px 0;
-  border-radius:3px;
+  padding:3px 8px;
+  border-radius:4px;
   font-size:0.7rem;
   font-weight:600;
+  letter-spacing:0.3px;
   text-transform:uppercase;
   border:1px solid transparent;
   line-height:1.1;
