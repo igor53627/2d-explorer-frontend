@@ -127,16 +127,10 @@
 
     <footer class="footer">
         <div class="container footer-inner">
-            <div class="footer-left">
-                <div class="footer-text">
-                    Powered by <a href="https://ethereum.org">Ethereum</a>
-                </div>
-                <div class="footer-text">
-                    2D Explorer
-                </div>
-                <div class="footer-text footer-version" title="frontend-ex release">
-                    v<%= @app_version %>·<%= @git_sha %><%= if assigns[:backend_version], do: " · backend v#{@backend_version}" %><%= if assigns[:backend_sha], do: "·#{@backend_sha}" %>
-                </div>
+            <div class="footer-text">
+                2D Explorer
+                <span class="footer-divider">·</span>
+                <span class="footer-version" title="frontend-ex release">v<%= @app_version %>·<%= @git_sha %><%= if assigns[:backend_version], do: " · backend v#{@backend_version}" %><%= if assigns[:backend_sha], do: "·#{@backend_sha}" %></span>
             </div>
             <div class="footer-links">
                 <a href="/terms">Terms</a>

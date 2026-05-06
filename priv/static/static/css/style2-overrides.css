@@ -539,16 +539,42 @@ button.nav-link{
   pointer-events:auto;
 }
 
-.footer-left{
+/* Pin footer to viewport bottom on short pages. body flex-col + main
+   flex:1 + footer at the end means content pushes footer down on long
+   pages and viewport-bottom holds it on short ones. */
+html, body{
+  min-height:100vh;
+}
+body{
   display:flex;
   flex-direction:column;
-  gap:4px;
+}
+main{
+  flex:1 0 auto;
+}
+.footer{
+  flex-shrink:0;
+  padding:14px 0;
+  margin-top:16px;
+  font-size:12px;
+}
+.footer-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.footer-text{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
 }
 .footer-links{
   display:flex;
   align-items:center;
   gap:8px;
-  font-size:13px;
+  font-size:12px;
 }
 .footer-divider{
   color:var(--text-muted);
