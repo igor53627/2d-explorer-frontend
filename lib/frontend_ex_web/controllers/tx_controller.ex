@@ -244,10 +244,11 @@ defmodule FrontendExWeb.TxController do
                 Format.truncate_hash(to_hash)
 
               _ ->
-                # On 2d, tx.to=null only happens for failed broadcasts (no
-                # EVM, no contract-creation pattern); see TASK-56 in 2d
-                # backlog for the gen_txs root cause.
-                "failed tx"
+                # On 2d, tx.to=null mostly happens for failed broadcasts (no
+                # EVM, no contract-creation pattern). Gate the "failed tx"
+                # label on tx.status so a future status=ok+to=null case
+                # doesn't get mislabeled.
+                if tx.status == "error", do: "failed tx", else: "—"
             end
 
           fee =

@@ -220,6 +220,12 @@ defmodule FrontendExWeb.AddressController do
     from_kind = get_in(tx, ["from", "primary_kind"]) || kind
     to_kind = get_in(tx, ["to", "primary_kind"]) || kind
 
+    status =
+      case tx["status"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
     %{
       hash: hash,
       method: method,
@@ -227,6 +233,7 @@ defmodule FrontendExWeb.AddressController do
       age: age,
       timestamp_raw: timestamp_raw,
       kind: kind,
+      status: status,
       from_hash: from_hash,
       from_display: FrontendEx.Tron.Address.display_for_kind(from_hash, from_kind),
       to_hash: to_hash,

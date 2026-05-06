@@ -195,7 +195,11 @@
                     <% end %>
                 </span>
             <% else %>
-                <span class="text-muted">[failed tx]</span>
+                <%= if @tx.status == "error" do %>
+                    <span class="text-muted">[failed tx]</span>
+                <% else %>
+                    <span class="text-muted">[—]</span>
+                <% end %>
             <% end %>
         </div>
     </div>

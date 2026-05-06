@@ -99,6 +99,83 @@ defmodule FrontendExWeb.UsdcRenderTest do
     }
     @tx_blob_logs %{"items" => [], "next_page_params" => nil}
 
+    # Cross-form fixture for /tx/:hash detail: eth-broadcast, sender's
+    # primary surface is eth (→ EIP-55 0x), recipient's primary is Tron
+    # (→ T-Base58). Pins per-address rendering on the tx-detail surface.
+    @tx_cross_hash "0xc0055000000000000000000000000000000000000000000000000000000000a4"
+    @tx_cross_detail %{
+      "hash" => @tx_cross_hash,
+      "block_number" => 0,
+      "transaction_index" => 0,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{
+        "hash" => "0x0000000000000000000000000000000000000004",
+        "primary_kind" => "eth_rlp"
+      },
+      "to" => %{
+        "hash" => "0x0000000000000000000000000000000000000005",
+        "primary_kind" => "tron_pb"
+      },
+      "value" => "100",
+      "status" => "ok",
+      "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
+      "gas_price" => "5",
+      "fee" => %{"value" => "105000"},
+      "transaction_type" => 0,
+      "kind" => "eth_rlp"
+    }
+    @tx_cross_logs %{"items" => [], "next_page_params" => nil}
+
+    # Failed-tx fixture: status=error, to=null (mirrors what 2d emits for
+    # failed Tron broadcasts pre-TASK-56). Pins that the "failed tx"
+    # label is gated on status=="error", not just on to=null.
+    @tx_failed_hash "0xfa11ed000000000000000000000000000000000000000000000000000000fa11"
+    @tx_failed_detail %{
+      "hash" => @tx_failed_hash,
+      "block_number" => 0,
+      "transaction_index" => 2,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{
+        "hash" => "0x0000000000000000000000000000000000000001",
+        "primary_kind" => "tron_pb"
+      },
+      "to" => nil,
+      "value" => "0",
+      "status" => "error",
+      "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
+      "gas_price" => "0",
+      "fee" => %{"value" => "0"},
+      "transaction_type" => 0,
+      "kind" => "tron_pb"
+    }
+    @tx_failed_logs %{"items" => [], "next_page_params" => nil}
+
+    # to=null + status=ok fixture: hypothetical edge case (2d empirically
+    # never produces this today, but we shouldn't mislabel it as failed).
+    @tx_orphan_hash "0x0177ba0000000000000000000000000000000000000000000000000000000077"
+    @tx_orphan_detail %{
+      "hash" => @tx_orphan_hash,
+      "block_number" => 0,
+      "transaction_index" => 3,
+      "timestamp" => "2023-11-14T22:13:20Z",
+      "from" => %{
+        "hash" => "0x0000000000000000000000000000000000000001",
+        "primary_kind" => "eth_rlp"
+      },
+      "to" => nil,
+      "value" => "0",
+      "status" => "ok",
+      "gas_used" => 21_000,
+      "gas_limit" => 30_000_000,
+      "gas_price" => "0",
+      "fee" => %{"value" => "0"},
+      "transaction_type" => 0,
+      "kind" => "eth_rlp"
+    }
+    @tx_orphan_logs %{"items" => [], "next_page_params" => nil}
+
     # EIP-1559 block detail: non-null base_fee_per_gas in USDC base units
     # (1500 base = 0.0015 USDC). Pins that /block/:id formats the base fee
     # via Format.format_native_amount/1 instead of dropping the raw integer
@@ -192,6 +269,12 @@ defmodule FrontendExWeb.UsdcRenderTest do
               rest == "#{@tx_hash}/logs" -> @tx_logs
               rest == @tx_blob_hash -> @tx_blob_detail
               rest == "#{@tx_blob_hash}/logs" -> @tx_blob_logs
+              rest == @tx_cross_hash -> @tx_cross_detail
+              rest == "#{@tx_cross_hash}/logs" -> @tx_cross_logs
+              rest == @tx_failed_hash -> @tx_failed_detail
+              rest == "#{@tx_failed_hash}/logs" -> @tx_failed_logs
+              rest == @tx_orphan_hash -> @tx_orphan_detail
+              rest == "#{@tx_orphan_hash}/logs" -> @tx_orphan_logs
               true -> nil
             end
 
@@ -481,6 +564,67 @@ defmodule FrontendExWeb.UsdcRenderTest do
     # fallback (a "-" label).
     assert body =~ "EIP-4844 Blob",
            "expected /tx/:hash with transaction_type=3 to render the EIP-4844 commit-tx label"
+  end
+
+  describe "GET /tx/:hash — per-address primary_kind cross-form (TASK-13.13)" do
+    # The /address regression test pins the table-row cells. tx-detail
+    # uses a different code path (tx_controller.parse_tx + EIP-55
+    # checksum on the eth side). Pin both surfaces independently so a
+    # regression on one doesn't hide behind the other.
+
+    test "renders 0xFrom + TTo when from.primary=eth_rlp and to.primary=tron_pb",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0xc0055000000000000000000000000000000000000000000000000000000000a4")
+        |> html_response(200)
+
+      # From: EIP-55 checksummed 0x form (sender's primary=eth_rlp).
+      assert body =~ FrontendEx.Format.checksum_eth_address(
+                       "0x0000000000000000000000000000000000000004"
+                     ),
+             "expected EIP-55 checksummed 0x form for From (from.primary=eth_rlp)"
+
+      # To: Tron Base58 form (recipient's primary=tron_pb).
+      expected_to_tron =
+        FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000005")
+
+      assert body =~ expected_to_tron,
+             "expected Tron Base58 for To (to.primary=tron_pb)"
+    end
+  end
+
+  describe "GET /tx/:hash — failed-tx label is status-gated (roborev)" do
+    # roborev flagged that "failed tx" was selected purely from to=null
+    # without checking status. Pins both branches: error → "failed tx",
+    # else → neutral "—". Sterile against future cases where 2d emits
+    # to=null with a non-error status.
+
+    test "to=null + status=error → '[failed tx]'", %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0xfa11ed000000000000000000000000000000000000000000000000000000fa11")
+        |> html_response(200)
+
+      assert body =~ "[failed tx]",
+             "expected [failed tx] label when status=error AND to=null"
+
+      refute body =~ "[—]",
+             "neutral em-dash must NOT appear when status=error"
+    end
+
+    test "to=null + status=ok → neutral '[—]'", %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0x0177ba0000000000000000000000000000000000000000000000000000000077")
+        |> html_response(200)
+
+      assert body =~ "[—]",
+             "expected neutral [—] label when to=null AND status is not error"
+
+      refute body =~ "[failed tx]",
+             "must NOT label as failed tx when status is not error"
+    end
   end
 
   test "GET /block/:id formats base_fee_per_gas as USDC, not raw base units",

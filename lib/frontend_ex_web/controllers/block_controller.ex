@@ -278,10 +278,17 @@ defmodule FrontendExWeb.BlockController do
     from_kind = get_in(tx, ["from", "primary_kind"]) || kind
     to_kind = get_in(tx, ["to", "primary_kind"]) || kind
 
+    status =
+      case tx["status"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
     %{
       hash: hash,
       method: method,
       kind: kind,
+      status: status,
       from: %{
         hash: from_hash,
         display: FrontendEx.Tron.Address.display_for_kind(from_hash, from_kind)
@@ -304,6 +311,7 @@ defmodule FrontendExWeb.BlockController do
       hash: "",
       method: nil,
       kind: nil,
+      status: nil,
       from: %{hash: "", display: ""},
       to: nil,
       value: "0",

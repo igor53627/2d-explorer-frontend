@@ -59,7 +59,11 @@
                     <%= if tx.to do %>
                         <a href="/address/<%= tx.to.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.to.display %>"><%= tx.to.display %></a>
                     <% else %>
-                        <span class="text-muted">failed tx</span>
+                        <%= if tx.status == "error" do %>
+                            <span class="text-muted">failed tx</span>
+                        <% else %>
+                            <span class="text-muted">—</span>
+                        <% end %>
                     <% end %>
                 </td>
                 <td><%= FrontendEx.Format.format_native_amount(tx.value) %> <%= @native_coin.symbol %></td>

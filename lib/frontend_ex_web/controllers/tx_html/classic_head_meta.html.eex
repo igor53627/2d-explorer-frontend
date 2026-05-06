@@ -1,9 +1,9 @@
 
 <meta property="og:title" content="Transaction: <%= FrontendEx.Format.format_native_amount_exact(@tx.value) %> <%= @native_coin.symbol %> <%= case @tx.status do %><% "ok" -> %>[Success]<% "error" -> %>[Failed]<% nil -> %>[Pending]<% s -> %>[<%= s %>]<% end %>">
-<meta property="og:description" content="From <%= FrontendEx.Format.truncate_hash(@tx.from.hash) %> to <%= if @tx.to, do: FrontendEx.Format.truncate_hash(@tx.to.hash), else: "failed tx" %> | Block <%= if @tx.block_number, do: ("#" <> Integer.to_string(@tx.block_number)), else: "Pending" %>">
+<meta property="og:description" content="From <%= FrontendEx.Format.truncate_hash(@tx.from.hash) %> to <%= if @tx.to, do: FrontendEx.Format.truncate_hash(@tx.to.hash), else: (if @tx.status == "error", do: "failed tx", else: "—") %> | Block <%= if @tx.block_number, do: ("#" <> Integer.to_string(@tx.block_number)), else: "Pending" %>">
 <meta property="og:image" content="<%= @base_url %>/static/og-<%= @tx.hash %>.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<%= FrontendEx.Format.format_native_amount_exact(@tx.value) %> <%= @native_coin.symbol %> Transaction">
-<meta name="twitter:description" content="<%= case @tx.status do %><% "ok" -> %>Success<% "error" -> %>Failed<% nil -> %>Pending<% s -> %><%= s %><% end %> | <%= FrontendEx.Format.truncate_hash(@tx.from.hash) %> to <%= if @tx.to, do: FrontendEx.Format.truncate_hash(@tx.to.hash), else: "failed tx" %>">
+<meta name="twitter:description" content="<%= case @tx.status do %><% "ok" -> %>Success<% "error" -> %>Failed<% nil -> %>Pending<% s -> %><%= s %><% end %> | <%= FrontendEx.Format.truncate_hash(@tx.from.hash) %> to <%= if @tx.to, do: FrontendEx.Format.truncate_hash(@tx.to.hash), else: (if @tx.status == "error", do: "failed tx", else: "—") %>">
 <meta name="twitter:image" content="<%= @base_url %>/static/og-<%= @tx.hash %>.png">
