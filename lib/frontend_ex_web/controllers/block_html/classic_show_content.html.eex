@@ -80,18 +80,16 @@
         </div>
     </div>
 
-    <%= if @block.proposed_on do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Proposed On:
-        </div>
-        <div class="detail-value">
-            <%= @block.proposed_on %>
-        </div>
-    </div>
-    <% end %>
-    
+    <%!-- 2d-fork: dropped these upstream-Ethereum-specific rows that
+        don't apply to 2d (single-block finality, gasless, no PoW/PoS):
+          - Proposed On (slot/epoch)        — no slot model
+          - Withdrawals                     — no validator withdrawals
+          - Block Reward                    — no proposer reward
+          - Total Difficulty                — no PoW
+          - Gas Used / Gas Limit            — gasless chain, always 0
+          - Base Fee Per Gas / Burnt Fees   — gasless, always nil
+        Block hashes (state root etc) live in the More Details fold. --%>
+
     <div class="detail-row">
         <div class="detail-label">
             <span class="help-icon">?</span>
@@ -99,30 +97,10 @@
         </div>
         <div class="detail-value">
             <a href="/block/<%= @block.height %>/txs"><%= @block.tx_count %> transactions</a>
-            <% # Askama leaves an extra blank line here for match/when tags (fixture parity). %>
-            <%= if @block.internal_transactions_count && @block.internal_transactions_count > 0 do %>
-                <span>and</span>
-                <a href="#" aria-disabled="true" tabindex="-1"><%= @block.internal_transactions_count %> contract internal transactions</a>
-            <% end %>
             <span class="text-muted">in this block</span>
         </div>
     </div>
 
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Withdrawals:
-        </div>
-        <div class="detail-value">
-            <%= if @block.withdrawals_count do %>
-                <a href="#" aria-disabled="true" tabindex="-1"><%= @block.withdrawals_count %> withdrawals</a>
-                <span class="text-muted">in this block</span>
-            <% else %>
-                <span class="text-muted">-</span>
-            <% end %>
-        </div>
-    </div>
-    
     <%= if @block.miner do %>
     <div class="detail-row">
         <div class="detail-label">
@@ -131,10 +109,7 @@
         </div>
         <div class="detail-value">
             <span class="hash-inline">
-                <span class="addr-wrapper">
-                    <span class="addr-icon"></span>
-                    <a href="/address/<%= @block.miner.hash %>" class="hash"><%= @block.miner.hash %></a>
-                </span>
+                <a href="/address/<%= @block.miner.hash %>" class="hash"><%= @block.miner.hash %></a>
                 <button class="copy-btn" data-copy="<%= @block.miner.hash %>" title="Copy">
                     <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                 </button>
@@ -145,34 +120,7 @@
         </div>
     </div>
     <% end %>
-    
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Block Reward:
-        </div>
-        <div class="detail-value">
-            <%= if @block.block_reward_eth do %>
-                <span><%= @block.block_reward_eth %> <%= @native_coin.symbol %></span>
-                <%= if @block.block_reward_breakdown do %>
-                    <span class="text-muted">(<%= @block.block_reward_breakdown %>)</span>
-                <% end %>
-            <% else %>
-                <span>0 <%= @native_coin.symbol %></span>
-            <% end %>
-        </div>
-    </div>
 
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Total Difficulty:
-        </div>
-        <div class="detail-value">
-            <span>0</span>
-        </div>
-    </div>
-    
     <%= if @block.size do %>
     <div class="detail-row">
         <div class="detail-label">
@@ -184,84 +132,7 @@
         </div>
     </div>
     <% end %>
-    
-    <%= if @block.gas_used do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Gas Used:
-        </div>
-        <div class="detail-value">
-            <span>
-                <%= @block.gas_used %><%= if @block.gas_used_percent do %> (<%= @block.gas_used_percent %>)<% end %>
-            </span>
-            <%= if @block.gas_used_percent_gauge do %>
-                <svg class="gas-gauge" viewBox="0 0 100 50" aria-hidden="true">
-                    <path class="gas-gauge-bg" d="M10 50 A40 40 0 0 1 90 50" pathLength="100" />
-                    <path class="gas-gauge-fg" d="M10 50 A40 40 0 0 1 90 50" pathLength="100" style="stroke-dasharray: <%= @block.gas_used_percent_gauge %> 100" />
-                </svg>
-            <% end %>
-            <%= if @block.gas_target_delta do %>
-                <span class="gas-target"><%= @block.gas_target_delta %></span>
-            <% end %>
-        </div>
-    </div>
-    <% end %>
-    
-    <%= if @block.gas_limit do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Gas Limit:
-        </div>
-        <div class="detail-value">
-            <span><%= @block.gas_limit %></span>
-        </div>
-    </div>
-    <% end %>
-    <% # Askama match/when padding (fixture parity). %>
-    
-    <%= if @block.base_fee_per_gas do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Base Fee Per Gas:
-        </div>
-        <div class="detail-value">
-            <span><%= @block.base_fee_per_gas %> <%= @native_coin.symbol %></span>
-        </div>
-    </div>
-    <% end %>
-
-    <%= if @block.burnt_fees_eth do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Burnt Fees:
-        </div>
-        <div class="detail-value">
-            <span class="burnt-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4 0 7-3 7-7 0-5-5-8-5-12 0 3-2 4-3 6-1-2-3-3-3-6C6 7 5 10 5 13c0 5 3 9 7 9z"/></svg>
-            </span>
-            <span><%= @block.burnt_fees_eth %> <%= @native_coin.symbol %></span>
-        </div>
-    </div>
-    <% end %>
-    <% # Askama match/when padding (fixture parity). %>
-
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Extra Data:
-        </div>
-        <div class="detail-value">
-            <%= if @block.extra_data do %>
-                <span class="hash"><%= @block.extra_data %></span>
-            <% else %>
-                <span class="text-muted">-</span>
-            <% end %>
-        </div>
-    </div>
+    <%!-- 2d-fork: Extra Data row dropped — always empty on 2d blocks. --%>
 
     <div class="detail-row">
         <div class="detail-label">

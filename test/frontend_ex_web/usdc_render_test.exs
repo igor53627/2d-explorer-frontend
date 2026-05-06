@@ -969,18 +969,13 @@ defmodule FrontendExWeb.UsdcRenderTest do
     end
   end
 
-  test "GET /block/:id formats base_fee_per_gas as USDC, not raw base units",
-       %{conn: conn} do
-    body = conn |> get("/block/0") |> html_response(200)
-
-    # 1500 base units / 10^6 decimals = 0.0015 USDC. The bug was the
-    # template rendering "1500 USDC" — a 10^6 overstatement.
-    assert body =~ "0.0015 USDC",
-           "expected /block/0 to render base_fee_per_gas as 0.0015 USDC"
-
-    refute body =~ "1500 USDC",
-           "tx-detail page must not surface raw base units alongside the USDC label"
-  end
+  # Test removed: /block/:id detail page no longer renders the Base
+  # Fee Per Gas row at all (gasless chain — Ethereum-specific concept
+  # dropped during the UI audit, see commit a5f5b59). The original
+  # assertion pinned that the value formatted via Format.format_native
+  # _amount/1 (catching a 10^6 overstatement). If 2d ever re-introduces
+  # base-fee semantics, add a fresh assertion against whatever surface
+  # renders it.
 
   test "GET /tx/:hash/card surfaces stats-derived USDC ticker",
        %{conn: conn} do
