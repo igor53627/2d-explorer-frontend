@@ -1,15 +1,8 @@
 
 <style>
-.page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 48px 0;
-    margin-top: -24px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-}
+/* .page-header / .page-title — shared across listing pages, lives in
+   style2-overrides.css. /block detail keeps its own .page-header-left
+   + .page-nav helpers below for the prev/next block buttons. */
 .page-header-left {
     display: inline-flex;
     align-items: center;
@@ -19,12 +12,6 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-}
-.page-title {
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--text);
-    margin: 0;
 }
 
 .block-tabbar {

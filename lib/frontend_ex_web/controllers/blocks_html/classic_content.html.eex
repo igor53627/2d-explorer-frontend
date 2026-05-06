@@ -1,21 +1,37 @@
 
 <div class="page-header">
-    <h1 class="page-title">Blocks</h1>
+    <div class="page-header-title">
+        <h1 class="page-title">Blocks</h1>
+        <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/blocks" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 7l-4 10"/></svg>
+            API
+        </a>
+    </div>
 </div>
 
 <div class="card">
     <div class="card-header">
-        <span>Latest Blocks</span>
+        <div class="table-toolbar">
+            <div>
+                <div class="txs-info-title">Latest <%= length(@blocks) %> blocks</div>
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn" type="button" aria-label="Download current page as CSV"
+                        data-csv-export="#blocks-table" data-csv-filename="2d-blocks-page.csv">
+                    <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5 1.42 1.42L11 6.84V16h2V6.84l3.08 3.08 1.42-1.42L12 2z"/></svg>
+                    Download Page Data
+                </button>
+            </div>
+        </div>
     </div>
-    <table>
+    <div class="table-responsive">
+    <table id="blocks-table">
         <thead>
             <tr>
                 <th>Block</th>
                 <th>Age</th>
-                <th>Txn</th>
+                <th>Txns</th>
                 <th>Proposer</th>
-                <th>Gas Used</th>
-                <th>Gas Limit</th>
             </tr>
         </thead>
         <tbody>
@@ -37,10 +53,9 @@
                         <span class="text-muted">-</span>
                     <% end %>
                 </td>
-                <td><%= block.gas_used %></td>
-                <td><%= block.gas_limit %></td>
             </tr>
             <% end %>
         </tbody>
     </table>
+    </div>
 </div>

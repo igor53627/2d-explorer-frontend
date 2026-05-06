@@ -126,6 +126,29 @@
   font-size:0.95em;
 }
 
+/* Shared page-header for listing pages (/txs, /blocks) — h1 left,
+   page-level actions right (e.g. API button). No border-bottom: the
+   card directly underneath provides the visual boundary. */
+.page-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:0 0 12px;
+  margin-bottom:16px;
+}
+.page-header-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.page-title{
+  font-size:20px;
+  font-weight:500;
+  color:var(--text);
+  margin:0;
+}
+
 .address-page-header{
   background:var(--bg-card);
   border:1px solid var(--border);
