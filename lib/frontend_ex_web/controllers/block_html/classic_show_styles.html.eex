@@ -1,8 +1,11 @@
 
 <style>
-/* .page-header / .page-title — shared across listing pages, lives in
-   style2-overrides.css. /block detail keeps its own .page-header-left
-   + .page-nav helpers below for the prev/next block buttons. */
+/* /block detail has its own page-header layout (h1 + prev/next nav
+   on the left, no right-side actions), so override the listing-page
+   defaults from style2-overrides.css here. */
+.page-header {
+    padding: 8px 0 16px;
+}
 .page-header-left {
     display: inline-flex;
     align-items: center;

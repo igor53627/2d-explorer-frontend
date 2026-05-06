@@ -42,7 +42,7 @@
                 </td>
                 <td>
                     <span class="time-ago" title="<%= block.timestamp_readable %>"><%= block.time_ago %></span>
-                    <%= if block.timestamp_readable do %>
+                    <%= if is_binary(block.timestamp_readable) and String.trim(block.timestamp_readable) != "" do %>
                         <span class="text-muted block-timestamp-readable"><%= block.timestamp_readable %></span>
                     <% end %>
                 </td>
