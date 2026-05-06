@@ -120,7 +120,7 @@ function createTxRow(tx) {
     const fromHash = tx.from?.hash || '';
     const fromDisplay = tx.from?.display || fromHash;
     const toHash = tx.to?.hash;
-    const toDisplay = tx.to?.display;
+    const toDisplay = tx.to?.display || toHash;
     const value = formatNativeAmount(tx.value || '0');
     const timestamp = tx.timestamp;
     // Mirror server-side status-gated label so realtime-injected rows
