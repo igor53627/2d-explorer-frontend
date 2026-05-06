@@ -21,10 +21,10 @@
                 <% end %>
             </div>
             <div class="toolbar-actions">
-                <button class="btn" type="button" aria-label="Download page data">
+                <button class="btn" type="button" aria-label="Download current page as CSV"
+                        data-csv-export="#txs-table" data-csv-filename="2d-txs-page.csv">
                     <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5 1.42 1.42L11 6.84V16h2V6.84l3.08 3.08 1.42-1.42L12 2z"/></svg>
                     Download Page Data
-                    <svg class="btn-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>
                 </button>
                 <nav aria-label="Transaction navigation">
                     <ul class="pagination pagination-sm pagination-classic">
@@ -67,10 +67,10 @@
         </div>
     <% else %>
         <div class="table-responsive">
-            <table class="txs-table" data-sortable-table>
+            <table id="txs-table" class="txs-table" data-sortable-table>
                 <thead>
                     <tr>
-                        <th class="dir-cell preview-cell">
+                        <th class="dir-cell preview-cell" data-csv-skip>
                             <span class="sr-only">Preview</span>
                             <button class="help-icon" type="button" aria-label="Help: Preview column" title="See preview of the transaction details.">?</button>
                         </th>
@@ -82,7 +82,7 @@
                         <th data-sort-key="block" data-sort-type="number"><button type="button" class="th-sort-btn">Block<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
                         <th data-sort-key="age" data-sort-type="number"><button type="button" class="th-sort-btn">Age<span class="th-sort-arrow" aria-hidden="true"></span></button></th>
                         <th>From</th>
-                        <th class="dir-cell dir-col">&nbsp;</th>
+                        <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
                         <th>To</th>
                         <th>Amount</th>
                         <th data-sort-key="fee" data-sort-type="number"><button type="button" class="th-sort-btn">Txn Fee<span class="th-sort-arrow" aria-hidden="true"></span></button></th>

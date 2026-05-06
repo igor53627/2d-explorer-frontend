@@ -121,6 +121,44 @@
         });
     });
 
+    // CSV export: any <button data-csv-export="<table selector>"
+    // data-csv-filename="…"> exports the targeted table's current page.
+    // Cells (th/td) marked with data-csv-skip are omitted.
+    function csvCell(s) {
+        s = (s || '').replace(/\s+/g, ' ').trim();
+        if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+    }
+    document.querySelectorAll('button[data-csv-export]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var table = document.querySelector(btn.dataset.csvExport);
+            if (!table) return;
+            var rows = [];
+            var ths = table.querySelectorAll('thead th');
+            var keep = [];
+            ths.forEach(function(th, i) {
+                if (!th.hasAttribute('data-csv-skip')) keep.push(i);
+            });
+            rows.push(keep.map(function(i) { return csvCell(ths[i].textContent); }));
+            table.querySelectorAll('tbody tr').forEach(function(tr) {
+                var cells = tr.children;
+                rows.push(keep.map(function(i) {
+                    return csvCell(cells[i] ? cells[i].textContent : '');
+                }));
+            });
+            var csv = rows.map(function(r) { return r.join(','); }).join('\r\n');
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = btn.dataset.csvFilename || 'export.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    });
+
     // Dropdown menu hover handling
     document.querySelectorAll('.nav-dropdown').forEach(function(dropdown) {
         var menu = dropdown.querySelector('.nav-menu-inner');

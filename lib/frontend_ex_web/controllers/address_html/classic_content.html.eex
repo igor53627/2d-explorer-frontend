@@ -115,13 +115,10 @@
                 <span>Latest <%= length(@transactions) %> from a total of <%= @tx_count_display %> transactions</span>
             <% end %>
             <div class="toolbar-actions">
-                <button class="btn" type="button" aria-label="Download page data">
+                <button class="btn" type="button" aria-label="Download current page as CSV"
+                        data-csv-export=".address-txs-table" data-csv-filename="2d-address-txs-page.csv">
                     <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5 1.42 1.42L11 6.84V16h2V6.84l3.08 3.08 1.42-1.42L12 2z"/></svg>
                     Download Page Data
-                    <svg class="btn-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>
-                </button>
-                <button class="btn btn-icon" type="button" aria-label="Filter">
-                    <svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"/></svg>
                 </button>
             </div>
         </div>
@@ -130,7 +127,7 @@
     <table class="txs-table address-txs-table">
         <thead>
             <tr>
-                <th class="dir-cell preview-cell">
+                <th class="dir-cell preview-cell" data-csv-skip>
                     <span class="sr-only">Preview</span>
                     <button class="help-icon" type="button" aria-label="Help: Preview column" title="See preview of the transaction details.">?</button>
                 </th>
@@ -140,9 +137,9 @@
                     <button class="help-icon" type="button" aria-label="Help" title="The decoded contract method name called by this transaction, if available.">?</button>
                 </th>
                 <th>Block</th>
-                <th><a href="#" class="link">Age</a></th>
+                <th>Age</th>
                 <th>From</th>
-                <th class="dir-cell dir-col"></th>
+                <th class="dir-cell dir-col" data-csv-skip></th>
                 <th>To</th>
                 <th>Amount</th>
                 <th>Txn Fee</th>
