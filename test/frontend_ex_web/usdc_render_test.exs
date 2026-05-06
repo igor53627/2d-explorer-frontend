@@ -631,6 +631,20 @@ defmodule FrontendExWeb.UsdcRenderTest do
            "expected /address/:hash to render the Tron-form alongside the 0x form"
   end
 
+  test "GET /tx/:hash renders Transaction Action as 'Transfer N USDC to <addr>' for value tx",
+       %{conn: conn} do
+    body =
+      conn
+      |> get("/tx/0xcafe000000000000000000000000000000000000000000000000000000000000")
+      |> html_response(200)
+
+    # @tx_detail has value=100 (= 0.0001 USDC at 6 decimals), to=set,
+    # method=nil, tx_type=2. Action row should describe the transfer
+    # Etherscan-style: "Transfer 0.0001 USDC to 0x…0002".
+    assert body =~ ~r{Transfer\s+0\.000100\s+USDC\s+to\s+<a},
+           "expected Etherscan-style 'Transfer N USDC to ADDR' Transaction Action"
+  end
+
   test "GET /tx/:hash with transaction_type=3 renders the EIP-4844 commit branch",
        %{conn: conn} do
     body =

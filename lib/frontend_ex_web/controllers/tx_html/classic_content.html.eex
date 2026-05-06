@@ -39,15 +39,21 @@
     <div>
         <div class="action-label">Transaction Action</div>
         <div class="action-value">
-            <%= case @tx.tx_type do %>
-                <% 3 -> %>
-                    <span class="fw-medium">Commit <a class="link" href="#" aria-disabled="true" tabindex="-1">EIP-4844 Blob</a></span>
-                <% _ -> %>
-                    <%= case @tx.method do %>
-                        <% m when is_binary(m) -> %><span class="fw-medium"><%= m %></span>
-                        <% _ -> %><span class="text-muted">-</span>
-                    <% end %>
-                <% end %>
+            <%= cond do %>
+                <% @tx.tx_type == 3 -> %>
+                    <span class="fw-medium">Commit EIP-4844 Blob</span>
+                <% is_binary(@tx.method) -> %>
+                    <span class="fw-medium"><%= @tx.method %></span>
+                <% @tx.to && FrontendExWeb.Parsers.parse_int_or(@tx.value, 0) > 0 -> %>
+                    <span class="fw-medium">Transfer
+                        <%= FrontendEx.Format.format_native_amount(@tx.value) %>
+                        <%= @native_coin.symbol %>
+                        to
+                        <a class="link" href="/address/<%= @tx.to.hash %>" title="<%= @tx.to.display %>"><%= FrontendEx.Format.truncate_addr_classic(@tx.to.display) %></a>
+                    </span>
+                <% true -> %>
+                    <span class="text-muted">-</span>
+            <% end %>
         </div>
     </div>
 </div>
