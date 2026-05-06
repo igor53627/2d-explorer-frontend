@@ -177,10 +177,20 @@ defmodule FrontendExWeb.AddressController do
     value = to_string(tx["value"] || "0")
     has_value = String.match?(value, ~r/[1-9]/)
 
+    # 2d's transactions API doesn't include a `fee` object (gasless
+    # chain — gas_price always 0). Mirror txs_controller's fallback:
+    # compute fee = gas_price × gas_used → "0" on 2d, real value on
+    # upstream Blockscout (where the inner case wins first).
     fee =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_native_amount(v)
-        _ -> nil
+        v when is_binary(v) ->
+          Format.format_native_amount(v)
+
+        _ ->
+          case compute_fee_raw(tx) do
+            v when is_binary(v) -> Format.format_native_amount(v)
+            _ -> nil
+          end
       end
 
     method =
@@ -248,6 +258,26 @@ defmodule FrontendExWeb.AddressController do
   end
 
   defp display_tx(_, _addr_hash, _native_coin), do: nil
+
+  defp compute_fee_raw(%{} = tx) do
+    with gp when is_integer(gp) and gp >= 0 <- normalize_int(tx["gas_price"]),
+         gu when is_integer(gu) and gu >= 0 <- normalize_int(tx["gas_used"]) do
+      Integer.to_string(gp * gu)
+    else
+      _ -> nil
+    end
+  end
+
+  defp normalize_int(v) when is_integer(v), do: v
+
+  defp normalize_int(v) when is_binary(v) do
+    case Integer.parse(String.trim(v)) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp normalize_int(_), do: nil
 
   defp parse_token_balances(nil), do: {[], 0}
 

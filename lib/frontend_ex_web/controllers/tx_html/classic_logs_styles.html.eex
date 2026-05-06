@@ -109,5 +109,4 @@
 .btn-group { display: inline-flex; gap: 6px; flex-shrink: 0; }
 .btn.btn-sm { padding: 3px 6px; font-size: 10px; }
 .tabs { margin: 12px 0; }
-.testnet-banner { margin-bottom: 12px; }
 </style>

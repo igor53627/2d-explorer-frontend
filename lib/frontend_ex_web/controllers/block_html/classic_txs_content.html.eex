@@ -7,10 +7,6 @@
     </div>
 </div>
 
-<div class="testnet-banner">
-    This is a 2D block only
-</div>
-
 <div class="tabs">
     <a href="/block/<%= @block_height %>" class="tab">Overview</a>
     <a href="/block/<%= @block_height %>/txs" class="tab active">Transactions</a>
@@ -26,7 +22,9 @@
                 <th>Txn Hash</th>
                 <th>Method</th>
                 <th>From</th>
-                <th></th>
+                <%!-- 2d-fork: dropped the bare OUT badge column — IN/OUT is
+                    a per-address-scoped concept and nonsensical on a
+                    block-tx listing (no referent address). --%>
                 <th>To</th>
                 <th>Value</th>
                 <th>Fee</th>
@@ -36,7 +34,7 @@
             <%= for tx <- @transactions do %>
             <tr>
                 <td>
-                    <a href="/tx/<%= tx.hash %>" class="hash hash--truncate"><%= tx.hash %></a>
+                    <a href="/tx/<%= tx.hash %>" class="hash" title="<%= tx.hash %>"><%= FrontendEx.Format.truncate_hash(tx.hash) %></a>
                 </td>
                 <td>
                     <%= if tx.method do %>
@@ -50,14 +48,11 @@
                     <% end %>
                 </td>
                 <td>
-                    <a href="/address/<%= tx.from.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from.display %>"><%= tx.from.display %></a>
-                </td>
-                <td>
-                    <span class="badge badge-warning">OUT</span>
+                    <a href="/address/<%= tx.from.hash %>" class="hash" title="<%= tx.from.display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from.display) %></a>
                 </td>
                 <td>
                     <%= if tx.to do %>
-                        <a href="/address/<%= tx.to.hash %>" class="hash hash--truncate hash--sm" title="<%= tx.to.display %>"><%= tx.to.display %></a>
+                        <a href="/address/<%= tx.to.hash %>" class="hash" title="<%= tx.to.display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.to.display) %></a>
                     <% else %>
                         <%= if tx.status == "error" do %>
                             <span class="text-muted">failed tx</span>
@@ -68,7 +63,14 @@
                 </td>
                 <td><%= FrontendEx.Format.format_native_amount(tx.value) %> <%= @native_coin.symbol %></td>
                 <td class="text-muted">
-                    <%= if tx.fee do %><%= FrontendEx.Format.format_native_amount(tx.fee.value) %><% else %>-<% end %>
+                    <%= cond do %>
+                    <% tx.fee && is_binary(tx.fee.value) -> %>
+                        <%= FrontendEx.Format.format_native_amount(tx.fee.value) %>
+                    <% is_binary(tx.fee_raw) -> %>
+                        <%= FrontendEx.Format.format_native_amount(tx.fee_raw) %>
+                    <% true -> %>
+                        -
+                    <% end %>
                 </td>
             </tr>
             <% end %>

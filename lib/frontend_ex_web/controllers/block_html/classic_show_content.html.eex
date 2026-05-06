@@ -22,27 +22,22 @@
 <div class="block-tabbar">
     <div class="tabs">
         <a href="/block/<%= @block.height %>" class="tab active">Overview</a>
-        <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Consensus Info</a>
-        <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blob Info</a>
+        <%!-- 2d-fork: Consensus Info / Blob Info tabs removed — 2d has
+            single-block finality (no consensus layer to inspect) and no
+            EIP-4844 blobs. --%>
     </div>
     <div class="block-tabbar-actions">
         <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/blocks/<%= @block.height %>" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 7l-4 10"/></svg>
             API
         </a>
-        <button class="btn btn-icon" type="button" aria-label="More actions" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9h12M6 12h12M6 15h12"/></svg>
-        </button>
     </div>
 </div>
 
 <div class="detail-card">
-    <div class="detail-banner">
-        This is a 2D block only
-    </div>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Block Height:
         </div>
         <div class="detail-value">
@@ -62,7 +57,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Status:
         </div>
         <div class="detail-value">
@@ -75,7 +70,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Timestamp:
         </div>
         <div class="detail-value">
@@ -85,61 +80,36 @@
         </div>
     </div>
 
-    <%= if @block.proposed_on do %>
+    <%!-- 2d-fork: dropped these upstream-Ethereum-specific rows that
+        don't apply to 2d (single-block finality, gasless, no PoW/PoS):
+          - Proposed On (slot/epoch)        — no slot model
+          - Withdrawals                     — no validator withdrawals
+          - Block Reward                    — no proposer reward
+          - Total Difficulty                — no PoW
+          - Gas Used / Gas Limit            — gasless chain, always 0
+          - Base Fee Per Gas / Burnt Fees   — gasless, always nil
+        Block hashes (state root etc) live in the More Details fold. --%>
+
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
-            Proposed On:
-        </div>
-        <div class="detail-value">
-            <%= @block.proposed_on %>
-        </div>
-    </div>
-    <% end %>
-    
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Transactions:
         </div>
         <div class="detail-value">
             <a href="/block/<%= @block.height %>/txs"><%= @block.tx_count %> transactions</a>
-            <% # Askama leaves an extra blank line here for match/when tags (fixture parity). %>
-            <%= if @block.internal_transactions_count && @block.internal_transactions_count > 0 do %>
-                <span>and</span>
-                <a href="#" aria-disabled="true" tabindex="-1"><%= @block.internal_transactions_count %> contract internal transactions</a>
-            <% end %>
             <span class="text-muted">in this block</span>
         </div>
     </div>
 
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Withdrawals:
-        </div>
-        <div class="detail-value">
-            <%= if @block.withdrawals_count do %>
-                <a href="#" aria-disabled="true" tabindex="-1"><%= @block.withdrawals_count %> withdrawals</a>
-                <span class="text-muted">in this block</span>
-            <% else %>
-                <span class="text-muted">-</span>
-            <% end %>
-        </div>
-    </div>
-    
     <%= if @block.miner do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
-            Fee Recipient:
+            
+            Proposer:
         </div>
         <div class="detail-value">
             <span class="hash-inline">
-                <span class="addr-wrapper">
-                    <span class="addr-icon"></span>
-                    <a href="/address/<%= @block.miner.hash %>" class="hash"><%= @block.miner.hash %></a>
-                </span>
+                <a href="/address/<%= @block.miner.hash %>" class="hash"><%= @block.miner.hash %></a>
                 <button class="copy-btn" data-copy="<%= @block.miner.hash %>" title="Copy">
                     <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                 </button>
@@ -150,38 +120,11 @@
         </div>
     </div>
     <% end %>
-    
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Block Reward:
-        </div>
-        <div class="detail-value">
-            <%= if @block.block_reward_eth do %>
-                <span><%= @block.block_reward_eth %> <%= @native_coin.symbol %></span>
-                <%= if @block.block_reward_breakdown do %>
-                    <span class="text-muted">(<%= @block.block_reward_breakdown %>)</span>
-                <% end %>
-            <% else %>
-                <span>0 <%= @native_coin.symbol %></span>
-            <% end %>
-        </div>
-    </div>
 
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Total Difficulty:
-        </div>
-        <div class="detail-value">
-            <span>0</span>
-        </div>
-    </div>
-    
     <%= if @block.size do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Size:
         </div>
         <div class="detail-value">
@@ -189,93 +132,65 @@
         </div>
     </div>
     <% end %>
-    
-    <%= if @block.gas_used do %>
+    <%!-- 2d-fork: dropped the upstream "+ Click to show more" fold —
+        it never had a click handler or hidden content. The hashes it
+        was supposed to gate (block / parent / state root) are useful
+        and short, so render them inline instead. --%>
+
+    <%= if @block.hash do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
-            Gas Used:
+            
+            Block Hash:
         </div>
         <div class="detail-value">
-            <span>
-                <%= @block.gas_used %><%= if @block.gas_used_percent do %> (<%= @block.gas_used_percent %>)<% end %>
+            <span class="hash-inline">
+                <span class="hash"><%= @block.hash %></span>
+                <button class="copy-btn" data-copy="<%= @block.hash %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
             </span>
-            <%= if @block.gas_used_percent_gauge do %>
-                <svg class="gas-gauge" viewBox="0 0 100 50" aria-hidden="true">
-                    <path class="gas-gauge-bg" d="M10 50 A40 40 0 0 1 90 50" pathLength="100" />
-                    <path class="gas-gauge-fg" d="M10 50 A40 40 0 0 1 90 50" pathLength="100" style="stroke-dasharray: <%= @block.gas_used_percent_gauge %> 100" />
-                </svg>
-            <% end %>
-            <%= if @block.gas_target_delta do %>
-                <span class="gas-target"><%= @block.gas_target_delta %></span>
-            <% end %>
-        </div>
-    </div>
-    <% end %>
-    
-    <%= if @block.gas_limit do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Gas Limit:
-        </div>
-        <div class="detail-value">
-            <span><%= @block.gas_limit %></span>
-        </div>
-    </div>
-    <% end %>
-    <% # Askama match/when padding (fixture parity). %>
-    
-    <%= if @block.base_fee_per_gas do %>
-    <div class="detail-row">
-        <div class="detail-label">
-            <span class="help-icon">?</span>
-            Base Fee Per Gas:
-        </div>
-        <div class="detail-value">
-            <span><%= @block.base_fee_per_gas %> <%= @native_coin.symbol %></span>
         </div>
     </div>
     <% end %>
 
-    <%= if @block.burnt_fees_eth do %>
+    <%= if @block.parent_hash do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
-            Burnt Fees:
+
+            Parent Hash:
         </div>
         <div class="detail-value">
-            <span class="burnt-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4 0 7-3 7-7 0-5-5-8-5-12 0 3-2 4-3 6-1-2-3-3-3-6C6 7 5 10 5 13c0 5 3 9 7 9z"/></svg>
+            <span class="hash-inline">
+                <%!-- Link via parent hash directly — router accepts both
+                    decimal height and 32-byte hash. height-1 arithmetic
+                    is brittle on chains where canonical-continuity isn't
+                    guaranteed. Genesis (height 0) carries an all-zero
+                    sentinel parent_hash that has no corresponding block,
+                    so render plain text instead of a 404'ing link. --%>
+                <%= if @block.height > 0 do %>
+                    <a class="hash" href="/block/<%= @block.parent_hash %>"><%= @block.parent_hash %></a>
+                <% else %>
+                    <span class="hash"><%= @block.parent_hash %></span>
+                <% end %>
+                <button class="copy-btn" data-copy="<%= @block.parent_hash %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
             </span>
-            <span><%= @block.burnt_fees_eth %> <%= @native_coin.symbol %></span>
         </div>
     </div>
     <% end %>
-    <% # Askama match/when padding (fixture parity). %>
 
+    <%= if @block.state_root do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
-            Extra Data:
+            
+            State Root:
         </div>
         <div class="detail-value">
-            <%= if @block.extra_data do %>
-                <span class="hash"><%= @block.extra_data %></span>
-            <% else %>
-                <span class="text-muted">-</span>
-            <% end %>
+            <span class="hash-inline">
+                <span class="hash"><%= @block.state_root %></span>
+                <button class="copy-btn" data-copy="<%= @block.state_root %>" title="Copy"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+            </span>
         </div>
     </div>
-
-    <div class="detail-row">
-        <div class="detail-label">
-            More Details:
-        </div>
-        <div class="detail-value">
-            <span style="color:#0d6efd; font-weight:500;">+ Click to show more</span>
-        </div>
-    </div>
+    <% end %>
 </div>
 
 <div class="block-footnote">
@@ -286,6 +201,6 @@
     </svg>
     <div>
         Blocks are batches of transactions linked via cryptographic hashes. Any tampering of a block would invalidate all following blocks.
-        Learn more about this page in our <a href="#" aria-disabled="true" tabindex="-1">Knowledge Base</a>.
+        Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.
     </div>
 </div>

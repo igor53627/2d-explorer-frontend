@@ -13,51 +13,6 @@
 </head>
 <body>
     <header class="header">
-        <div class="topbar">
-            <div class="container topbar-inner">
-                <div class="topbar-left">
-                    <span class="topbar-badge">2D</span>
-                </div>
-                <div class="topbar-right">
-                    <form class="topbar-search" action="/search" method="get">
-                        <span class="topbar-search-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24">
-                                <circle cx="11" cy="11" r="7"></circle>
-                                <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </span>
-                        <input type="text" name="q" class="topbar-search-input" placeholder="Search by Address / Txn Hash / Block / Token" aria-label="Search by Address / Txn Hash / Block / Token">
-                        <span class="topbar-search-shortcut" aria-hidden="true"><kbd>/</kbd></span>
-                    </form>
-                    <button class="topbar-icon-btn" type="button" aria-label="Knowledge Base" title="Knowledge Base">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M4 5h6a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3V5z"></path>
-                            <path d="M20 5h-6a3 3 0 0 0-3 3v11h6a3 3 0 0 1 3 3V5z"></path>
-                        </svg>
-                    </button>
-                    <button class="topbar-icon-btn" type="button" aria-label="Theme" title="Theme">
-                        <svg viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="4"></circle>
-                            <path d="M12 2v3"></path>
-                            <path d="M12 19v3"></path>
-                            <path d="M4.2 4.2l2.1 2.1"></path>
-                            <path d="M17.7 17.7l2.1 2.1"></path>
-                            <path d="M2 12h3"></path>
-                            <path d="M19 12h3"></path>
-                            <path d="M4.2 19.8l2.1-2.1"></path>
-                            <path d="M17.7 6.3l2.1-2.1"></path>
-                        </svg>
-                    </button>
-                    <button class="topbar-icon-btn" type="button" aria-label="Network" title="Network">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 2l4.5 8-4.5 4.5L7.5 10 12 2z"></path>
-                            <path d="M12 15l4.5-4.5-4.5 12-4.5-12L12 15z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <div class="header-main">
             <div class="container header-top">
                 <a href="/" class="logo">
@@ -70,43 +25,31 @@
                     <span class="logo-title">2D Explorer</span>
                 </a>
 
+                <%!-- Header search is hidden on the home page — the hero
+                    already has its own prominent search, no need to
+                    duplicate. On every other page the hero is absent and
+                    the header search is the single discoverable entry. --%>
+                <%= if assigns[:nav_home] != "active" do %>
+                <form class="global-search" action="/search" method="get">
+                    <span class="global-search-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
+                    <input id="global-search-input" type="text" name="q" class="global-search-input"
+                           placeholder="Search address, tx hash, or block"
+                           aria-label="Search address, tx hash, or block">
+                    <span class="global-search-shortcut" aria-hidden="true"><kbd>/</kbd></span>
+                </form>
+                <% end %>
+
                 <nav class="nav" aria-label="Primary">
                     <a href="/" class="nav-link <%= assigns[:nav_home] || "" %>">Home</a>
-
-                    <div class="nav-dropdown">
-                        <button class="nav-link nav-dropdown-toggle <%= assigns[:nav_blocks] || "" %> <%= assigns[:nav_txs] || "" %>" type="button" aria-haspopup="true" aria-expanded="false">
-                            Blockchain
-                            <svg class="nav-caret" viewBox="0 0 12 12" aria-hidden="true">
-                                <path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </button>
-                        <div class="nav-menu">
-                            <div class="nav-menu-inner">
-                                <a href="/txs" class="nav-menu-item">Transactions</a>
-                                <a href="/blocks" class="nav-menu-item">View Blocks</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <%!-- 2d-fork: Tokens / NFTs nav dropdowns removed — neither
-                        section exists in 2d, so the links would 404. --%>
-
-                    <div class="nav-dropdown">
-                        <button class="nav-link nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                            More
-                            <svg class="nav-caret" viewBox="0 0 12 12" aria-hidden="true">
-                                <path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </button>
-                        <div class="nav-menu nav-menu-right">
-                            <div class="nav-menu-inner">
-                                <a href="/api-docs" class="nav-menu-item">APIs</a>
-                            </div>
-                        </div>
-                    </div>
+                    <a href="/txs" class="nav-link <%= assigns[:nav_txs] || "" %>">Transactions</a>
+                    <a href="/blocks" class="nav-link <%= assigns[:nav_blocks] || "" %>">Blocks</a>
+                    <a class="nav-link" href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">Docs</a>
                 </nav>
-
-                <span class="topbar-badge mobile-badge">2D</span>
 
                 <button class="mobile-menu-btn" type="button" aria-label="Open menu" title="Menu">
                     <svg viewBox="0 0 24 24">
@@ -127,21 +70,13 @@
 
     <footer class="footer">
         <div class="container footer-inner">
-            <div class="footer-left">
-                <div class="footer-text">
-                    Powered by <a href="https://ethereum.org">Ethereum</a>
-                </div>
-                <div class="footer-text">
-                    2D Explorer
-                </div>
-                <div class="footer-text footer-version" title="frontend-ex release">
-                    v<%= @app_version %>·<%= @git_sha %><%= if assigns[:backend_version], do: " · backend v#{@backend_version}" %><%= if assigns[:backend_sha], do: "·#{@backend_sha}" %>
-                </div>
+            <div class="footer-text">
+                2D Explorer
+                <span class="footer-divider">·</span>
+                <span class="footer-version" title="frontend-ex release">v<%= @app_version %>·<%= @git_sha %><%= if assigns[:backend_version], do: " · backend v#{@backend_version}" %><%= if assigns[:backend_sha], do: "·#{@backend_sha}" %></span>
             </div>
             <div class="footer-links">
-                <a href="/terms">Terms</a>
-                <span class="footer-divider">|</span>
-                <a href="/privacy">Privacy</a>
+                <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">Docs</a>
             </div>
         </div>
     </footer>
@@ -156,30 +91,74 @@
         });
     });
 
-    // Dropdown menu hover handling
-    document.querySelectorAll('.nav-dropdown').forEach(function(dropdown) {
-        var menu = dropdown.querySelector('.nav-menu-inner');
-        var timeout;
-        
-        function showMenu() {
-            clearTimeout(timeout);
-            menu.classList.add('is-open');
+    // CSV export: any <button data-csv-export="<table selector>"
+    // data-csv-filename="…"> exports the targeted table's current page.
+    // Cells (th/td) marked with data-csv-skip are omitted.
+    function csvCell(s) {
+        s = (s || '').replace(/\s+/g, ' ').trim();
+        // CSV-injection guard: Excel / Sheets / LibreOffice interpret
+        // a leading =/+/-/@/tab/CR as a formula trigger. Prefix with a
+        // single-quote so the cell renders literally instead of
+        // executing a formula sourced from on-chain data.
+        if (s && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+    }
+    function csvCellText(cell) {
+        if (!cell) return '';
+        // Prefer canonical values (data-csv-value, then a [title] inside
+        // the cell — used by truncated hashes/addresses to expose the
+        // full value on hover). Fall back to visible text.
+        if (cell.dataset && cell.dataset.csvValue) return cell.dataset.csvValue;
+        var titled = cell.querySelector('[title]');
+        if (titled && titled.getAttribute('title')) return titled.getAttribute('title');
+        return cell.textContent;
+    }
+    document.querySelectorAll('button[data-csv-export]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var table = document.querySelector(btn.dataset.csvExport);
+            if (!table) return;
+            var rows = [];
+            var ths = table.querySelectorAll('thead th');
+            var keep = [];
+            ths.forEach(function(th, i) {
+                if (!th.hasAttribute('data-csv-skip')) keep.push(i);
+            });
+            rows.push(keep.map(function(i) { return csvCell(ths[i].textContent); }));
+            table.querySelectorAll('tbody tr').forEach(function(tr) {
+                var cells = tr.children;
+                rows.push(keep.map(function(i) {
+                    return csvCell(csvCellText(cells[i]));
+                }));
+            });
+            var csv = rows.map(function(r) { return r.join(','); }).join('\r\n');
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = btn.dataset.csvFilename || 'export.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    });
+
+    // "/" key focuses the global search input — standard pattern.
+    // Skipped if the user is already typing in a form field, or if a
+    // modifier key is held.
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+        var target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' ||
+                       target.isContentEditable)) {
+            return;
         }
-        
-        function hideMenu(e) {
-            var related = e.relatedTarget;
-            if (related && dropdown.contains(related)) {
-                return;
-            }
-            menu.classList.remove('is-open');
-        }
-        
-        dropdown.addEventListener('mouseenter', showMenu);
-        dropdown.addEventListener('mouseleave', hideMenu);
-        
-        var menuWrapper = dropdown.querySelector('.nav-menu');
-        if (menuWrapper) {
-            menuWrapper.addEventListener('mouseenter', showMenu);
+        var input = document.getElementById('global-search-input');
+        if (input) {
+            e.preventDefault();
+            input.focus();
+            input.select();
         }
     });
     </script>

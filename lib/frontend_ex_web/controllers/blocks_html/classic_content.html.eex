@@ -1,21 +1,37 @@
 
 <div class="page-header">
-    <h1 class="page-title">Blocks</h1>
+    <div class="page-header-title">
+        <h1 class="page-title">Blocks</h1>
+        <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/blocks" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 7l-4 10"/></svg>
+            API
+        </a>
+    </div>
 </div>
 
 <div class="card">
     <div class="card-header">
-        <span>Latest Blocks</span>
+        <div class="table-toolbar">
+            <div>
+                <div class="txs-info-title">Latest <%= length(@blocks) %> blocks</div>
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn" type="button" aria-label="Download current page as CSV"
+                        data-csv-export="#blocks-table" data-csv-filename="2d-blocks-page.csv">
+                    <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5 1.42 1.42L11 6.84V16h2V6.84l3.08 3.08 1.42-1.42L12 2z"/></svg>
+                    Download Page Data
+                </button>
+            </div>
+        </div>
     </div>
-    <table>
+    <div class="table-responsive">
+    <table id="blocks-table">
         <thead>
             <tr>
                 <th>Block</th>
                 <th>Age</th>
-                <th>Txn</th>
-                <th>Fee Recipient</th>
-                <th>Gas Used</th>
-                <th>Gas Limit</th>
+                <th>Txns</th>
+                <th>Proposer</th>
             </tr>
         </thead>
         <tbody>
@@ -24,23 +40,31 @@
                 <td>
                     <a href="/block/<%= block.height %>" class="hash"><%= block.height %></a>
                 </td>
-                <td>
-                    <span class="time-ago"><%= block.time_ago %></span>
+                <td data-csv-value="<%= block.time_ago %>">
+                    <%!-- data-csv-value pins the relative-time string for
+                        CSV export. Without it, csvCellText prefers the
+                        nearest [title] (the readable timestamp on the
+                        time-ago span), which is the wrong column for the
+                        Age cell — that pattern exists for truncated
+                        hashes, not for hover tooltips. --%>
+                    <span class="time-ago" title="<%= block.timestamp_readable %>"><%= block.time_ago %></span>
+                    <%= if is_binary(block.timestamp_readable) and String.trim(block.timestamp_readable) != "" do %>
+                        <span class="text-muted block-timestamp-readable"><%= block.timestamp_readable %></span>
+                    <% end %>
                 </td>
                 <td>
                     <a href="/block/<%= block.height %>/txs"><%= block.tx_count %></a>
                 </td>
                 <td>
                     <%= if block.miner_hash do %>
-                        <a href="/address/<%= block.miner_hash %>" class="hash hash--truncate"><%= block.miner_hash %></a>
+                        <a href="/address/<%= block.miner_hash %>" class="hash" title="<%= block.miner_hash %>"><%= FrontendEx.Format.truncate_addr_classic(block.miner_hash) %></a>
                     <% else %>
                         <span class="text-muted">-</span>
                     <% end %>
                 </td>
-                <td><%= block.gas_used %></td>
-                <td><%= block.gas_limit %></td>
             </tr>
             <% end %>
         </tbody>
     </table>
+    </div>
 </div>

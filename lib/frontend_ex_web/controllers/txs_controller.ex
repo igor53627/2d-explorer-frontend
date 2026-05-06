@@ -254,6 +254,26 @@ defmodule FrontendExWeb.TxsController do
 
   defp parse_transactions_response(_, _native_coin), do: {[], nil}
 
+  defp compute_fee_raw(%{} = tx) do
+    with gp when is_integer(gp) and gp >= 0 <- normalize_int(tx["gas_price"]),
+         gu when is_integer(gu) and gu >= 0 <- normalize_int(tx["gas_used"]) do
+      Integer.to_string(gp * gu)
+    else
+      _ -> nil
+    end
+  end
+
+  defp normalize_int(v) when is_integer(v), do: v
+
+  defp normalize_int(v) when is_binary(v) do
+    case Integer.parse(String.trim(v)) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp normalize_int(_), do: nil
+
   defp display_tx(%{} = tx, native_coin) do
     hash = to_string(tx["hash"] || "")
 
@@ -272,11 +292,21 @@ defmodule FrontendExWeb.TxsController do
     value_raw = to_string(tx["value"] || "0")
     has_value = String.match?(value_raw, ~r/[1-9]/)
 
-    fee =
+    # 2d's /api/v2/transactions* responses don't include a `fee` field
+    # (gasless chain — `gas_price` is always 0). When `fee.value` is
+    # missing, fall back to gas_price × gas_used. Both are numeric on 2d
+    # (integer for gas_used, integer/string for gas_price); on upstream
+    # Blockscout where fee is populated, the inner case wins first.
+    fee_raw =
       case get_in(tx, ["fee", "value"]) do
-        v when is_binary(v) -> Format.format_native_amount(v)
-        _ -> nil
+        v when is_binary(v) ->
+          v
+
+        _ ->
+          compute_fee_raw(tx)
       end
+
+    fee = if fee_raw, do: Format.format_native_amount(fee_raw), else: nil
 
     method =
       case tx["method"] do
@@ -286,8 +316,14 @@ defmodule FrontendExWeb.TxsController do
 
     block_number = parse_u64(tx["block_number"])
 
-    age =
+    timestamp_raw =
       case tx["timestamp"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
+    age =
+      case timestamp_raw do
         v when is_binary(v) -> Format.format_relative_time(v)
         _ -> "-"
       end
@@ -318,6 +354,7 @@ defmodule FrontendExWeb.TxsController do
       method: method,
       block_number: block_number,
       age: age,
+      timestamp_raw: timestamp_raw,
       kind: kind,
       status: status,
       from_hash: from_hash,
@@ -327,7 +364,8 @@ defmodule FrontendExWeb.TxsController do
         if(to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, to_kind), else: nil),
       value: value,
       has_value: has_value,
-      fee: fee
+      fee: fee,
+      fee_raw: fee_raw
     }
   end
 end

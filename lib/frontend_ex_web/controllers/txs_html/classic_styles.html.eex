@@ -1,26 +1,7 @@
 
 <style>
-.page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 24px 0 16px;
-    margin-top: -12px;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-}
-.page-header-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.page-title {
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--text);
-    margin: 0;
-}
+/* .page-header / .page-header-title / .page-title — shared across
+   /txs and /blocks listing pages. Lives in style2-overrides.css now. */
 .txs-info-title {
     font-size: 13px;
     color: var(--text);

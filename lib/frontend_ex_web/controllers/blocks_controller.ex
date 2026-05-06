@@ -90,6 +90,7 @@ defmodule FrontendExWeb.BlocksController do
     %{
       height: height,
       time_ago: Format.format_blocks_time_ago(ts_raw),
+      timestamp_readable: Format.format_readable_date_classic(ts_raw),
       tx_count: tx_count,
       miner_hash: miner_hash,
       gas_used: format_optional_number_string(b["gas_used"]),

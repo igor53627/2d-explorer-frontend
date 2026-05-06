@@ -631,6 +631,23 @@ defmodule FrontendExWeb.UsdcRenderTest do
            "expected /address/:hash to render the Tron-form alongside the 0x form"
   end
 
+  test "GET /tx/:hash renders Transaction Action as 'Transfer N USDC to <addr>' for value tx",
+       %{conn: conn} do
+    body =
+      conn
+      |> get("/tx/0xcafe000000000000000000000000000000000000000000000000000000000000")
+      |> html_response(200)
+
+    # @tx_detail has value=100 (= 0.0001 USDC at 6 decimals), to=set,
+    # method=nil, tx_type=2, to.is_contract=false. Action row should
+    # describe the transfer Etherscan-style: "Transfer 0.0001 USDC to
+    # 0x…0002". Use the same exact-decimals formatter as the Value row
+    # below — the two surfaces would otherwise drift on the same number
+    # ("0.000100" vs "0.0001"), which reads like two different values.
+    assert body =~ ~r{Transfer\s+0\.0001\s+USDC\s+to\s+<a},
+           "expected Etherscan-style 'Transfer N USDC to ADDR' Transaction Action"
+  end
+
   test "GET /tx/:hash with transaction_type=3 renders the EIP-4844 commit branch",
        %{conn: conn} do
     body =
@@ -788,6 +805,57 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       assert body =~ expected_to_tron,
              "expected Tron Base58 for To (to.primary=tron_pb)"
+    end
+  end
+
+  describe "client-side sort + CSV export attributes (roborev)" do
+    # Pin the data-* hooks the inline JS depends on. Logic itself
+    # (sort comparator, CSV serialization) isn't unit-tested — those
+    # live in the layout's inline <script> and a JS-level harness
+    # would be heavier than the surface justifies. Attributes are the
+    # contract between server and JS, so attribute drift is the
+    # realistic regression class to catch.
+
+    test "GET /txs has sortable-table + sort-key headers + per-row data attrs",
+         %{conn: conn} do
+      body = conn |> get("/txs") |> html_response(200)
+
+      assert body =~ ~s|data-sortable-table|,
+             "txs table must opt into sort with data-sortable-table"
+
+      for key <- ~w(block age fee) do
+        assert body =~ ~s|data-sort-key="#{key}"|,
+               "expected sortable header for #{key}"
+      end
+
+      # Every tr should carry data-block / data-age / data-fee for the
+      # JS comparator to read.
+      assert body =~ ~r/<tr data-block="\d+" data-age="[^"]*" data-fee="[^"]*"/,
+             "tx rows must carry data-block/data-age/data-fee for sorting"
+    end
+
+    test "GET /txs has Download Page Data button targeting #txs-table",
+         %{conn: conn} do
+      body = conn |> get("/txs") |> html_response(200)
+
+      assert body =~ ~s|data-csv-export="#txs-table"|,
+             "Download button must target the txs table"
+
+      assert body =~ ~s|data-csv-filename="2d-txs-page.csv"|,
+             "CSV filename hook must be set"
+
+      # Header cells excluded from CSV (Preview eye-icon column,
+      # direction-icon column) carry data-csv-skip.
+      assert body =~ ~s|data-csv-skip|,
+             "preview/dir cells must opt out of CSV via data-csv-skip"
+    end
+
+    test "GET /blocks has Download Page Data button targeting #blocks-table",
+         %{conn: conn} do
+      body = conn |> get("/blocks") |> html_response(200)
+
+      assert body =~ ~s|data-csv-export="#blocks-table"|,
+             "blocks Download button must target the blocks table"
     end
   end
 
@@ -955,18 +1023,13 @@ defmodule FrontendExWeb.UsdcRenderTest do
     end
   end
 
-  test "GET /block/:id formats base_fee_per_gas as USDC, not raw base units",
-       %{conn: conn} do
-    body = conn |> get("/block/0") |> html_response(200)
-
-    # 1500 base units / 10^6 decimals = 0.0015 USDC. The bug was the
-    # template rendering "1500 USDC" — a 10^6 overstatement.
-    assert body =~ "0.0015 USDC",
-           "expected /block/0 to render base_fee_per_gas as 0.0015 USDC"
-
-    refute body =~ "1500 USDC",
-           "tx-detail page must not surface raw base units alongside the USDC label"
-  end
+  # Test removed: /block/:id detail page no longer renders the Base
+  # Fee Per Gas row at all (gasless chain — Ethereum-specific concept
+  # dropped during the UI audit, see commit a5f5b59). The original
+  # assertion pinned that the value formatted via Format.format_native
+  # _amount/1 (catching a 10^6 overstatement). If 2d ever re-introduces
+  # base-fee semantics, add a fresh assertion against whatever surface
+  # renders it.
 
   test "GET /tx/:hash/card surfaces stats-derived USDC ticker",
        %{conn: conn} do
@@ -1022,6 +1085,80 @@ defmodule FrontendExWeb.UsdcRenderTest do
         refute body =~ ~s|href="#{route}|,
                "tx detail page links to deleted route #{route}"
       end
+    end
+  end
+
+  describe "ultrareview round 2 nit fixes" do
+    test "GET /block/0 — genesis parent_hash renders as plain text, not a 404'ing link",
+         %{conn: conn} do
+      body = conn |> get("/block/0") |> html_response(200)
+
+      # Genesis carries the all-zero sentinel parent_hash (0x000…000).
+      # The router accepts it as a 32-byte hash, but no upstream block
+      # exists at that hash, so a link 404s. Pin: the parent_hash row
+      # still shows the hash text but does NOT wrap it in an anchor.
+      zero_hash = "0x" <> String.duplicate("0", 64)
+
+      assert body =~ zero_hash,
+             "expected /block/0 to render the parent_hash text"
+
+      refute body =~ ~s|href="/block/#{zero_hash}"|,
+             "expected /block/0 to NOT link the genesis parent_hash (would 404)"
+    end
+
+    test "GET /tx/:hash/logs — Logs tab hidden when logs_count == 0",
+         %{conn: conn} do
+      # FakeClient @tx_failed_hash; inlined here because module attrs
+      # don't cross the FakeClient → test-module boundary. @tx_failed_logs
+      # has empty items (logs_count=0). All three tx-detail surfaces
+      # (Overview / State / Logs) must agree on tab gating — landing on
+      # /logs directly with 0 logs shouldn't render a self-referential
+      # Logs tab that the other surfaces hide.
+      hash = "0xfa11ed000000000000000000000000000000000000000000000000000000fa11"
+
+      body =
+        conn
+        |> get("/tx/#{hash}/logs")
+        |> html_response(200)
+
+      refute body =~ ~r{<a[^>]*href="/tx/#{hash}/logs"[^>]*class="tab[^"]*"},
+             "expected /tx/:hash/logs to hide the Logs tab when logs_count == 0"
+    end
+
+    test "/blocks Age cell carries data-csv-value with the relative-time string" do
+      template_path =
+        Path.join([
+          File.cwd!(),
+          "lib/frontend_ex_web/controllers/blocks_html/classic_content.html.eex"
+        ])
+
+      template = File.read!(template_path)
+
+      # csvCellText prefers data-csv-value > [title] > textContent. The
+      # Age cell has [title]=readable on time-ago, which would shadow
+      # textContent on the CSV path; data-csv-value pins the visible
+      # relative-time string explicitly.
+      assert template =~ ~s|data-csv-value="<%= block.time_ago %>"|,
+             "expected /blocks Age td to carry data-csv-value=block.time_ago"
+    end
+
+    test "home realtime createBlockRow links to /block/:id/txs (not /transactions)" do
+      # Server-side block tiles use /txs (the only route the router
+      # defines). The realtime-injected row's URL must agree, or every
+      # tile prepended after a WS new_block event 404s on click.
+      template_path =
+        Path.join([
+          File.cwd!(),
+          "lib/frontend_ex_web/controllers/home_html/classic_scripts.html.eex"
+        ])
+
+      template = File.read!(template_path)
+
+      refute template =~ "/block/${height}/transactions",
+             "expected createBlockRow to NOT link to deleted /block/:id/transactions route"
+
+      assert template =~ "/block/${height}/txs",
+             "expected createBlockRow to link to /block/:id/txs (the live route)"
     end
   end
 end

@@ -3,15 +3,12 @@
     <h1 class="page-title">Transaction Details</h1>
 </div>
 
-<div class="testnet-banner">
-    This is a 2D transaction only
-</div>
-
 <div class="tabs">
     <a href="/tx/<%= @tx_hash %>" class="tab">Overview</a>
-    <a href="/tx/<%= @tx_hash %>/logs" class="tab active">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
+    <%= if @logs_count > 0 do %>
+        <a href="/tx/<%= @tx_hash %>/logs" class="tab active">Logs (<%= @logs_count %>)</a>
+    <% end %>
     <a href="/tx/<%= @tx_hash %>/state" class="tab">State</a>
-    <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blobs</a>
 </div>
 
 <%= if Enum.empty?(@logs) do %>

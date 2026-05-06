@@ -1,17 +1,6 @@
 
 <style>
-.page-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-.page-title {
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--text);
-    margin: 0;
-}
+/* .page-header / .page-title shared from style2-overrides.css. */
 .block-nav {
     display: flex;
     gap: 4px;

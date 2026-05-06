@@ -1,14 +1,10 @@
 
 <style>
+/* /block detail has its own page-header layout (h1 + prev/next nav
+   on the left, no right-side actions), so override the listing-page
+   defaults from style2-overrides.css here. */
 .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 48px 0;
-    margin-top: -24px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border);
+    padding: 8px 0 16px;
 }
 .page-header-left {
     display: inline-flex;
@@ -19,12 +15,6 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-}
-.page-title {
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--text);
-    margin: 0;
 }
 
 .block-tabbar {

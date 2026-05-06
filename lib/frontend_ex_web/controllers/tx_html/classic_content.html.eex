@@ -2,33 +2,26 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1 class="page-title">Transaction Details</h1>
-        <div class="page-nav">
-            <button class="btn btn-icon" type="button" aria-label="Previous transaction" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button class="btn btn-icon" type="button" aria-label="Next transaction" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
-        </div>
+        <%!-- 2d-fork: Previous/Next transaction buttons removed — there is
+            no canonical "previous tx" globally on a chain (txs aren't
+            linearly ordered like blocks). --%>
     </div>
 </div>
 
 <div class="tx-tabbar">
     <div class="tabs">
         <a href="/tx/<%= @tx.hash %>" class="tab active">Overview</a>
-        <a href="/tx/<%= @tx.hash %>/logs" class="tab">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
+        <%= if @logs_count > 0 do %>
+            <a href="/tx/<%= @tx.hash %>/logs" class="tab">Logs (<%= @logs_count %>)</a>
+        <% end %>
         <a href="/tx/<%= @tx.hash %>/state" class="tab">State</a>
-        <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blobs</a>
+        <%!-- 2d-fork: Blobs tab removed — 2d has no EIP-4844 blob data. --%>
     </div>
     <div class="tx-tabbar-actions">
-        <button class="btn btn-sm" type="button" aria-label="API" disabled>
+        <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/transactions/<%= @tx.hash %>" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 7l-4 10"/></svg>
             API
-            <svg class="btn-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>
-        </button>
-        <button class="btn btn-icon" type="button" aria-label="More actions" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9h12M6 12h12M6 15h12"/></svg>
-        </button>
+        </a>
     </div>
 </div>
 
@@ -39,26 +32,35 @@
     <div>
         <div class="action-label">Transaction Action</div>
         <div class="action-value">
-            <%= case @tx.tx_type do %>
-                <% 3 -> %>
-                    <span class="fw-medium">Commit <a class="link" href="#" aria-disabled="true" tabindex="-1">EIP-4844 Blob</a></span>
-                <% _ -> %>
-                    <%= case @tx.method do %>
-                        <% m when is_binary(m) -> %><span class="fw-medium"><%= m %></span>
-                        <% _ -> %><span class="text-muted">-</span>
-                    <% end %>
-                <% end %>
+            <%= cond do %>
+                <% @tx.tx_type == 3 -> %>
+                    <span class="fw-medium">Commit EIP-4844 Blob</span>
+                <% is_binary(@tx.method) and String.trim(@tx.method) not in ["", "-"] -> %>
+                    <span class="fw-medium"><%= @tx.method %></span>
+                <% @tx.to && FrontendExWeb.Parsers.parse_int_or(@tx.value, 0) > 0 && not @to_is_contract_like -> %>
+                    <%!-- Etherscan-style "Transfer N USDC to ADDR" only for
+                        EOA recipients. Payable contract calls (to is a
+                        contract, value > 0, no decoded method) shouldn't be
+                        labeled "Transfer" — they're invocations, not plain
+                        payments. Format with the same exact-decimals helper
+                        the Value row below uses, so the two surfaces agree. --%>
+                    <span class="fw-medium">Transfer
+                        <%= FrontendEx.Format.format_native_amount_exact(@tx.value) %>
+                        <%= @native_coin.symbol %>
+                        to
+                        <a class="link" href="/address/<%= @tx.to.hash %>" title="<%= @tx.to.display %>"><%= FrontendEx.Format.truncate_addr_classic(@tx.to.display) %></a>
+                    </span>
+                <% true -> %>
+                    <span class="text-muted">-</span>
+            <% end %>
         </div>
     </div>
 </div>
 
 <div class="detail-card">
-    <div class="detail-banner">
-        This is a 2D transaction only
-    </div>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Transaction Hash:
         </div>
         <div class="detail-value">
@@ -73,7 +75,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Status:
         </div>
         <div class="detail-value">
@@ -96,7 +98,7 @@
     <%= if @tx.block_number do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Block:
         </div>
         <div class="detail-value">
@@ -115,7 +117,7 @@
     <%= if @timestamp_relative do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Timestamp:
         </div>
         <div class="detail-value">
@@ -130,7 +132,7 @@
     
 <%= if is_nil(@tx.block_number) and is_nil(@timestamp_relative), do: "    \n    \n", else: "" %>    <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             From:
         </div>
         <div class="detail-value">
@@ -164,7 +166,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             To:
         </div>
         <div class="detail-value">
@@ -206,7 +208,7 @@
     
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Value:
         </div>
         <div class="detail-value">
@@ -220,7 +222,7 @@
     <%= if @fee_eth do %>
     <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Transaction Fee:
         </div>
         <div class="detail-value">
@@ -232,7 +234,7 @@
     <%= if @gas_price_native do %>
 <%= if is_nil(@fee_eth), do: "    \n", else: "" %>    <div class="detail-row">
         <div class="detail-label">
-            <span class="help-icon">?</span>
+            
             Gas Price:
         </div>
         <div class="detail-value">
@@ -263,7 +265,7 @@
         <%= if @gas_display do %>
         <div class="detail-row">
             <div class="detail-label">
-                <span class="help-icon">?</span>
+                
                 Gas Limit & Usage by Txn:
             </div>
             <div class="detail-value">
@@ -285,7 +287,7 @@
         <%= if @base_fee_native || @max_fee_native || @max_priority_fee_native do %>
         <div class="detail-row">
             <div class="detail-label">
-                <span class="help-icon">?</span>
+                
                 Gas Fees:
             </div>
             <div class="detail-value">
@@ -305,7 +307,7 @@
         <%= if @method_id do %>
         <div class="detail-row">
             <div class="detail-label">
-                <span class="help-icon">?</span>
+                
                 Input Data:
             </div>
             <div class="detail-value">
@@ -325,6 +327,6 @@
         <path d="M12 8h.01"></path>
     </svg>
     <span>
-        A transaction is a cryptographically signed instruction that changes the blockchain state. Block explorers track the details of all transactions in the network. Learn more about transactions in our <a href="#" class="link">Knowledge Base</a>.
+        A transaction is a cryptographically signed instruction that changes the blockchain state. Block explorers track the details of all transactions in the network. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener" class="link">2D docs</a>.
     </span>
 </div>

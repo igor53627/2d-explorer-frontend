@@ -3,15 +3,12 @@
     <h1 class="page-title">Transaction Details</h1>
 </div>
 
-<div class="testnet-banner">
-    This is a 2D transaction only
-</div>
-
 <div class="tabs">
     <a href="/tx/<%= @tx_hash %>" class="tab">Overview</a>
-    <a href="/tx/<%= @tx_hash %>/logs" class="tab">Logs<%= if @logs_count > 0 do %> (<%= @logs_count %>)<% end %></a>
+    <%= if @logs_count > 0 do %>
+        <a href="/tx/<%= @tx_hash %>/logs" class="tab">Logs (<%= @logs_count %>)</a>
+    <% end %>
     <a href="/tx/<%= @tx_hash %>/state" class="tab active">State</a>
-    <a href="#" class="tab disabled" aria-disabled="true" tabindex="-1">Blobs</a>
 </div>
 
 <%= if Enum.empty?(@state_changes) do %>
@@ -25,37 +22,41 @@
         <thead>
             <tr>
                 <th>Address</th>
-                <th>Before</th>
-                <th>After</th>
-                <th>Change</th>
+                <th>Balance Change</th>
             </tr>
         </thead>
         <tbody>
             <%= for sc <- @state_changes do %>
+            <% addr = get_in(sc, ["address", "hash"]) || "" %>
             <tr>
                 <td>
-                    <a href="/address/<%= get_in(sc, ["address", "hash"]) %>" class="hash hash--truncate"><%= get_in(sc, ["address", "hash"]) %></a>
-                    <%= if get_in(sc, ["is_miner"]) == true do %>
-                        <span class="badge badge-secondary">Miner</span>
+                    <%= if addr != "" do %>
+                        <a href="/address/<%= addr %>" class="hash hash--truncate" title="<%= addr %>"><%= FrontendEx.Format.truncate_addr_classic(addr) %></a>
+                    <% else %>
+                        <span class="text-muted">-</span>
                     <% end %>
                 </td>
-                <td class="text-muted mono">
-                    <%= case Map.get(sc, "balance_before") do %>
-                    <% v when is_binary(v) -> %><%= v %><% _ -> %>-<% end %>
-                </td>
                 <td class="mono">
-                    <%= case Map.get(sc, "balance_after") do %>
-                    <% v when is_binary(v) -> %><%= v %><% _ -> %>-<% end %>
-                </td>
-                <td class="mono">
-                    <%= case Map.get(sc, "change") do %>
-                    <% c when is_binary(c) -> %>
-                        <%= if String.starts_with?(c, "-") do %>
-                            <span class="change-negative"><%= c %></span>
-                        <% else %>
-                            <span class="change-positive">+<%= c %></span>
-                        <% end %>
-                    <% _ -> %>-<% end %>
+                    <%!-- Parse the diff numerically before classifying so
+                        leading-zero strings ("000", "+0") don't get tagged
+                        as non-zero. Branch on the parsed integer's sign. --%>
+                    <%= case (case Map.get(sc, "balance_diff") do
+                                v when is_binary(v) ->
+                                  case Integer.parse(String.trim(v)) do
+                                    {n, ""} -> n
+                                    _ -> nil
+                                  end
+                                _ -> nil
+                              end) do %>
+                    <% n when is_integer(n) and n < 0 -> %>
+                        <span class="change-negative">-<%= FrontendEx.Format.format_native_amount(Integer.to_string(-n)) %> <%= @native_coin.symbol %></span>
+                    <% n when is_integer(n) and n > 0 -> %>
+                        <span class="change-positive">+<%= FrontendEx.Format.format_native_amount(Integer.to_string(n)) %> <%= @native_coin.symbol %></span>
+                    <% 0 -> %>
+                        <span class="text-muted">0 <%= @native_coin.symbol %></span>
+                    <% _ -> %>
+                        <span class="text-muted">-</span>
+                    <% end %>
                 </td>
             </tr>
             <% end %>
