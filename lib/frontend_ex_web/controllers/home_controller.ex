@@ -245,15 +245,31 @@ defmodule FrontendExWeb.HomeController do
 
     is_contract_call = Enum.any?(tx_types, &(&1 == "contract_call"))
 
+    # Per-address rendering: prefer each side's `primary_kind` (account's
+    # broadcast history, TASK-13.13) over the tx's own `kind`, so a
+    # cross-broadcast like "Alice (eth) → Bob (tron)" renders as
+    # `0xAlice → TBob` instead of both sides matching tx.kind.
+    kind =
+      case tx["kind"] do
+        v when is_binary(v) -> v
+        _ -> nil
+      end
+
+    from_kind = get_in(tx, ["from", "primary_kind"]) || kind
+    to_kind = get_in(tx, ["to", "primary_kind"]) || kind
+    from_display = FrontendEx.Tron.Address.display_for_kind(from_hash, from_kind)
+    to_display = if to_hash, do: FrontendEx.Tron.Address.display_for_kind(to_hash, to_kind)
+
     %{
       hash: hash,
-      from: %{hash: from_hash, display: Format.truncate_addr(from_hash)},
-      to: if(to_hash, do: %{hash: to_hash, display: Format.truncate_addr(to_hash)}, else: nil),
+      from: %{hash: from_hash, display: Format.truncate_addr(from_display)},
+      to: if(to_hash, do: %{hash: to_hash, display: Format.truncate_addr(to_display)}, else: nil),
       value: value,
       fee: fee,
       status: status,
       timestamp: if(ts_raw, do: Format.format_relative_time(ts_raw), else: nil),
       timestamp_raw: ts_raw,
+      kind: kind,
       tx_type_label: if(is_contract_call, do: "Contract call", else: "Coin transfer"),
       tx_type_class: if(is_contract_call, do: "badge-blue", else: "badge-orange")
     }

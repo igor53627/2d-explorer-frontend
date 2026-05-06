@@ -119,7 +119,7 @@
                     </div>
                     <div class="tx-addrs">
                         From <a href="/address/<%= tx.from.hash %>"><%= tx.from.display %></a>
-                        To <%= if tx.to do %><a href="/address/<%= tx.to.hash %>"><%= tx.to.display %></a><% else %><span style="color: #6c757d;">Contract Create</span><% end %>
+                        To <%= if tx.to do %><a href="/address/<%= tx.to.hash %>"><%= tx.to.display %></a><% else %><span class="text-muted"><%= if tx.status == "error", do: "failed tx", else: "—" %></span><% end %>
                     </div>
                 </div>
                 <div class="tx-meta">

@@ -193,8 +193,8 @@
                 <td><span class="text-muted"><%= tx.age %></span></td>
                 <td>
                     <span class="hash-inline">
-                        <a href="/address/<%= tx.from_hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from_hash %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from_hash) %></a>
-                        <button class="copy-btn" data-copy="<%= tx.from_hash %>" title="Copy from address">
+                        <a href="/address/<%= tx.from_hash %>" class="hash hash--truncate hash--sm" title="<%= tx.from_display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.from_display) %></a>
+                        <button class="copy-btn" data-copy="<%= tx.from_display %>" title="Copy from address">
                             <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                         </button>
                     </span>
@@ -210,13 +210,17 @@
                     <%= case tx.to_hash do %>
                     <% to when is_binary(to) -> %>
                         <span class="hash-inline">
-                            <a href="/address/<%= to %>" class="hash hash--truncate hash--sm" title="<%= to %>"><%= FrontendEx.Format.truncate_addr_classic(to) %></a>
-                            <button class="copy-btn" data-copy="<%= to %>" title="Copy to address">
+                            <a href="/address/<%= to %>" class="hash hash--truncate hash--sm" title="<%= tx.to_display %>"><%= FrontendEx.Format.truncate_addr_classic(tx.to_display) %></a>
+                            <button class="copy-btn" data-copy="<%= tx.to_display %>" title="Copy to address">
                                 <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                             </button>
                         </span>
                     <% _ -> %>
-                        <span class="text-muted">Contract Creation</span>
+                        <%= if tx.status == "error" do %>
+                            <span class="text-muted">failed tx</span>
+                        <% else %>
+                            <span class="text-muted">—</span>
+                        <% end %>
                     <% end %>
                 </td>
                 <td><%= tx.amount %></td>

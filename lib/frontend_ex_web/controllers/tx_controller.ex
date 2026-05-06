@@ -236,15 +236,24 @@ defmodule FrontendExWeb.TxController do
               _ -> {"Pending", "#eab308", "rgba(234, 179, 8, 0.2)"}
             end
 
-          from_short = Format.truncate_hash(get_in(tx, [:from, :hash]) || "")
+          # Use the per-address `display` form populated by parse_tx
+          # (EIP-55 0x for eth_rlp, Tron Base58 for tron_pb) so the OG
+          # SVG matches what the /tx/:hash body shows. Social platforms
+          # cache OG previews aggressively — divergence between the
+          # cached SVG and the live page is hard to live down.
+          from_short = Format.truncate_hash(get_in(tx, [:from, :display]) || "")
 
           to_short =
             case tx.to do
-              %{hash: to_hash} when is_binary(to_hash) and to_hash != "" ->
-                Format.truncate_hash(to_hash)
+              %{display: to_display} when is_binary(to_display) and to_display != "" ->
+                Format.truncate_hash(to_display)
 
               _ ->
-                "Contract Creation"
+                # On 2d, tx.to=null mostly happens for failed broadcasts (no
+                # EVM, no contract-creation pattern). Gate the "failed tx"
+                # label on tx.status so a future status=ok+to=null case
+                # doesn't get mislabeled.
+                if tx.status == "error", do: "failed tx", else: "—"
             end
 
           fee =
@@ -342,6 +351,18 @@ defmodule FrontendExWeb.TxController do
       end
     end
   end
+
+  defp address_display_for(eth_hex, "tron_pb") when is_binary(eth_hex) do
+    FrontendEx.Tron.Address.from_eth_hex(eth_hex) || Format.checksum_eth_address(eth_hex)
+  end
+
+  defp address_display_for(eth_hex, _kind) when is_binary(eth_hex),
+    do: Format.checksum_eth_address(eth_hex)
+
+  # Defensive fallback: if upstream ever returns from/to as nil or any
+  # non-binary, render an empty string instead of raising
+  # FunctionClauseError and 500-ing the tx-detail page.
+  defp address_display_for(_eth_hex, _kind), do: ""
 
   defp send_tx_not_found(conn) do
     conn
@@ -719,11 +740,22 @@ defmodule FrontendExWeb.TxController do
         _ -> nil
       end
 
+    # Per-address From/To form (TASK-13.13). Each side's display is keyed
+    # off its own primary_kind (account broadcast history); fall back to
+    # this tx's kind when the address has no history. tron_pb → T-Base58,
+    # anything else → EIP-55 checksummed 0x.
+    kind = normalize_opt_string(tx_json["kind"])
+    from_kind = get_in(tx_json, ["from", "primary_kind"]) || kind
+    to_kind = get_in(tx_json, ["to", "primary_kind"]) || kind
+    from_display = address_display_for(from_hash, from_kind)
+    to_display = if to_hash, do: address_display_for(to_hash, to_kind)
+
     %{
       hash: hash,
       block_number: parse_u64(tx_json["block_number"]),
-      from: %{hash: from_hash},
-      to: if(to_hash, do: %{hash: to_hash}, else: nil),
+      kind: kind,
+      from: %{hash: from_hash, display: from_display},
+      to: if(to_hash, do: %{hash: to_hash, display: to_display}, else: nil),
       value: to_string(tx_json["value"] || "0"),
       # Numeric-string fields: upstream Blockscout returns these as JSON
       # strings, 2d's API returns them as JSON integers. normalize_int_or_string

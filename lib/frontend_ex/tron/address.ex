@@ -32,6 +32,28 @@ defmodule FrontendEx.Tron.Address do
     end
   end
 
+  @doc """
+  Pick the display form for an Ethereum-form `0x…` address based on the
+  transaction's broadcast surface (`tx.kind` from /api/v2/transactions/*):
+
+    - `"tron_pb"` → Base58Check (T…) — tx was signed via TronLink/TronWeb
+    - anything else (`"eth_rlp"`, nil, …) → hex 0x… as-is
+
+  When derivation fails (malformed input), falls back to the hex form so
+  the cell always renders something rather than blanking out.
+
+  The link target on /address/<form>/… should still use the canonical 0x
+  form — both surfaces resolve to the same internal account, but the
+  router only knows /address/0x….
+  """
+  @spec display_for_kind(binary(), term()) :: binary()
+  def display_for_kind(eth_hex, "tron_pb") when is_binary(eth_hex) do
+    from_eth_hex(eth_hex) || eth_hex
+  end
+
+  def display_for_kind(eth_hex, _kind) when is_binary(eth_hex), do: eth_hex
+  def display_for_kind(_eth_hex, _kind), do: ""
+
   @doc "Base58Check encode a 20-byte account as Tron mainnet address (T…)."
   @spec encode_bin(<<_::160>>) :: binary()
   def encode_bin(<<_::binary-20>> = address) do

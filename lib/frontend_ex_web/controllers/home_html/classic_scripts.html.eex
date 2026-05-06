@@ -113,11 +113,22 @@ function createBlockRow(block) {
 
 function createTxRow(tx) {
     const hash = tx.hash;
-    const from = tx.from?.hash || '';
-    const to = tx.to?.hash;
+    // 2d TASK-13.15: from/to ship `display` (wallet-native — T-Base58 for
+    // tron_pb, lowercase 0x otherwise) alongside `hash` (canonical 0x for
+    // routing). Use display for the rendered text, hash for the link
+    // target, so realtime-injected rows match SSR per-address rendering.
+    const fromHash = tx.from?.hash || '';
+    const fromDisplay = tx.from?.display || fromHash;
+    const toHash = tx.to?.hash;
+    const toDisplay = tx.to?.display || toHash;
     const value = formatNativeAmount(tx.value || '0');
     const timestamp = tx.timestamp;
-    
+    // Mirror server-side status-gated label so realtime-injected rows
+    // stay consistent with SSR.
+    const toFallback = tx.status === 'error'
+        ? '<span class="text-muted">failed tx</span>'
+        : '<span class="text-muted">—</span>';
+
     const div = document.createElement('div');
     div.className = 'tx-item';
     div.style.animation = 'fadeIn 0.3s ease-out';
@@ -129,8 +140,8 @@ function createTxRow(tx) {
                 <span class="tx-time"${timestamp ? ` data-timestamp="${timestamp}"` : ''}>${timestamp ? formatRelativeTime(timestamp) : ''}</span>
             </div>
             <div class="tx-addrs">
-                From <a href="/address/${from}">${truncateAddr(from)}</a>
-                To ${to ? `<a href="/address/${to}">${truncateAddr(to)}</a>` : '<span style="color: #6c757d;">Contract Create</span>'}
+                From <a href="/address/${fromHash}">${truncateAddr(fromDisplay)}</a>
+                To ${toHash ? `<a href="/address/${toHash}">${truncateAddr(toDisplay)}</a>` : toFallback}
             </div>
         </div>
         <div class="tx-meta">
