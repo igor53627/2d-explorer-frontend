@@ -33,14 +33,22 @@
                     <a href="/address/<%= addr %>" class="hash hash--truncate" title="<%= addr %>"><%= FrontendEx.Format.truncate_addr_classic(addr) %></a>
                 </td>
                 <td class="mono">
-                    <%= case Map.get(sc, "balance_diff") do %>
-                    <% "-" <> rest -> %>
-                        <span class="change-negative">-<%= FrontendEx.Format.format_native_amount(rest) %> <%= @native_coin.symbol %></span>
-                    <% "+" <> rest -> %>
-                        <span class="change-positive">+<%= FrontendEx.Format.format_native_amount(rest) %> <%= @native_coin.symbol %></span>
-                    <% v when is_binary(v) and v != "0" -> %>
-                        <span class="change-positive">+<%= FrontendEx.Format.format_native_amount(v) %> <%= @native_coin.symbol %></span>
-                    <% "0" -> %>
+                    <%!-- Parse the diff numerically before classifying so
+                        leading-zero strings ("000", "+0") don't get tagged
+                        as non-zero. Branch on the parsed integer's sign. --%>
+                    <%= case (case Map.get(sc, "balance_diff") do
+                                v when is_binary(v) ->
+                                  case Integer.parse(String.trim(v)) do
+                                    {n, ""} -> n
+                                    _ -> nil
+                                  end
+                                _ -> nil
+                              end) do %>
+                    <% n when is_integer(n) and n < 0 -> %>
+                        <span class="change-negative">-<%= FrontendEx.Format.format_native_amount(Integer.to_string(-n)) %> <%= @native_coin.symbol %></span>
+                    <% n when is_integer(n) and n > 0 -> %>
+                        <span class="change-positive">+<%= FrontendEx.Format.format_native_amount(Integer.to_string(n)) %> <%= @native_coin.symbol %></span>
+                    <% 0 -> %>
                         <span class="text-muted">0 <%= @native_coin.symbol %></span>
                     <% _ -> %>
                         <span class="text-muted">-</span>
