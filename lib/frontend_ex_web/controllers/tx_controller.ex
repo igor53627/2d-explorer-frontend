@@ -236,12 +236,17 @@ defmodule FrontendExWeb.TxController do
               _ -> {"Pending", "#eab308", "rgba(234, 179, 8, 0.2)"}
             end
 
-          from_short = Format.truncate_hash(get_in(tx, [:from, :hash]) || "")
+          # Use the per-address `display` form populated by parse_tx
+          # (EIP-55 0x for eth_rlp, Tron Base58 for tron_pb) so the OG
+          # SVG matches what the /tx/:hash body shows. Social platforms
+          # cache OG previews aggressively — divergence between the
+          # cached SVG and the live page is hard to live down.
+          from_short = Format.truncate_hash(get_in(tx, [:from, :display]) || "")
 
           to_short =
             case tx.to do
-              %{hash: to_hash} when is_binary(to_hash) and to_hash != "" ->
-                Format.truncate_hash(to_hash)
+              %{display: to_display} when is_binary(to_display) and to_display != "" ->
+                Format.truncate_hash(to_display)
 
               _ ->
                 # On 2d, tx.to=null mostly happens for failed broadcasts (no

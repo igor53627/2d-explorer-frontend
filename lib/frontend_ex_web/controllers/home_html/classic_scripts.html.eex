@@ -117,7 +117,13 @@ function createTxRow(tx) {
     const to = tx.to?.hash;
     const value = formatNativeAmount(tx.value || '0');
     const timestamp = tx.timestamp;
-    
+    // Mirror server-side status-gated label so realtime-injected rows
+    // stay consistent with SSR. Tron-broadcast txs use the same WS
+    // payload shape; status comes through verbatim.
+    const toFallback = tx.status === 'error'
+        ? '<span class="text-muted">failed tx</span>'
+        : '<span class="text-muted">—</span>';
+
     const div = document.createElement('div');
     div.className = 'tx-item';
     div.style.animation = 'fadeIn 0.3s ease-out';
@@ -130,7 +136,7 @@ function createTxRow(tx) {
             </div>
             <div class="tx-addrs">
                 From <a href="/address/${from}">${truncateAddr(from)}</a>
-                To ${to ? `<a href="/address/${to}">${truncateAddr(to)}</a>` : '<span style="color: #6c757d;">Contract Create</span>'}
+                To ${to ? `<a href="/address/${to}">${truncateAddr(to)}</a>` : toFallback}
             </div>
         </div>
         <div class="tx-meta">

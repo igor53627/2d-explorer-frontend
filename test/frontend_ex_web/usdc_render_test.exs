@@ -655,6 +655,55 @@ defmodule FrontendExWeb.UsdcRenderTest do
     end
   end
 
+  describe "share-card + OG image cross-form (ultrareview merged_bug_004)" do
+    # Pre-fix tx_card.html.eex and og_image SVG used .hash (canonical
+    # 0x) for From/To truncation, bypassing the per-address `display`
+    # field. Cross-broadcast tx with from.primary=eth_rlp,
+    # to.primary=tron_pb must surface 0x-form for From and Tron-form
+    # for To on both surfaces.
+
+    test "GET /tx/:hash/card renders cross-form using per-address display",
+         %{conn: conn} do
+      body =
+        conn
+        |> get("/tx/0xc0055000000000000000000000000000000000000000000000000000000000a4/card")
+        |> html_response(200)
+
+      expected_to_tron =
+        FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000005")
+
+      truncated_to = FrontendEx.Format.truncate_hash(expected_to_tron)
+
+      assert body =~ truncated_to,
+             "share-card To column must show truncated Tron-form when to.primary=tron_pb"
+
+      # From: truncated EIP-55 0x form. Format.checksum_eth_address
+      # produces a mixed-case hex; truncate_hash takes the first 6/last
+      # 4 bytes of that string. Just assert any 0x-prefixed truncation
+      # of the From address is present.
+      assert body =~ "0x0000",
+             "share-card From column must show 0x form (from.primary=eth_rlp)"
+    end
+
+    test "GET /tx/:hash/og-image.svg renders cross-form display",
+         %{conn: conn} do
+      conn =
+        conn
+        |> get("/tx/0xc0055000000000000000000000000000000000000000000000000000000000a4/og-image.svg")
+
+      body = conn.resp_body
+      assert conn.status == 200
+
+      expected_to_tron =
+        FrontendEx.Tron.Address.from_eth_hex("0x0000000000000000000000000000000000000005")
+
+      truncated_to = FrontendEx.Format.truncate_hash(expected_to_tron)
+
+      assert body =~ truncated_to,
+             "OG SVG To text must render truncated Tron-form when to.primary=tron_pb"
+    end
+  end
+
   describe "GET /tx/:hash — per-address primary_kind cross-form (TASK-13.13)" do
     # The /address regression test pins the table-row cells. tx-detail
     # uses a different code path (tx_controller.parse_tx + EIP-55
@@ -721,6 +770,29 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       assert count_occurrences(body, "failed tx") == 1,
              "/address row must render 'failed tx' on exactly one row"
+    end
+
+    test "GET / renders 'failed tx' on the home tile (ultrareview bug_006)",
+         %{conn: conn} do
+      # Pre-fix the home tile hardcoded 'Contract Create' for tx.to=nil,
+      # bypassing the status-gated label. @transactions_list contains
+      # one failed item, so the tile must surface it via the same label
+      # as every other listing surface.
+      #
+      # The bare substring "failed tx" also appears once inside the inline
+      # `<script>` block (JS realtime fallback string), so we anchor on
+      # the SSR-only markup pattern `To <span class="text-muted">failed
+      # tx<` which the JS literal doesn't reproduce.
+      body = conn |> get("/") |> html_response(200)
+
+      ssr_pattern = ~r/To\s+<span class="text-muted">failed tx</
+
+      assert length(Regex.scan(ssr_pattern, body)) == 1,
+             "home tile must render 'failed tx' on exactly one row " <>
+               "(was hardcoded 'Contract Create' before ultrareview fix)"
+
+      refute body =~ "Contract Create",
+             "home tile must not render the legacy 'Contract Create' label"
     end
   end
 

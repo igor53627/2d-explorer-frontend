@@ -282,9 +282,9 @@
                     <%= if is_binary(get_in(@tx, [:from, :name])) do %>
                     <div class="address-name"><%= @tx.from.name %></div>
                     <% end %>
-                    <div class="address-hash"><%= FrontendEx.Format.truncate_hash(@tx.from.hash) %></div>
+                    <div class="address-hash"><%= FrontendEx.Format.truncate_hash(@tx.from.display) %></div>
                 </div>
-                
+
                 <div class="arrow-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="5" y1="12" x2="19" y2="12"/>
@@ -299,7 +299,7 @@
                         <%= if is_binary(get_in(@tx, [:to, :name])) do %>
                         <div class="address-name"><%= @tx.to.name %></div>
                         <% end %>
-                        <div class="address-hash"><%= FrontendEx.Format.truncate_hash(@tx.to.hash) %></div>
+                        <div class="address-hash"><%= FrontendEx.Format.truncate_hash(@tx.to.display) %></div>
                     <% else %>
                         <div class="address-name"><%= if @tx.status == "error", do: "failed tx", else: "—" %></div>
                     <% end %>
