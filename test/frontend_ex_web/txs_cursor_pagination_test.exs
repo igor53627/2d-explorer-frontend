@@ -140,6 +140,68 @@ defmodule FrontendExWeb.TxsCursorPaginationTest do
              "href=\"/txs?cursor=block_number%3D10217967%26index%3D1%26items_count%3D50&amp;ps=50\""
   end
 
+  test "/txs ignores items_count bypass via top-level param (server-controlled)" do
+    # Adapter only matches `items_count=50` for the first page; an
+    # un-stripped `items_count=10000` would propagate to upstream and
+    # miss every clause → 404. Receiving 200 + the first-page hash
+    # proves the controller normalized the value back to ps default 50.
+    restore =
+      put_env(%{
+        ff_skin: "classic",
+        blockscout_url: "https://2d.example.com",
+        blockscout_api_url: "http://127.0.0.1:4901",
+        blockscout_ws_url: nil,
+        clock_utc_now: @frozen_now,
+        blockscout_request_adapter: Adapter
+      })
+
+    on_exit(restore)
+    on_exit(fn -> _ = FrontendEx.Cache.clear(FrontendEx.ApiCache) end)
+
+    _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
+
+    body = html_response(get(build_conn(), "/txs?items_count=10000"), 200)
+
+    # First-page tx hash from @txs_page_1
+    assert body =~ String.duplicate("1", 64)
+  end
+
+  test "/txs strips items_count from cursor segment (cursor bypass blocked)" do
+    # Same defense: a `?cursor=items_count=10000&...` injection would
+    # let the cursor's items_count survive into the upstream URL pre-fix.
+    # After the fix, items_count is server-controlled regardless of how
+    # it's smuggled in. Other cursor fields (block_number, index) survive
+    # untouched, so the second-page adapter clause still matches.
+    restore =
+      put_env(%{
+        ff_skin: "classic",
+        blockscout_url: "https://2d.example.com",
+        blockscout_api_url: "http://127.0.0.1:4901",
+        blockscout_ws_url: nil,
+        clock_utc_now: @frozen_now,
+        blockscout_request_adapter: Adapter
+      })
+
+    on_exit(restore)
+    on_exit(fn -> _ = FrontendEx.Cache.clear(FrontendEx.ApiCache) end)
+
+    _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
+
+    body =
+      html_response(
+        get(
+          build_conn(),
+          "/txs?cursor=items_count=10000&block_number=10217968&index=82"
+        ),
+        200
+      )
+
+    # Second-page tx hash from @txs_page_2 — proves the cursor's
+    # block_number+index reached upstream while the malicious
+    # items_count=10000 was stripped.
+    assert body =~ String.duplicate("a", 64)
+  end
+
   defp put_env(kvs) when is_map(kvs) do
     prev =
       for {k, _v} <- kvs, into: %{} do
