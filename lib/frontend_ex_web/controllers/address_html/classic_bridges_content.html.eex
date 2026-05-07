@@ -117,9 +117,9 @@
                         <th>Locked on Ethereum</th>
                         <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
                         <th>Minted on 2D</th>
+                        <th>Age</th>
                         <th>Recipient</th>
                         <th>Amount</th>
-                        <th>Age</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,6 +150,9 @@
                             <% end %>
                         </td>
                         <td>
+                            <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
+                        </td>
+                        <td>
                             <%= case b.recipient_hash do %>
                             <% r when is_binary(r) -> %>
                                 <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
@@ -158,9 +161,6 @@
                             <% end %>
                         </td>
                         <td><%= b.amount_formatted %></td>
-                        <td>
-                            <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
-                        </td>
                     </tr>
                     <% end %>
                 </tbody>
