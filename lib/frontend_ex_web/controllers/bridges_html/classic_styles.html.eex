@@ -63,15 +63,22 @@
     margin-top: 14px !important;
 }
 
-/* One-line orientation paragraph above the bridges table. Sits just
-   below the page-header card and explains what each row means without
-   forcing the user to infer it from column labels alone. */
+/* Orientation block above the bridges table. Two paragraphs split at
+   the natural semantic boundary (what /bridges represents vs. what the
+   columns link to) so the lines never wrap mid-clause on widescreen.
+   No max-width — let lines stretch to the container so each <p> sits
+   on a single line on standard viewports. */
 .bridges-subtitle {
+    margin: 4px 0 14px;
+}
+.bridges-subtitle p {
     font-size: 13px;
     line-height: 1.55;
     color: var(--text-secondary);
-    margin: 4px 0 14px;
-    max-width: 880px;
+    margin: 0 0 4px;
+}
+.bridges-subtitle p:last-child {
+    margin-bottom: 0;
 }
 .bridges-subtitle code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

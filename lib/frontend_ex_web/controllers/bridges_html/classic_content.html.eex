@@ -9,9 +9,10 @@
     </div>
 </div>
 
-<p class="bridges-subtitle">
-    Each row is a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The source-chain reference links out to Etherscan; the 2D mint links to the on-chain <code>bridge_lock</code> extrinsic.
-</p>
+<div class="bridges-subtitle">
+    <p>Each row is a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC.</p>
+    <p>The source-chain reference links out to Etherscan; the 2D mint links to the on-chain <code>bridge_lock</code> extrinsic.</p>
+</div>
 
 <div class="card">
     <div class="card-header txs-card-header">
