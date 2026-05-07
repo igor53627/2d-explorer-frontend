@@ -105,11 +105,11 @@
         </div>
     <% else %>
         <%!-- Table body mirrors bridges_html/classic_content.html.eex —
-            6-column layout with a direction arrow between the source ETH
-            tx and the on-chain 2D bridge_lock. Event ID / HTLC hash live
-            on the row as `data-event-id` / `data-htlc-hash` attributes
-            (operator-only fields; surface as visible cells when TASK-47
-            detail page lands). --%>
+            6-column layout: Locked on Ethereum → Minted on 2D | Age |
+            Recipient | Amount. Event ID / HTLC hash live on the row as
+            `data-event-id` / `data-htlc-hash` attributes (operator-only
+            fields; surface as visible cells when TASK-47 detail page
+            lands). --%>
         <div class="table-responsive">
             <table id="bridges-table" class="txs-table">
                 <thead>
@@ -219,5 +219,5 @@
         <path d="M10 22h4"/>
         <path d="M12 2a7 7 0 0 0-4 12c.5.5 1 1.5 1 2v1h6v-1c0-.5.5-1.5 1-2a7 7 0 0 0-4-12z"/>
     </svg>
-    <span>Bridge mints recorded for this address — USDC transfers locked on Ethereum and minted into 2D via the bridge HTLC. The Source ETH Tx links to Etherscan; the 2D Tx links to the on-chain `bridge_lock` extrinsic.</span>
+    <span>Bridge mints recorded for this address — USDC transfers locked on Ethereum and minted into 2D via the bridge HTLC. The "Locked on Ethereum" cell links to Etherscan; the "Minted on 2D" cell links to the on-chain <code>bridge_lock</code> extrinsic.</span>
 </p>

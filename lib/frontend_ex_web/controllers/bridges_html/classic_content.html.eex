@@ -65,7 +65,7 @@
             </div>
         </div>
     <% else %>
-        <%!-- 6-column layout: Source ETH → 2D Tx | Recipient | Amount | Age.
+        <%!-- 6-column layout: Locked on Ethereum → Minted on 2D | Age | Recipient | Amount.
             Event ID and HTLC hash are operator-only fields (returned by
             the API, embedded as `data-event-id` / `data-htlc-hash` on
             the row for power-user inspection). They come back as visible
@@ -185,5 +185,5 @@
         <path d="M10 22h4"/>
         <path d="M12 2a7 7 0 0 0-4 12c.5.5 1 1.5 1 2v1h6v-1c0-.5.5-1.5 1-2a7 7 0 0 0-4-12z"/>
     </svg>
-    <span>A bridge mint records a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The Source ETH Tx links to Etherscan; the 2D Tx links to the on-chain `bridge_lock` extrinsic. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.</span>
+    <span>A bridge mint records a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The "Locked on Ethereum" cell links to Etherscan; the "Minted on 2D" cell links to the on-chain <code>bridge_lock</code> extrinsic. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.</span>
 </p>

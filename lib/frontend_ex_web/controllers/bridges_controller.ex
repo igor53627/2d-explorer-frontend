@@ -298,11 +298,15 @@ defmodule FrontendExWeb.BridgesController do
         _ -> ""
       end
 
+    # `eth_event_id_short` and `htlc_hash_short` were dropped along with
+    # the visible Event/HTLC cells in PR #6. The full unshortened forms
+    # land in row `data-event-id` / `data-htlc-hash` attributes for
+    # operator inspection. The truncated variants will be re-added on
+    # demand when TASK-47 (per-event detail page) renders them as
+    # visible header cells.
     %{
       eth_event_id: eth_event_id,
-      eth_event_id_short: Format.truncate_hash(eth_event_id),
       htlc_hash: htlc_hash,
-      htlc_hash_short: if(htlc_hash, do: Format.truncate_hash(htlc_hash), else: nil),
       # `Format.format_native_amount/1` always emits 4 decimal places
       # (e.g. "1.0000"). On a /bridges row that's most of the visual
       # weight; trim trailing zeros so round amounts read as `1 USDC`
