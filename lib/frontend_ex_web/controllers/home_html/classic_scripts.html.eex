@@ -99,7 +99,7 @@ function createBlockRow(block) {
             <div class="block-time"${timestamp ? ` data-timestamp="${timestamp}"` : ''}>${timestamp ? formatRelativeTime(timestamp) : '-'}</div>
         </div>
         <div class="block-meta">
-            <%= if FrontendExWeb.ControllerHelpers.home_block_meta_full?() do %>
+            <%= if @home_block_meta_full do %>
             <div class="block-miner">
                 Proposer ${miner ? `<a href="/address/${miner}">${truncateAddr(miner)}</a>` : '-'}
             </div>
@@ -107,7 +107,7 @@ function createBlockRow(block) {
             <div class="block-txns">
                 <a href="/block/${height}/txs">${txCount} txns</a>
             </div>
-            <%= if FrontendExWeb.ControllerHelpers.home_block_meta_full?() do %>
+            <%= if @home_block_meta_full do %>
             <div class="block-reward">Fees 0 <%= @native_coin.symbol %></div>
             <% end %>
         </div>

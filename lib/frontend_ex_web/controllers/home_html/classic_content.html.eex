@@ -86,7 +86,7 @@
                     <div class="block-time" data-timestamp="<%= block.timestamp_raw %>"><%= block.timestamp %></div>
                 </div>
                 <div class="block-meta">
-                    <%= if FrontendExWeb.ControllerHelpers.home_block_meta_full?() do %>
+                    <%= if @home_block_meta_full do %>
                     <div class="block-miner">
                         Proposer <%= if block.miner do %><a href="/address/<%= block.miner.hash %>"><%= block.miner.display %></a><% else %>-<% end %>
                     </div>
@@ -94,7 +94,7 @@
                     <div class="block-txns">
                         <a href="/block/<%= block.height %>/txs"><%= block.tx_count || 0 %> txns</a>
                     </div>
-                    <%= if FrontendExWeb.ControllerHelpers.home_block_meta_full?() do %>
+                    <%= if @home_block_meta_full do %>
                     <div class="block-reward">Fees 0 <%= @native_coin.symbol %></div>
                     <% end %>
                 </div>

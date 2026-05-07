@@ -203,8 +203,7 @@ config :frontend_ex,
   base_url: base_url
 
 metrics_enabled =
-  case System.get_env("FF_METRICS_ENABLED") do
-    nil -> true
+  case System.get_env("FF_METRICS_ENABLED") |> Kernel.||("") |> String.trim() do
     "" -> true
     "true" -> true
     "TRUE" -> true
@@ -248,10 +247,7 @@ config :frontend_ex, :metrics,
 # if the chain ever evolves into multi-proposer or fee-bearing modes, or
 # for upstream forks reusing this codebase.
 home_block_meta_full =
-  case System.get_env("FF_HOME_BLOCK_META_FULL") do
-    nil ->
-      false
-
+  case System.get_env("FF_HOME_BLOCK_META_FULL") |> Kernel.||("") |> String.trim() do
     "" ->
       false
 

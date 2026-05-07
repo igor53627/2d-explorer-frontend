@@ -34,13 +34,12 @@ priority: high
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-<!-- AC:BEGIN -->
-- [x] #1 #1 GET /address/:addr/bridges renders SSR (classic skin) with rows filtered by recipient
-- [x] #2 #2 Bridges tab in address-page nav appears only when bridge_mints_count > 0
-- [x] #3 #3 Tab header displays the count
-- [x] #4 #4 Cursor pagination via next_page_params
-- [x] #5 #5 Empty 200 from API (zero mints) renders empty state, not an error
-- [x] #6 #6 Golden HTML snapshot test driven by stubbed /api/v2/addresses/:addr/bridge-mints fixture
+- [x] #1 GET /address/:addr/bridges renders SSR (classic skin) with rows filtered by recipient
+- [x] #2 Bridges tab in address-page nav appears only when bridge_mints_count > 0
+- [x] #3 Tab header displays the count
+- [x] #4 Cursor pagination via next_page_params
+- [x] #5 Empty 200 from API (zero mints) renders empty state, not an error
+- [x] #6 Golden HTML snapshot test driven by stubbed /api/v2/addresses/:addr/bridge-mints fixture
 <!-- AC:END -->
 
 ## Implementation Plan
