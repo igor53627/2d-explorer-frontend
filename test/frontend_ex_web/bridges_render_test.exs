@@ -101,6 +101,9 @@ defmodule FrontendExWeb.BridgesRenderTest do
       else
         Application.delete_env(:frontend_ex, :clock_utc_now)
       end
+
+      _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
+      _ = FrontendEx.Cache.clear(FrontendEx.ApiSWRCache)
     end)
 
     :ok
@@ -275,6 +278,62 @@ defmodule FrontendExWeb.BridgesRenderTest do
       html = conn |> get("/bridges") |> html_response(200)
       refute html =~ "https://etherscan.io/tx/"
       assert html =~ "0xabcd...0000#7"
+    end
+  end
+
+  describe "GET /bridges malformed source_tx_hash on mainnet (defense-in-depth)" do
+    # `source_chain_explorer_url/2` validates the hash with a strict
+    # `^(0x)?[0-9a-fA-F]{64}$` regex even when chain_id == 1 — so a
+    # corrupted upstream payload (truncated hash, embedded scheme
+    # injection, etc.) cannot land in an `href=` attribute. Compact
+    # roborev #2237 flagged that this branch was implemented in PR #4
+    # but had no targeted regression test.
+    test "truncated hash with chain_id=1 falls back to plain text (no <a href)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "source_tx_hash", "0xdeadbeef")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+      refute html =~ "https://etherscan.io/tx/"
+    end
+
+    test "scheme-injection-shaped hash with chain_id=1 produces no <a href", %{conn: conn} do
+      # The regex guard rejects non-hex shapes so the controller returns
+      # nil for `source_chain_explorer_url`, and the template's
+      # `case ... <% _ -> %>` arm renders a plain `<span>` instead of an
+      # anchor. The malformed `"javascript:alert(1)"` does still surface
+      # inside the cell's `title=` tooltip (it's the raw `source_tx_hash`
+      # value), but a tooltip cannot execute a URI scheme — only `href=`
+      # with `javascript:` would. So the right assertion is "no anchor
+      # tag was emitted for this row", not "the bytes never appear in
+      # the HTML".
+      mint = Map.put(@bridge_default, "source_tx_hash", "javascript:alert(1)")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+      refute html =~ "https://etherscan.io/tx/"
+      # Defense in depth: the dangerous shape is `href="javascript:` —
+      # any href whose value starts with the javascript scheme. Title
+      # attributes (`title="javascript:..."`) are inert.
+      refute html =~ ~s(href="javascript:)
+    end
+  end
+
+  describe "GET /bridges source_log_index nil tooltip" do
+    # Display surface and tooltip both guard against `nil` log index now
+    # (ultrareview bug_001 fix in 9d3ba47). Pin the tooltip behavior so a
+    # future template refactor doesn't regress to the trailing-label form
+    # `title="0xabcd... log index "`.
+    test "title attribute omits 'log index' label when source_log_index is nil", %{conn: conn} do
+      mint = Map.put(@bridge_default, "source_log_index", nil)
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+      # Display cell shows just the truncated hash, no `#N` suffix.
+      assert html =~ "0xabcd...0000"
+      refute html =~ "0xabcd...0000#"
+      # Tooltip on the source-tx span must not contain the dangling
+      # "log index " label when the value is nil.
+      refute html =~ ~r/title="[^"]*log index ?"/
     end
   end
 end

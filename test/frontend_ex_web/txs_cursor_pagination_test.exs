@@ -187,11 +187,19 @@ defmodule FrontendExWeb.TxsCursorPaginationTest do
 
     _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
 
+    # `&` between cursor segments must be %26-escaped — without escaping
+    # Plug parses `block_number` and `index` as separate top-level params
+    # rather than as parts of the cursor value, which would mean the
+    # test passes for the wrong reason (TxsController.merge_cursor_params
+    # also pulls block_number+index from top-level params, so the
+    # upstream URL would still be correct, but the test name claims to
+    # exercise cursor-segment stripping specifically). Compact roborev
+    # #2237 flagged this drift.
     body =
       html_response(
         get(
           build_conn(),
-          "/txs?cursor=items_count=10000&block_number=10217968&index=82"
+          "/txs?cursor=items_count=10000%26block_number=10217968%26index=82"
         ),
         200
       )

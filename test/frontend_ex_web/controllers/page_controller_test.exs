@@ -90,6 +90,14 @@ defmodule FrontendExWeb.HomeControllerTest do
         Application.delete_env(:frontend_ex, :home_test_stats_payload)
         Application.delete_env(:frontend_ex, :home_test_blocks_payload)
         Application.delete_env(:frontend_ex, :home_test_txs_payload)
+
+        # Clear caches AFTER restoring the prior adapter — without this,
+        # any /api/v2/* response cached during this test under the inline
+        # Adapter would survive into the next async test, where the
+        # restored (real or default) adapter would never be hit. Order-
+        # dependent flakes are exactly what compact roborev #2237 flagged.
+        _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
+        _ = FrontendEx.Cache.clear(FrontendEx.ApiSWRCache)
       end)
 
       :ok
