@@ -71,7 +71,9 @@ defmodule FrontendExWeb.TxController do
             else: nil
 
         gas_price_native =
-          if display_tx.gas_price, do: Format.format_native_amount(display_tx.gas_price), else: nil
+          if display_tx.gas_price,
+            do: Format.format_native_amount(display_tx.gas_price),
+            else: nil
 
         base_fee_native =
           if display_tx.base_fee_per_gas,
@@ -110,7 +112,7 @@ defmodule FrontendExWeb.TxController do
             logs_count: logs_count,
             coin_price: coin_price,
             gas_price: gas_price,
-          native_coin: native_coin
+            native_coin: native_coin
           })
 
         head_meta = TxHTML.classic_head_meta(base_assigns)
@@ -223,8 +225,28 @@ defmodule FrontendExWeb.TxController do
     if not valid_tx_hash?(hash) do
       send_tx_not_found(conn)
     else
-      case Client.get_json_cached("/api/v2/transactions/#{hash}", :public, @immutable_ttl_ms) do
-        {:ok, tx_json} when is_map(tx_json) ->
+      stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
+
+      tx_task =
+        Task.async(fn ->
+          Client.get_json_cached(
+            "/api/v2/transactions/#{hash}",
+            :public,
+            @immutable_ttl_ms
+          )
+        end)
+
+      [stats_json, tx_json] = await_ok_many([stats_task, tx_task], @task_timeout_ms)
+
+      cond do
+        is_nil(tx_json) ->
+          send_tx_not_found(conn)
+
+        not is_map(tx_json) ->
+          send_tx_not_found(conn)
+
+        true ->
+          native_coin = derive_native_coin(stats_json)
           tx = parse_tx(tx_json)
 
           short_hash = tx_short_hash_svg(hash)
@@ -307,7 +329,7 @@ defmodule FrontendExWeb.TxController do
               <text x="600" y="180" font-family="Inter, system-ui, sans-serif" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="3">TRANSACTION</text>
               
               <!-- Value -->
-              <text x="600" y="260" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="url(#value-gradient)" text-anchor="middle">#{Format.format_native_amount(tx.value)} #{default_native_coin().symbol}</text>
+              <text x="600" y="260" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="url(#value-gradient)" text-anchor="middle">#{Format.format_native_amount(tx.value)} #{native_coin.symbol}</text>
               
               <!-- From/To Flow -->
               <rect x="80" y="320" width="440" height="120" rx="16" fill="rgba(255,255,255,0.05)"/>
@@ -329,7 +351,7 @@ defmodule FrontendExWeb.TxController do
               
               <rect x="440" y="480" width="320" height="90" rx="12" fill="rgba(255,255,255,0.03)"/>
               <text x="600" y="515" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="1">FEE</text>
-              <text x="600" y="545" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">#{fee} #{default_native_coin().symbol}</text>
+              <text x="600" y="545" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle">#{fee} #{native_coin.symbol}</text>
               
               <rect x="780" y="480" width="340" height="90" rx="12" fill="rgba(255,255,255,0.03)"/>
               <text x="950" y="515" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="1">HASH</text>
@@ -342,12 +364,6 @@ defmodule FrontendExWeb.TxController do
           |> put_resp_content_type("image/svg+xml")
           |> put_resp_header("cache-control", "public, max-age=300")
           |> send_resp(200, svg)
-
-        {:error, :not_found} ->
-          send_tx_not_found(conn)
-
-        {:error, _} ->
-          send_tx_not_found(conn)
       end
     end
   end
@@ -396,7 +412,7 @@ defmodule FrontendExWeb.TxController do
         logs_count: logs_count,
         coin_price: coin_price,
         gas_price: gas_price,
-          native_coin: native_coin
+        native_coin: native_coin
       })
 
     styles = TxHTML.classic_logs_styles(base_assigns)
@@ -441,7 +457,7 @@ defmodule FrontendExWeb.TxController do
         logs_count: logs_count,
         coin_price: coin_price,
         gas_price: gas_price,
-          native_coin: native_coin
+        native_coin: native_coin
       })
 
     styles = TxHTML.classic_state_styles(base_assigns)
@@ -677,7 +693,6 @@ defmodule FrontendExWeb.TxController do
 
   defp parse_state_changes(%{"items" => items}) when is_list(items), do: items
   defp parse_state_changes(_), do: []
-
 
   defp await_ok_many(tasks, timeout_ms)
        when is_list(tasks) and is_integer(timeout_ms) and timeout_ms >= 0 do

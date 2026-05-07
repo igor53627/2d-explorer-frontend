@@ -1,0 +1,173 @@
+
+<div class="page-header">
+    <div class="page-header-title">
+        <h1 class="page-title">Bridges</h1>
+        <a class="btn btn-sm btn-outline" href="<%= @explorer_url %>/api/v2/bridges" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 7l-4 10"/></svg>
+            API
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header txs-card-header">
+        <div class="table-toolbar">
+            <div>
+                <div class="txs-info-title"><%= @page_label %></div>
+            </div>
+            <div class="toolbar-actions">
+                <nav aria-label="Bridge navigation">
+                    <ul class="pagination pagination-sm pagination-classic">
+                        <%= if @is_first_page do %>
+                            <li class="page-item disabled"><span class="page-link">First</span></li>
+                        <% else %>
+                            <li class="page-item"><a class="page-link" href="/bridges?ps=<%= @page_size %>">First</a></li>
+                        <% end %>
+                        <li class="page-item disabled">
+                            <span class="page-link page-link-icon" aria-label="Previous page">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                            </span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link text-nowrap pagination-label"><%= @page_label %></span>
+                        </li>
+                        <%= if @next_cursor do %>
+                            <li class="page-item">
+                                <a class="page-link page-link-icon" href="/bridges?cursor=<%= @next_cursor %>&amp;ps=<%= @page_size %>" aria-label="View older bridge mints">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                                </a>
+                            </li>
+                        <% else %>
+                            <li class="page-item disabled">
+                                <span class="page-link page-link-icon" aria-label="No older bridge mints">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                                </span>
+                            </li>
+                        <% end %>
+                        <li class="page-item disabled"><span class="page-link">Last</span></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <%= if Enum.empty?(@bridges) do %>
+        <div class="card-body">
+            <div class="empty-state">No bridge mints found.</div>
+        </div>
+    <% else %>
+        <div class="table-responsive">
+            <table id="bridges-table" class="txs-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>HTLC</th>
+                        <th>Amount</th>
+                        <th>Recipient</th>
+                        <th>Source ETH Tx</th>
+                        <th>2D Tx</th>
+                        <th>Age</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <%= for b <- @bridges do %>
+                    <tr>
+                        <td>
+                            <span class="hash" title="<%= b.eth_event_id %>"><%= b.eth_event_id_short %></span>
+                        </td>
+                        <td>
+                            <%= case b.htlc_hash do %>
+                            <% h when is_binary(h) -> %>
+                                <span class="hash" title="<%= h %>"><%= b.htlc_hash_short %></span>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td><%= b.amount_formatted %></td>
+                        <td>
+                            <%= case b.recipient_hash do %>
+                            <% r when is_binary(r) -> %>
+                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td>
+                            <%= case b.source_chain_explorer_url do %>
+                            <% url when is_binary(url) -> %>
+                                <a href="<%= url %>" target="_blank" rel="noopener" class="hash" title="<%= b.source_tx_hash %> log index <%= b.source_log_index %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></a>
+                            <% _ -> %>
+                                <span class="hash" title="<%= b.source_tx_hash %> log index <%= b.source_log_index %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
+                            <% end %>
+                        </td>
+                        <td>
+                            <%= case b.tx_hash_2d do %>
+                            <% h when is_binary(h) -> %>
+                                <a href="/tx/<%= h %>" class="hash" title="<%= h %>"><%= b.tx_hash_2d_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td>
+                            <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
+                        </td>
+                    </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
+    <% end %>
+
+    <div class="card-footer">
+        <form class="txs-records" action="/bridges" method="get">
+            <label for="page-size-select" class="text-secondary">Show:</label>
+            <select id="page-size-select" name="ps" class="txs-select" onchange="this.form.submit()">
+                <%= for opt <- @page_size_options do %>
+                    <option value="<%= opt.value %>" <%= if opt.selected, do: "selected" %>><%= opt.value %></option>
+                <% end %>
+            </select>
+            <span class="text-secondary">Records</span>
+        </form>
+
+        <nav aria-label="Bridge navigation">
+            <ul class="pagination pagination-sm pagination-classic">
+                <%= if @is_first_page do %>
+                    <li class="page-item disabled"><span class="page-link">First</span></li>
+                <% else %>
+                    <li class="page-item"><a class="page-link" href="/bridges?ps=<%= @page_size %>">First</a></li>
+                <% end %>
+                <li class="page-item disabled">
+                    <span class="page-link page-link-icon" aria-label="Previous page">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                    </span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link text-nowrap pagination-label"><%= @page_label %></span>
+                </li>
+                <%= if @next_cursor do %>
+                    <li class="page-item">
+                        <a class="page-link page-link-icon" href="/bridges?cursor=<%= @next_cursor %>&amp;ps=<%= @page_size %>" aria-label="View older bridge mints">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                        </a>
+                    </li>
+                <% else %>
+                    <li class="page-item disabled">
+                        <span class="page-link page-link-icon" aria-label="No older bridge mints">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                        </span>
+                    </li>
+                <% end %>
+                <li class="page-item disabled"><span class="page-link">Last</span></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<p class="txs-footnote">
+    <svg class="txs-footnote-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+        <path d="M12 2a7 7 0 0 0-4 12c.5.5 1 1.5 1 2v1h6v-1c0-.5.5-1.5 1-2a7 7 0 0 0-4-12z"/>
+    </svg>
+    <span>A bridge mint records a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The Source ETH Tx links to Etherscan; the 2D Tx links to the on-chain `bridge_lock` extrinsic. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.</span>
+</p>

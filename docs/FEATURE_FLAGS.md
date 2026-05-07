@@ -40,6 +40,20 @@ environment is silently ignored.
   - If unset, `frontend-ex` derives:
     - `wss://<BLOCKSCOUT_URL host>/socket/v2/websocket?vsn=2.0.0`
 
+## Home page tiles
+
+- `FF_HOME_BLOCK_META_FULL`
+  - When `true`, home block tiles render the `Proposer …` and `Fees 0 USDC`
+    rows. On 2d these are static by design (single validator, gasless USDC),
+    so they default to hidden to keep the at-a-glance home view focused on
+    fields that actually change block-to-block (height, age, txn count).
+  - Set to `true` if the chain ever moves to multi-proposer or fee-bearing
+    modes, or for upstream forks reusing this codebase against a non-2d
+    backend.
+  - Block detail page (`/block/:id`) is unaffected — it always shows full
+    metadata.
+  - Default: `false`.
+
 ## Misc
 
 - `BASE_URL`

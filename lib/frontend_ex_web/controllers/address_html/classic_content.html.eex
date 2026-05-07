@@ -80,6 +80,9 @@
     when contract verification lands. --%>
 <div class="tabs">
     <a href="/address/<%= @address.hash %>" class="tab active">Transactions</a>
+    <%= if @address.bridge_mints_count > 0 do %>
+    <a href="/address/<%= @address.hash %>/bridges" class="tab">Bridges (<%= @address.bridge_mints_count %>)</a>
+    <% end %>
     <%= if @address.is_contract do %>
     <a href="<%= @explorer_url %>/address/<%= @address.hash %>?tab=contract" class="tab">Contract</a>
     <% end %>

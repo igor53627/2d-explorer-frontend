@@ -126,14 +126,6 @@
   font-size:0.95em;
 }
 
-/* /blocks Age column — relative time on top, readable timestamp
-   below in a smaller muted line. */
-.block-timestamp-readable{
-  display:block;
-  font-size:11px;
-  margin-top:2px;
-}
-
 /* Shared page-header for listing pages (/txs, /blocks) — h1 left,
    page-level actions right (e.g. API button). No border-bottom: the
    card directly underneath provides the visual boundary. */

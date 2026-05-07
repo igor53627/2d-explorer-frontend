@@ -48,6 +48,7 @@
                     <a href="/" class="nav-link <%= assigns[:nav_home] || "" %>">Home</a>
                     <a href="/txs" class="nav-link <%= assigns[:nav_txs] || "" %>">Transactions</a>
                     <a href="/blocks" class="nav-link <%= assigns[:nav_blocks] || "" %>">Blocks</a>
+                    <a href="/bridges" class="nav-link <%= assigns[:nav_bridges] || "" %>">Bridges</a>
                     <a class="nav-link" href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">Docs</a>
                 </nav>
 

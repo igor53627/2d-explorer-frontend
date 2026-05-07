@@ -4,9 +4,11 @@ defmodule FrontendExWeb.AddressController do
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
   alias FrontendExWeb.AddressHTML
+  alias FrontendExWeb.BridgesController
 
   @txs_preview_limit 25
-  @token_holdings_preview_limit 10
+  @bridges_page_size_options [10, 25, 50, 100]
+  @bridges_default_page_size 50
 
   def show(conn, %{"address" => address} = params) when is_binary(address) do
     address = String.trim(address)
@@ -37,18 +39,12 @@ defmodule FrontendExWeb.AddressController do
         Client.get_json_cached(address_txs_path(address, cursor_query), :public)
       end)
 
-    tokens_task =
-      Task.async(fn ->
-        Client.get_json_cached("/api/v2/addresses/#{address}/tokens", :public)
-      end)
-
-    [stats_json, addr_json, txs_json, tokens_json] =
+    [stats_json, addr_json, txs_json] =
       await_many_ok(
         [
           {"stats", stats_task},
           {"address", addr_task},
-          {"address_txs", txs_task},
-          {"address_tokens", tokens_task}
+          {"address_txs", txs_task}
         ],
         "address"
       )
@@ -68,9 +64,6 @@ defmodule FrontendExWeb.AddressController do
         |> parse_transactions(address_info.hash, native_coin)
         |> Enum.take(@txs_preview_limit)
 
-      {all_token_balances, token_holdings_count} = parse_token_balances(tokens_json)
-      token_balances = Enum.take(all_token_balances, @token_holdings_preview_limit)
-
       balance_display = format_balance_display(address_info.coin_balance, native_coin)
 
       balance_usd_display =
@@ -79,23 +72,14 @@ defmodule FrontendExWeb.AddressController do
       {tx_first_seen, tx_latest_seen} =
         derive_tx_time_window(transactions, address_info.transactions_count)
 
-      token_holdings_display =
-        if token_holdings_count == 0 do
-          "N/A"
-        else
-          ">$0.00 (#{token_holdings_count} Tokens)"
-        end
-
       tx_count_display = format_tx_count_display(address_info.transactions_count)
 
       base_assigns =
         base_assigns(%{
           address: address_info,
           transactions: transactions,
-          token_balances: token_balances,
           balance_display: balance_display,
           balance_usd_display: balance_usd_display,
-          token_holdings_display: token_holdings_display,
           tx_count_display: tx_count_display,
           tx_first_seen: tx_first_seen,
           tx_latest_seen: tx_latest_seen,
@@ -114,10 +98,105 @@ defmodule FrontendExWeb.AddressController do
     end
   end
 
+  def bridges(conn, %{"address" => address} = params) when is_binary(address) do
+    address = String.trim(address)
+
+    unless eth_address?(address) do
+      conn
+      |> put_resp_content_type("text/plain")
+      |> send_resp(404, "Address not found")
+    else
+      bridges_valid(conn, address, params)
+    end
+  end
+
+  defp bridges_valid(conn, address, params) do
+    page_size =
+      FrontendExWeb.Pagination.normalize_page_size(
+        params,
+        @bridges_page_size_options,
+        @bridges_default_page_size
+      )
+
+    cursor_query = BridgesController.cursor_query_from_params(params)
+    is_first_page = is_nil(cursor_query)
+
+    stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
+
+    addr_task =
+      Task.async(fn -> Client.get_json_cached("/api/v2/addresses/#{address}", :public) end)
+
+    bridges_task =
+      Task.async(fn ->
+        Client.get_json_cached(address_bridges_path(address, page_size, cursor_query), :public)
+      end)
+
+    [stats_json, addr_json, bridges_json] =
+      await_many_ok(
+        [
+          {"stats", stats_task},
+          {"address", addr_task},
+          {"address_bridges", bridges_task}
+        ],
+        "address_bridges"
+      )
+
+    if is_nil(addr_json) do
+      conn
+      |> put_resp_content_type("text/plain")
+      |> send_resp(404, "Address not found")
+    else
+      native_coin = derive_native_coin(stats_json)
+      address_info = parse_address(addr_json)
+      {bridges, next_cursor} = BridgesController.parse_bridges_response(bridges_json, native_coin)
+
+      page_label = if is_first_page, do: "Latest", else: "Older"
+
+      page_size_options =
+        Enum.map(@bridges_page_size_options, fn value ->
+          %{value: value, selected: value == page_size}
+        end)
+
+      base_assigns =
+        base_assigns(%{
+          address: address_info,
+          bridges: bridges,
+          page_size: page_size,
+          page_size_options: page_size_options,
+          page_label: page_label,
+          is_first_page: is_first_page,
+          next_cursor: next_cursor,
+          native_coin: native_coin,
+          bridge_mints_count: address_info.bridge_mints_count
+        })
+
+      styles = AddressHTML.classic_bridges_styles(base_assigns)
+
+      render(conn, :classic_bridges_content, %{
+        base_assigns
+        | page_title: "Bridges for #{address_info.hash} | 2D",
+          styles: styles
+      })
+    end
+  end
+
   defp address_txs_path(address, ""), do: "/api/v2/addresses/#{address}/transactions"
 
   defp address_txs_path(address, cursor_query) when is_binary(cursor_query) do
     "/api/v2/addresses/#{address}/transactions?" <> cursor_query
+  end
+
+  defp address_bridges_path(address, page_size, nil) when is_integer(page_size) do
+    "/api/v2/addresses/#{address}/bridge-mints?items_count=#{page_size}"
+  end
+
+  defp address_bridges_path(address, page_size, cursor_query)
+       when is_integer(page_size) and is_binary(cursor_query) do
+    if String.contains?(cursor_query, "items_count=") do
+      "/api/v2/addresses/#{address}/bridge-mints?" <> cursor_query
+    else
+      "/api/v2/addresses/#{address}/bridge-mints?items_count=#{page_size}&" <> cursor_query
+    end
   end
 
   defp parse_address(%{} = json) do
@@ -132,7 +211,13 @@ defmodule FrontendExWeb.AddressController do
       is_contract: json["is_contract"],
       is_verified: json["is_verified"],
       coin_balance: normalize_opt_string(json["coin_balance"]),
-      transactions_count: parse_u64(json["transactions_count"])
+      transactions_count: parse_u64(json["transactions_count"]),
+      # Defaults to 0 until 2d TASK-13.25 lands `bridge_mints_count` on the
+      # /api/v2/addresses/:address payload. Frontend reads optimistically: the
+      # Bridges tab stays hidden when this is 0/nil (and on field absence the
+      # parse_u64 fallback gives 0), then activates without a redeploy once
+      # 2d ships the field.
+      bridge_mints_count: parse_u64(json["bridge_mints_count"]) || 0
     }
   end
 
@@ -143,7 +228,8 @@ defmodule FrontendExWeb.AddressController do
       is_contract: nil,
       is_verified: nil,
       coin_balance: nil,
-      transactions_count: nil
+      transactions_count: nil,
+      bridge_mints_count: 0
     }
 
   defp parse_transactions(nil, _addr_hash, _native_coin), do: []
@@ -278,36 +364,6 @@ defmodule FrontendExWeb.AddressController do
   end
 
   defp normalize_int(_), do: nil
-
-  defp parse_token_balances(nil), do: {[], 0}
-
-  defp parse_token_balances(%{} = tokens_json) do
-    items =
-      case tokens_json["items"] do
-        list when is_list(list) -> list
-        _ -> []
-      end
-
-    balances =
-      Enum.flat_map(items, fn
-        %{"token" => %{} = token, "value" => value} ->
-          [
-            %{
-              token: %{
-                address: normalize_opt_string(token["address"]),
-                name: normalize_opt_string(token["name"]),
-                symbol: normalize_opt_string(token["symbol"])
-              },
-              value: to_string(value || "")
-            }
-          ]
-
-        _ ->
-          []
-      end)
-
-    {balances, length(balances)}
-  end
 
   defp format_balance_display(nil, native_coin), do: "0 " <> native_coin.symbol
 
