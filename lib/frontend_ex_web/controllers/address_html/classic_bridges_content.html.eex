@@ -114,9 +114,9 @@
             <table id="bridges-table" class="txs-table">
                 <thead>
                     <tr>
-                        <th>Source ETH Tx</th>
+                        <th>Locked on Ethereum</th>
                         <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
-                        <th>2D Tx</th>
+                        <th>Minted on 2D</th>
                         <th>Recipient</th>
                         <th>Amount</th>
                         <th>Age</th>
@@ -134,6 +134,9 @@
                             <% end %>
                         </td>
                         <td class="dir-cell dir-col">
+                            <%!-- See bridges_html/classic_content.html.eex
+                                for the bridge OUT direction notes. Hardcoded
+                                right-arrow until 2d ships bridge_burns. --%>
                             <span class="dir-icon" aria-label="bridges into 2D">
                                 <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
                             </span>

@@ -9,6 +9,10 @@
     </div>
 </div>
 
+<p class="bridges-subtitle">
+    Each row is a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The source-chain reference links out to Etherscan; the 2D mint links to the on-chain <code>bridge_lock</code> extrinsic.
+</p>
+
 <div class="card">
     <div class="card-header txs-card-header">
         <div class="table-toolbar">
@@ -69,9 +73,9 @@
             <table id="bridges-table" class="txs-table">
                 <thead>
                     <tr>
-                        <th>Source ETH Tx</th>
+                        <th>Locked on Ethereum</th>
                         <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
-                        <th>2D Tx</th>
+                        <th>Minted on 2D</th>
                         <th>Recipient</th>
                         <th>Amount</th>
                         <th>Age</th>
@@ -89,6 +93,15 @@
                             <% end %>
                         </td>
                         <td class="dir-cell dir-col">
+                            <%!-- Direction is currently always Ethereum→2D
+                                (bridge IN). Bridge OUT (2D→Ethereum) is not
+                                yet implemented on 2d (no `bridge_burns` table
+                                or analogous flow). When it lands, this arrow
+                                will need to flip per row, and "Locked on
+                                Ethereum"/"Minted on 2D" labels will need
+                                action variants ("Burned on 2D"/"Released on
+                                Ethereum"). Kept as a hardcoded right-arrow
+                                for now to avoid premature complexity. --%>
                             <span class="dir-icon" aria-label="bridges into 2D">
                                 <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
                             </span>

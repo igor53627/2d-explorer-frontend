@@ -62,4 +62,23 @@
     padding-top: 10px;
     margin-top: 14px !important;
 }
+
+/* One-line orientation paragraph above the bridges table. Sits just
+   below the page-header card and explains what each row means without
+   forcing the user to infer it from column labels alone. */
+.bridges-subtitle {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin: 4px 0 14px;
+    max-width: 880px;
+}
+.bridges-subtitle code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
 </style>
