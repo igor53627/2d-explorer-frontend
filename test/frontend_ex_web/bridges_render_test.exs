@@ -146,7 +146,10 @@ defmodule FrontendExWeb.BridgesRenderTest do
       refute html =~ "0xc0de...0000"
       # Direction arrow cell sits between Source ETH Tx and 2D Tx to
       # cue the cross-chain narrative visually.
-      assert html =~ ~s(<td class="dir-cell dir-col">)
+      # Direction arrow cell sits between Source ETH Tx and 2D Tx; the
+      # `data-csv-skip` attribute mirrors what the `<th>` carries so CSV
+      # export skips this column consistently.
+      assert html =~ ~s(<td class="dir-cell dir-col" data-csv-skip>)
     end
 
     test "renders source-chain link to Etherscan when chain_id == 1", %{conn: conn} do
@@ -156,6 +159,43 @@ defmodule FrontendExWeb.BridgesRenderTest do
                ~s(href="https://etherscan.io/tx/0xabcd000000000000000000000000000000000000000000000000000000000000")
 
       assert html =~ "0xabcd...0000#7"
+    end
+  end
+
+  describe "GET /bridges amount formatting (trim_trailing_decimal_zeros)" do
+    # The local helper in BridgesController post-processes
+    # `Format.format_native_amount/1` so round amounts read as `1 USDC`
+    # instead of `1.0000 USDC`. Pin the three branches end-to-end so a
+    # future change to either the helper or the global formatter can't
+    # silently regress only one of them.
+
+    test "round 1 USDC: 4 trailing zeros stripped (`1.0000` → `1`)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "amount", "1000000")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+
+      assert html =~ "1 USDC"
+      refute html =~ "1.0000"
+    end
+
+    test "round 0.5 USDC: trailing zeros after decimal stripped (`0.5000` → `0.5`)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "amount", "500000")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+
+      assert html =~ "0.5 USDC"
+      refute html =~ "0.5000"
+    end
+
+    test "non-round 0.1068 USDC: precision preserved (no trim)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "amount", "106800")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+
+      assert html =~ "0.1068 USDC"
     end
   end
 

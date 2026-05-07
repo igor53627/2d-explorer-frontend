@@ -75,7 +75,9 @@
                 <thead>
                     <tr>
                         <th>Locked on Ethereum</th>
-                        <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
+                        <th class="dir-cell dir-col" data-csv-skip>
+                            <span class="sr-only">Direction</span>
+                        </th>
                         <th>Minted on 2D</th>
                         <th>Age</th>
                         <th>Recipient</th>
@@ -93,7 +95,7 @@
                                 <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
                             <% end %>
                         </td>
-                        <td class="dir-cell dir-col">
+                        <td class="dir-cell dir-col" data-csv-skip>
                             <%!-- Direction is currently always Ethereum→2D
                                 (bridge IN). Bridge OUT (2D→Ethereum) is not
                                 yet implemented on 2d (no `bridge_burns` table
@@ -102,8 +104,11 @@
                                 Ethereum"/"Minted on 2D" labels will need
                                 action variants ("Burned on 2D"/"Released on
                                 Ethereum"). Kept as a hardcoded right-arrow
-                                for now to avoid premature complexity. --%>
-                            <span class="dir-icon" aria-label="bridges into 2D">
+                                for now to avoid premature complexity. The
+                                arrow is decorative (`aria-hidden="true"`)
+                                because the column header carries the
+                                accessible "Direction" label already. --%>
+                            <span class="dir-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
                             </span>
                         </td>

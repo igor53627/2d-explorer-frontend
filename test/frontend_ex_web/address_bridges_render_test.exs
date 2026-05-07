@@ -164,7 +164,9 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
       refute html =~ "0xbeef...0000"
       refute html =~ "0xc0de...0000"
       # Direction arrow cell between Source ETH Tx and 2D Tx columns.
-      assert html =~ ~s(<td class="dir-cell dir-col">)
+      # Direction arrow cell + `data-csv-skip` to mirror the `<th>` for
+      # CSV-exporter consistency.
+      assert html =~ ~s(<td class="dir-cell dir-col" data-csv-skip>)
     end
 
     test "Bridges tab always renders as active here, even when count==0 (ultrareview bug_003)", %{

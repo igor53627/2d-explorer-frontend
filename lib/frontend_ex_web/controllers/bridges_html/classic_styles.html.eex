@@ -51,16 +51,24 @@
 .bridges-empty-state code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12px;
+    /* Subtle gray bg for inline code spans. Hardcoded rgba rather than
+       a CSS variable because this fork is single-skin (classic, light)
+       — see PR #3 audit. When/if dark mode lands, this and many other
+       hardcoded shades across style2-overrides.css need a coordinated
+       sweep into theme tokens; deferring as a single follow-up. */
     background: rgba(0, 0, 0, 0.05);
     padding: 1px 5px;
     border-radius: 3px;
 }
-.bridges-empty-meta {
-    font-size: 12px !important;
-    color: var(--text-muted) !important;
+/* Specificity bumped via the parent class so we can drop the `!important`
+   declarations that were previously needed to override `.bridges-empty-state p`
+   (which sets font-size, color, and bottom margin one level up). */
+.bridges-empty-state .bridges-empty-meta {
+    font-size: 12px;
+    color: var(--text-muted);
     border-top: 1px solid var(--border);
     padding-top: 10px;
-    margin-top: 14px !important;
+    margin-top: 14px;
 }
 
 /* Orientation block above the bridges table. Two paragraphs split at
