@@ -33,19 +33,25 @@
                     </button>
                 </div>
             </div>
+            <div class="address-page-header-note">
+                Both addresses point to the same account. Hex (0x…) is how Ethereum wallets address it; Base58 (T…) is how Tron wallets address it.
+            </div>
             <% end %>
         </div>
     </div>
 </div>
 
-<%!-- Tabs block — Bridges active here. Same conditional rules as the
-    index template; "Bridges (N)" only renders when count > 0 (which it
-    obviously is on this page since we got here via the tab). --%>
+<%!-- Tabs block — Bridges always renders as the active tab on this page,
+    regardless of `@bridge_mints_count`. Direct-URL entry (bookmark, shared
+    link, URL bar) hits this template even when count is 0 (which is the
+    default for every address until 2d TASK-13.25 ships `bridge_mints_count`
+    on the addresses payload), and an active-tab indicator must always be
+    present so the user knows where they are. The `(N)` count suffix stays
+    conditional — rendering "Bridges (0)" alongside the empty-state copy
+    "No bridge mints for this address." would be redundant. --%>
 <div class="tabs">
     <a href="/address/<%= @address.hash %>" class="tab">Transactions</a>
-    <%= if @bridge_mints_count > 0 do %>
-    <a href="/address/<%= @address.hash %>/bridges" class="tab active">Bridges (<%= @bridge_mints_count %>)</a>
-    <% end %>
+    <a href="/address/<%= @address.hash %>/bridges" class="tab active">Bridges<%= if @bridge_mints_count > 0, do: " (#{@bridge_mints_count})" %></a>
     <%= if @address.is_contract do %>
     <a href="<%= @explorer_url %>/address/<%= @address.hash %>?tab=contract" class="tab">Contract</a>
     <% end %>
@@ -140,9 +146,9 @@
                         <td>
                             <%= case b.source_chain_explorer_url do %>
                             <% url when is_binary(url) -> %>
-                                <a href="<%= url %>" target="_blank" rel="noopener" class="hash" title="<%= b.source_tx_hash %> log index <%= b.source_log_index %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></a>
+                                <a href="<%= url %>" target="_blank" rel="noopener" class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></a>
                             <% _ -> %>
-                                <span class="hash" title="<%= b.source_tx_hash %> log index <%= b.source_log_index %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
+                                <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
                             <% end %>
                         </td>
                         <td>

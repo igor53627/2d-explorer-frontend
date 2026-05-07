@@ -95,9 +95,9 @@
                         <td>
                             <%= case b.source_chain_explorer_url do %>
                             <% url when is_binary(url) -> %>
-                                <a href="<%= url %>" target="_blank" rel="noopener" class="hash" title="<%= b.source_tx_hash %> log index <%= b.source_log_index %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></a>
+                                <a href="<%= url %>" target="_blank" rel="noopener" class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></a>
                             <% _ -> %>
-                                <span class="hash" title="<%= b.source_tx_hash %> log index <%= b.source_log_index %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
+                                <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
                             <% end %>
                         </td>
                         <td>

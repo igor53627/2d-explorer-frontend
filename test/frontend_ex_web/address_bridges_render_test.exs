@@ -154,6 +154,26 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
 
       assert html =~ "0xabcd...0000#7"
     end
+
+    test "Bridges tab always renders as active here, even when count==0 (ultrareview bug_003)", %{
+      conn: conn
+    } do
+      # Default @addr_payload_base has no bridge_mints_count → parses to 0.
+      # Direct URL entry (bookmark, shared link, URL bar) must still surface
+      # an active-tab indicator so the user knows where they are; the
+      # tab visibility gate from the address-index template does not apply
+      # on this surface. Regression test for the rollout window when
+      # 2d TASK-13.25 has not yet shipped `bridge_mints_count` on the
+      # `/api/v2/addresses/:address` payload.
+      put_addr_payload(@addr_payload_base)
+      html = conn |> get("/address/#{@addr}/bridges") |> html_response(200)
+
+      assert html =~ ~s(<a href="/address/#{@addr}/bridges" class="tab active">Bridges)
+      # The "(N)" count suffix stays conditional — rendering "Bridges (0)"
+      # alongside the empty-state copy "No bridge mints for this address."
+      # would be redundant.
+      refute html =~ "Bridges (0)"
+    end
   end
 
   describe "GET /address/:addr/bridges empty result" do
