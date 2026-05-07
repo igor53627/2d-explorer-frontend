@@ -68,6 +68,11 @@
 .search-btn:hover { background: #066a9c; }
 .search-btn svg { width: 18px; height: 18px; vertical-align: middle; }
 
+/* "/" keyboard shortcut hint inside the hero search box. Sits between
+   the input and the submit button; the small horizontal padding keeps
+   the kbd badge from kissing the blue submit button. */
+.hero-search-shortcut { padding: 0 12px 0 4px; background: white; }
+
 /* Stats Strip */
 .stats-strip {
     display: flex;

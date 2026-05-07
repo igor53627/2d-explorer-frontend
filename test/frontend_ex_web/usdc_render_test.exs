@@ -338,11 +338,21 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
       body =
         case path do
-          "/api/v2/stats" -> @stats
-          "/api/v2/blocks" -> @blocks_list
-          "/api/v2/blocks/0" -> @block_detail
-          "/api/v2/blocks/0/transactions" -> @block_txs
-          "/api/v2/transactions" -> @transactions_list
+          "/api/v2/stats" ->
+            @stats
+
+          "/api/v2/blocks" ->
+            @blocks_list
+
+          "/api/v2/blocks/0" ->
+            @block_detail
+
+          "/api/v2/blocks/0/transactions" ->
+            @block_txs
+
+          "/api/v2/transactions" ->
+            @transactions_list
+
           "/api/v2/transactions/" <> rest ->
             cond do
               rest == @tx_hash -> @tx_detail
@@ -487,7 +497,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
 
   test "GET /tx/:hash surfaces USDC, no Gwei labels remain on gas fields",
        %{conn: conn} do
-    body = conn |> get("/tx/0xcafe000000000000000000000000000000000000000000000000000000000000") |> html_response(200)
+    body =
+      conn
+      |> get("/tx/0xcafe000000000000000000000000000000000000000000000000000000000000")
+      |> html_response(200)
 
     assert body =~ "USDC", "expected /tx/:hash to render the USDC ticker"
     refute body =~ ~r/\bETH\b/
@@ -677,9 +690,7 @@ defmodule FrontendExWeb.UsdcRenderTest do
       body = conn |> get("/") |> html_response(200)
 
       to_tron_truncated =
-        FrontendEx.Format.truncate_addr(
-          FrontendEx.Tron.Address.from_eth_hex(@cross_to)
-        )
+        FrontendEx.Format.truncate_addr(FrontendEx.Tron.Address.from_eth_hex(@cross_to))
 
       from_eth_truncated = FrontendEx.Format.truncate_addr(@cross_from)
 
@@ -694,9 +705,7 @@ defmodule FrontendExWeb.UsdcRenderTest do
       body = conn |> get("/txs") |> html_response(200)
 
       to_tron_truncated =
-        FrontendEx.Format.truncate_addr_classic(
-          FrontendEx.Tron.Address.from_eth_hex(@cross_to)
-        )
+        FrontendEx.Format.truncate_addr_classic(FrontendEx.Tron.Address.from_eth_hex(@cross_to))
 
       from_eth_truncated = FrontendEx.Format.truncate_addr_classic(@cross_from)
 
@@ -757,7 +766,9 @@ defmodule FrontendExWeb.UsdcRenderTest do
          %{conn: conn} do
       conn =
         conn
-        |> get("/tx/0xc0055000000000000000000000000000000000000000000000000000000000a4/og-image.svg")
+        |> get(
+          "/tx/0xc0055000000000000000000000000000000000000000000000000000000000a4/og-image.svg"
+        )
 
       body = conn.resp_body
       assert conn.status == 200
@@ -794,9 +805,10 @@ defmodule FrontendExWeb.UsdcRenderTest do
         |> html_response(200)
 
       # From: EIP-55 checksummed 0x form (sender's primary=eth_rlp).
-      assert body =~ FrontendEx.Format.checksum_eth_address(
-                       "0x0000000000000000000000000000000000000004"
-                     ),
+      assert body =~
+               FrontendEx.Format.checksum_eth_address(
+                 "0x0000000000000000000000000000000000000004"
+               ),
              "expected EIP-55 checksummed 0x form for From (from.primary=eth_rlp)"
 
       # To: Tron Base58 form (recipient's primary=tron_pb).

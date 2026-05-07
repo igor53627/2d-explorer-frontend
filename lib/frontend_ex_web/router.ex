@@ -91,12 +91,14 @@ defmodule FrontendExWeb.Router do
     get "/search", SearchController, :index
     get "/blocks", BlocksController, :index
     get "/txs", TxsController, :index
+    get "/bridges", BridgesController, :index
     get "/block/:id", BlockController, :show
     get "/block/:id/txs", BlockController, :txs
     get "/tx/:hash", TxController, :show
     get "/tx/:hash/logs", TxController, :logs
     get "/tx/:hash/state", TxController, :state
     get "/address/:address", AddressController, :show
+    get "/address/:address/bridges", AddressController, :bridges
   end
 
   scope "/", FrontendExWeb do

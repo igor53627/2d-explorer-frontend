@@ -1,0 +1,25 @@
+<style>
+/* /bridges page reuses the .card / .txs-table / .pagination idiom from
+   /txs. The .txs-footnote* rules are also needed here — without the
+   width/height constraint the lightbulb SVG renders at its native
+   intrinsic size and balloons to fill the viewport. */
+.txs-footnote {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.txs-footnote-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: .8;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+</style>

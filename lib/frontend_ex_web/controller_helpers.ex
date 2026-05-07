@@ -60,6 +60,7 @@ defmodule FrontendExWeb.ControllerHelpers do
       nav_home: "",
       nav_blocks: "",
       nav_txs: "",
+      nav_bridges: "",
       nav_tokens: "",
       nav_nfts: "",
       app_version: Version.app(),
@@ -268,4 +269,14 @@ defmodule FrontendExWeb.ControllerHelpers do
   @doc "Per-fork default `native_coin` map — 2d uses USDC at 6 decimals."
   @spec default_native_coin() :: %{symbol: String.t(), decimals: non_neg_integer()}
   def default_native_coin, do: %{symbol: "USDC", decimals: 6}
+
+  @doc """
+  Whether to render the static-by-design proposer + fees rows on home block tiles.
+
+  Gated by `FF_HOME_BLOCK_META_FULL` (parsed in `config/runtime.exs`); defaults
+  to `false` because on 2d those values never change (single proposer, gasless).
+  """
+  def home_block_meta_full? do
+    Keyword.get(Application.get_env(:frontend_ex, :home, []), :block_meta_full, false)
+  end
 end

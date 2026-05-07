@@ -3,6 +3,7 @@ defmodule FrontendExWeb.HomeController do
 
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
+  alias FrontendExWeb.ControllerHelpers
   alias FrontendExWeb.HomeHTML
 
   @blocks_limit 10
@@ -49,6 +50,13 @@ defmodule FrontendExWeb.HomeController do
 
     native_coin = derive_native_coin(stats_json)
 
+    # Read the FF_HOME_BLOCK_META_FULL flag once per request and thread
+    # through assigns. Templates referencing `@home_block_meta_full` avoid
+    # calling `ControllerHelpers.home_block_meta_full?/0` in a per-block
+    # loop body (Application env lookups are fast but unbounded; reading
+    # once is the cheapest correct behavior).
+    home_block_meta_full = ControllerHelpers.home_block_meta_full?()
+
     base_assigns =
       base_assigns(%{
         api_url: api_url,
@@ -62,7 +70,8 @@ defmodule FrontendExWeb.HomeController do
         gas_slow: gas_slow,
         gas_avg: gas_avg,
         gas_fast: gas_fast,
-        native_coin: native_coin
+        native_coin: native_coin,
+        home_block_meta_full: home_block_meta_full
       })
 
     styles = HomeHTML.classic_styles(base_assigns)

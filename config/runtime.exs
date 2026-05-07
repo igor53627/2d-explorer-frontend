@@ -203,8 +203,7 @@ config :frontend_ex,
   base_url: base_url
 
 metrics_enabled =
-  case System.get_env("FF_METRICS_ENABLED") do
-    nil -> true
+  case System.get_env("FF_METRICS_ENABLED") |> Kernel.||("") |> String.trim() do
     "" -> true
     "true" -> true
     "TRUE" -> true
@@ -241,6 +240,40 @@ config :frontend_ex, :metrics,
   port: metrics_port,
   # Never bind metrics publicly by default.
   ip: {127, 0, 0, 1}
+
+# Home tiles: on 2d the per-block `proposer` and `fees` rows are static by
+# design (single-validator chain, gasless USDC) so they are hidden by
+# default. Set FF_HOME_BLOCK_META_FULL=true to surface them again — useful
+# if the chain ever evolves into multi-proposer or fee-bearing modes, or
+# for upstream forks reusing this codebase.
+home_block_meta_full =
+  case System.get_env("FF_HOME_BLOCK_META_FULL") |> Kernel.||("") |> String.trim() do
+    "" ->
+      false
+
+    "true" ->
+      true
+
+    "TRUE" ->
+      true
+
+    "1" ->
+      true
+
+    "false" ->
+      false
+
+    "FALSE" ->
+      false
+
+    "0" ->
+      false
+
+    other ->
+      raise "invalid FF_HOME_BLOCK_META_FULL value: #{inspect(other)} (expected true/false)"
+  end
+
+config :frontend_ex, :home, block_meta_full: home_block_meta_full
 
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.

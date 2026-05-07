@@ -48,9 +48,6 @@
                         Age cell — that pattern exists for truncated
                         hashes, not for hover tooltips. --%>
                     <span class="time-ago" title="<%= block.timestamp_readable %>"><%= block.time_ago %></span>
-                    <%= if is_binary(block.timestamp_readable) and String.trim(block.timestamp_readable) != "" do %>
-                        <span class="text-muted block-timestamp-readable"><%= block.timestamp_readable %></span>
-                    <% end %>
                 </td>
                 <td>
                     <a href="/block/<%= block.height %>/txs"><%= block.tx_count %></a>

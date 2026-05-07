@@ -1,0 +1,224 @@
+
+<%!-- Address-page header card — duplicated from classic_content.html.eex
+    so the /bridges sub-page renders the same chrome (hex/Base58 hash row +
+    contract badge if applicable). No partial pattern in this codebase
+    (verified: tx_html duplicates tabs across 3 templates), so we mirror
+    the pattern instead of inventing a new one. --%>
+<div class="address-page-header">
+    <div class="address-page-header-content">
+        <div class="address-page-header-title">
+            <h1 class="address-page-title">
+                Address
+                <%= if @address.is_contract do %>
+                    <span class="badge badge-success addr-type">Contract</span>
+                <% end %>
+            </h1>
+        </div>
+
+        <div class="address-page-header-hashes">
+            <div class="address-page-header-hash">
+                <span class="addr-hash-text"><%= @address.hash %></span>
+                <div class="addr-actions">
+                    <button class="copy-btn" data-copy="<%= @address.hash %>" title="Copy address">
+                        <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <%= if @address.tron_hash do %>
+            <div class="address-page-header-hash">
+                <span class="addr-hash-text"><%= @address.tron_hash %></span>
+                <div class="addr-actions">
+                    <button class="copy-btn" data-copy="<%= @address.tron_hash %>" title="Copy Base58 form">
+                        <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="address-page-header-note">
+                Both addresses point to the same account. Hex (0x…) is how Ethereum wallets address it; Base58 (T…) is how Tron wallets address it.
+            </div>
+            <% end %>
+        </div>
+    </div>
+</div>
+
+<%!-- Tabs block — Bridges always renders as the active tab on this page,
+    regardless of `@bridge_mints_count`. Direct-URL entry (bookmark, shared
+    link, URL bar) hits this template even when count is 0 (which is the
+    default for every address until 2d TASK-13.25 ships `bridge_mints_count`
+    on the addresses payload), and an active-tab indicator must always be
+    present so the user knows where they are. The `(N)` count suffix stays
+    conditional — rendering "Bridges (0)" alongside the empty-state copy
+    "No bridge mints for this address." would be redundant. --%>
+<div class="tabs">
+    <a href="/address/<%= @address.hash %>" class="tab">Transactions</a>
+    <a href="/address/<%= @address.hash %>/bridges" class="tab active">Bridges<%= if @bridge_mints_count > 0, do: " (#{@bridge_mints_count})" %></a>
+    <%= if @address.is_contract do %>
+    <a href="<%= @explorer_url %>/address/<%= @address.hash %>?tab=contract" class="tab">Contract</a>
+    <% end %>
+</div>
+
+<div class="card">
+    <div class="card-header txs-card-header">
+        <div class="table-toolbar">
+            <div>
+                <div class="txs-info-title"><%= @page_label %></div>
+            </div>
+            <div class="toolbar-actions">
+                <nav aria-label="Bridge navigation">
+                    <ul class="pagination pagination-sm pagination-classic">
+                        <%= if @is_first_page do %>
+                            <li class="page-item disabled"><span class="page-link">First</span></li>
+                        <% else %>
+                            <li class="page-item"><a class="page-link" href="/address/<%= @address.hash %>/bridges?ps=<%= @page_size %>">First</a></li>
+                        <% end %>
+                        <li class="page-item disabled">
+                            <span class="page-link page-link-icon" aria-label="Previous page">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                            </span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link text-nowrap pagination-label"><%= @page_label %></span>
+                        </li>
+                        <%= if @next_cursor do %>
+                            <li class="page-item">
+                                <a class="page-link page-link-icon" href="/address/<%= @address.hash %>/bridges?cursor=<%= @next_cursor %>&amp;ps=<%= @page_size %>" aria-label="View older bridge mints">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                                </a>
+                            </li>
+                        <% else %>
+                            <li class="page-item disabled">
+                                <span class="page-link page-link-icon" aria-label="No older bridge mints">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                                </span>
+                            </li>
+                        <% end %>
+                        <li class="page-item disabled"><span class="page-link">Last</span></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <%= if Enum.empty?(@bridges) do %>
+        <div class="card-body">
+            <div class="empty-state">No bridge mints for this address.</div>
+        </div>
+    <% else %>
+        <%!-- Table body duplicated from bridges_html/classic_content.html.eex.
+            No partial mechanism in this codebase; if a third bridges-table
+            consumer ever appears, extract a Phoenix.HTML helper. --%>
+        <div class="table-responsive">
+            <table id="bridges-table" class="txs-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>HTLC</th>
+                        <th>Amount</th>
+                        <th>Recipient</th>
+                        <th>Source ETH Tx</th>
+                        <th>2D Tx</th>
+                        <th>Age</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <%= for b <- @bridges do %>
+                    <tr>
+                        <td>
+                            <span class="hash" title="<%= b.eth_event_id %>"><%= b.eth_event_id_short %></span>
+                        </td>
+                        <td>
+                            <%= case b.htlc_hash do %>
+                            <% h when is_binary(h) -> %>
+                                <span class="hash" title="<%= h %>"><%= b.htlc_hash_short %></span>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td><%= b.amount_formatted %></td>
+                        <td>
+                            <%= case b.recipient_hash do %>
+                            <% r when is_binary(r) -> %>
+                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td>
+                            <%= case b.source_chain_explorer_url do %>
+                            <% url when is_binary(url) -> %>
+                                <a href="<%= url %>" target="_blank" rel="noopener" class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></a>
+                            <% _ -> %>
+                                <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
+                            <% end %>
+                        </td>
+                        <td>
+                            <%= case b.tx_hash_2d do %>
+                            <% h when is_binary(h) -> %>
+                                <a href="/tx/<%= h %>" class="hash" title="<%= h %>"><%= b.tx_hash_2d_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td>
+                            <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
+                        </td>
+                    </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
+    <% end %>
+
+    <div class="card-footer">
+        <form class="txs-records" action="/address/<%= @address.hash %>/bridges" method="get">
+            <label for="page-size-select" class="text-secondary">Show:</label>
+            <select id="page-size-select" name="ps" class="txs-select" onchange="this.form.submit()">
+                <%= for opt <- @page_size_options do %>
+                    <option value="<%= opt.value %>" <%= if opt.selected, do: "selected" %>><%= opt.value %></option>
+                <% end %>
+            </select>
+            <span class="text-secondary">Records</span>
+        </form>
+
+        <nav aria-label="Bridge navigation">
+            <ul class="pagination pagination-sm pagination-classic">
+                <%= if @is_first_page do %>
+                    <li class="page-item disabled"><span class="page-link">First</span></li>
+                <% else %>
+                    <li class="page-item"><a class="page-link" href="/address/<%= @address.hash %>/bridges?ps=<%= @page_size %>">First</a></li>
+                <% end %>
+                <li class="page-item disabled">
+                    <span class="page-link page-link-icon" aria-label="Previous page">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                    </span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link text-nowrap pagination-label"><%= @page_label %></span>
+                </li>
+                <%= if @next_cursor do %>
+                    <li class="page-item">
+                        <a class="page-link page-link-icon" href="/address/<%= @address.hash %>/bridges?cursor=<%= @next_cursor %>&amp;ps=<%= @page_size %>" aria-label="View older bridge mints">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                        </a>
+                    </li>
+                <% else %>
+                    <li class="page-item disabled">
+                        <span class="page-link page-link-icon" aria-label="No older bridge mints">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                        </span>
+                    </li>
+                <% end %>
+                <li class="page-item disabled"><span class="page-link">Last</span></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<p class="txs-footnote">
+    <svg class="txs-footnote-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+        <path d="M12 2a7 7 0 0 0-4 12c.5.5 1 1.5 1 2v1h6v-1c0-.5.5-1.5 1-2a7 7 0 0 0-4-12z"/>
+    </svg>
+    <span>Bridge mints recorded for this address — USDC transfers locked on Ethereum and minted into 2D via the bridge HTLC. The Source ETH Tx links to Etherscan; the 2D Tx links to the on-chain `bridge_lock` extrinsic.</span>
+</p>
