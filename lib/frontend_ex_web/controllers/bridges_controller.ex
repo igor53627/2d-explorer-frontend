@@ -307,12 +307,15 @@ defmodule FrontendExWeb.BridgesController do
     %{
       eth_event_id: eth_event_id,
       htlc_hash: htlc_hash,
-      # `Format.format_native_amount/1` always emits 4 decimal places
-      # (e.g. "1.0000"). On a /bridges row that's most of the visual
-      # weight; trim trailing zeros so round amounts read as `1 USDC`
-      # and `0.5 USDC` instead of `1.0000 USDC` / `0.5000 USDC`. Local
-      # post-process here so the global formatter's golden-byte parity
-      # on /tx, /address etc. is unaffected.
+      # Trim trailing zeros from the formatter's decimal output so round
+      # amounts read as `1 USDC` / `0.5 USDC` instead of `1.0000 USDC` /
+      # `0.5000 USDC`. `Format.format_native_amount/1` is tiered: up to
+      # 4 dp for typical mint magnitudes, more for very small amounts
+      # (6 dp / 8 dp branches), and a bare `"0"` (no decimal point) for
+      # zero. The trim helper handles all four shapes — see
+      # `trim_trailing_decimal_zeros/1` below for the no-decimal
+      # passthrough. Local post-process here so the global formatter
+      # keeps its golden-byte parity on /tx, /address etc.
       amount_formatted:
         trim_trailing_decimal_zeros(Format.format_native_amount(amount_raw)) <>
           " " <> native_coin.symbol,
