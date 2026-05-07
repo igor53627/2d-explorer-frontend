@@ -192,11 +192,11 @@ defmodule FrontendExWeb.AddressController do
 
   defp address_bridges_path(address, page_size, cursor_query)
        when is_integer(page_size) and is_binary(cursor_query) do
-    if String.contains?(cursor_query, "items_count=") do
-      "/api/v2/addresses/#{address}/bridge-mints?" <> cursor_query
-    else
-      "/api/v2/addresses/#{address}/bridge-mints?items_count=#{page_size}&" <> cursor_query
-    end
+    # `cursor_query` is stripped of any `items_count=` segment by
+    # `BridgesController.cursor_query_from_params/1`. Always set
+    # `items_count` from the normalized `page_size` so the
+    # @bridges_page_size_options clamp can't be bypassed.
+    "/api/v2/addresses/#{address}/bridge-mints?items_count=#{page_size}&" <> cursor_query
   end
 
   defp parse_address(%{} = json) do

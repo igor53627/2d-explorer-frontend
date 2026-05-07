@@ -219,6 +219,28 @@ defmodule FrontendExWeb.BridgesRenderTest do
       assert is_binary(url)
       assert url =~ "items_count=25"
     end
+
+    test "items_count bypass via top-level param is ignored (server-controlled)", %{conn: conn} do
+      _html = conn |> get("/bridges?items_count=10000") |> html_response(200)
+      url = Application.get_env(:frontend_ex, :bridges_test_last_url)
+      assert is_binary(url)
+      # User-supplied items_count must not reach upstream — only normalized ps.
+      assert url =~ "items_count=50"
+      refute url =~ "items_count=10000"
+    end
+
+    test "items_count bypass via cursor segment is stripped", %{conn: conn} do
+      _html =
+        conn
+        |> get("/bridges?cursor=items_count=10000%26block_number=42")
+        |> html_response(200)
+
+      url = Application.get_env(:frontend_ex, :bridges_test_last_url)
+      assert is_binary(url)
+      assert url =~ "items_count=50"
+      refute url =~ "items_count=10000"
+      assert url =~ "block_number=42"
+    end
   end
 
   describe "GET /bridges cursor passthrough" do

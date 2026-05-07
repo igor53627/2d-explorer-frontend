@@ -134,7 +134,6 @@ defmodule FrontendExWeb.TxsController do
       fragments
       |> maybe_append_cursor_param(cursor_query, "block_number", params)
       |> maybe_append_cursor_param(cursor_query, "index", params)
-      |> maybe_append_cursor_param(cursor_query, "items_count", params)
 
     fragments =
       fragments
@@ -144,6 +143,12 @@ defmodule FrontendExWeb.TxsController do
       end)
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
+      # `items_count` is server-controlled (normalized via @page_size_options
+      # clamp). Strip any user-supplied value here — whether top-level
+      # `?items_count=10000` (now ignored above) or sneaked in via
+      # `?cursor=items_count=10000&block_number=42`. Without this the
+      # page_size clamp can be bypassed → unbounded upstream payload.
+      |> Enum.reject(&String.starts_with?(&1, "items_count="))
 
     case fragments do
       [] -> nil
@@ -183,11 +188,11 @@ defmodule FrontendExWeb.TxsController do
   end
 
   defp txs_path(page_size, cursor_query) when is_integer(page_size) and is_binary(cursor_query) do
-    if String.contains?(cursor_query, "items_count=") do
-      "/api/v2/transactions?" <> cursor_query
-    else
-      "/api/v2/transactions?items_count=#{page_size}&" <> cursor_query
-    end
+    # `cursor_query` is stripped of any `items_count=` segment by
+    # `cursor_query_from_params/1`. Always set `items_count` from the
+    # normalized `page_size` so the @page_size_options clamp can't be
+    # bypassed.
+    "/api/v2/transactions?items_count=#{page_size}&" <> cursor_query
   end
 
   defp derive_stats_fields(nil), do: {nil, nil, nil}
