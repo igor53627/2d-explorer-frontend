@@ -1,11 +1,11 @@
 ---
 id: TASK-45
 title: 'Bridges list: /bridges (SSR + cursor pagination)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-05-06 13:49'
-updated_date: '2026-05-06 18:09'
+updated_date: '2026-05-07 13:30'
 labels:
   - pages
   - bridge
@@ -35,11 +35,11 @@ Mirrors TASK-20 (`/txs`) in shape: cursor-paginated list with `ps` page-size par
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 GET /bridges renders SSR (classic skin)
-- [ ] #2 Cursor pagination via next_page_params (no page numbers)
-- [ ] #3 ps query param normalized (10/25/50/100, default 50) — match TASK-20 helper
-- [ ] #4 Empty result renders cleanly with empty-state copy (no error)
-- [ ] #5 Golden HTML snapshot test driven by stubbed /api/v2/bridges fixture
+- [x] #1 GET /bridges renders SSR (classic skin)
+- [x] #2 Cursor pagination via next_page_params (no page numbers)
+- [x] #3 ps query param normalized (10/25/50/100, default 50) — match TASK-20 helper
+- [x] #4 Empty result renders cleanly with empty-state copy (no error)
+- [x] #5 Golden HTML snapshot test driven by stubbed /api/v2/bridges fixture
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -105,3 +105,9 @@ Mirrors TASK-20 (`/txs`) in shape: cursor-paginated list with `ps` page-size par
 - (c) **CSV export button.** AC doesn't require it; `/txs` and `/blocks` have it. **My pick: skip for v1**, add as follow-up if needed.
 - (d) **Sepolia (chain_id 11155111) Etherscan link.** Spec requires only mainnet (1); adding Sepolia is ~3 lines and helps dev iteration. **My pick: include both.**
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Shipped in commit ef15d67. /bridges list page renders with 7 columns (Event/HTLC/Amount/Recipient/Source ETH Tx/2D Tx/Age), cursor pagination via next_page_params (block_number+event_id keys per 2d TASK-13.17), batch-refill disambiguation via tx_hash#log_index, mainnet-only Etherscan link. 5th nav item Bridges added to global header. items_count bypass discovered post-merge in roborev #2210 — fixed in 7626368. 14 tests covering full row, batch-refill, empty, ps clamp, cursor passthrough, non-mainnet fallback, items_count bypass.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,11 +1,11 @@
 ---
 id: TASK-46
 title: 'Address tab: /address/:addr/bridges (counter + conditional render)'
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-05-06 13:50'
-updated_date: '2026-05-07 12:27'
+updated_date: '2026-05-07 13:30'
 labels:
   - pages
   - address
@@ -34,12 +34,14 @@ priority: high
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 GET /address/:addr/bridges renders SSR (classic skin) with rows filtered by recipient
-- [ ] #2 Bridges tab in address-page nav appears only when bridge_mints_count > 0
-- [ ] #3 Tab header displays the count
-- [ ] #4 Cursor pagination via next_page_params
-- [ ] #5 Empty 200 from API (zero mints) renders empty state, not an error
-- [ ] #6 Golden HTML snapshot test driven by stubbed /api/v2/addresses/:addr/bridge-mints fixture
+<!-- AC:BEGIN -->
+- [x] #1 #1 GET /address/:addr/bridges renders SSR (classic skin) with rows filtered by recipient
+- [x] #2 #2 Bridges tab in address-page nav appears only when bridge_mints_count > 0
+- [x] #3 #3 Tab header displays the count
+- [x] #4 #4 Cursor pagination via next_page_params
+- [x] #5 #5 Empty 200 from API (zero mints) renders empty state, not an error
+- [x] #6 #6 Golden HTML snapshot test driven by stubbed /api/v2/addresses/:addr/bridge-mints fixture
+<!-- AC:END -->
 
 ## Implementation Plan
 
@@ -93,3 +95,9 @@ priority: high
 
 **No open design points** — all carried over from TASK-45 (event_id link → plain text per A1, mainnet-only Etherscan link per (d), no CSV per (c)). Page chrome conventions follow the existing `tx_html`/`address_html` pattern (duplication over partials).
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Shipped in commit ef15d67. /address/:addr/bridges renders SSR with bridges table; AddressController.bridges/2 reuses BridgesController helpers (cursor_query_from_params, parse_bridges_response, display_bridge — made public for reuse). Bridges tab on address index conditional on bridge_mints_count > 0 — reads optimistically with default 0, so tab stays hidden until 2d TASK-13.25 lands the field on /api/v2/addresses/:address. 8 tests: page rendering, empty, tab visibility (3 states), ps clamp, cursor passthrough.
+<!-- SECTION:FINAL_SUMMARY:END -->
