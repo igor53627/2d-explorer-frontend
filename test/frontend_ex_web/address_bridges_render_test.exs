@@ -115,6 +115,9 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
       else
         Application.delete_env(:frontend_ex, :clock_utc_now)
       end
+
+      _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
+      _ = FrontendEx.Cache.clear(FrontendEx.ApiSWRCache)
     end)
 
     :ok
@@ -272,6 +275,46 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
       assert is_binary(url)
       assert url =~ "block_number=42"
       assert url =~ "event_id=0x" <> String.duplicate("a", 64)
+    end
+  end
+
+  describe "GET /address/:addr/bridges hex/Base58 explanatory note" do
+    # `parse_address/1` in AddressController derives `tron_hash` from the
+    # 0x form via `FrontendEx.Tron.Address.from_eth_hex/1`, so any non-
+    # zero hex hash gets a tron_hash. The page-header note must mirror
+    # the index template (classic_content) — present when both forms are
+    # rendered, absent when there's only the hex form. Compact roborev
+    # #2237 flagged that ultrareview bug_002 fix in 9d3ba47 had no
+    # targeted regression test.
+    setup do
+      put_bridges_payload(%{"items" => [], "next_page_params" => nil})
+      :ok
+    end
+
+    test "renders the hex/Base58 helper sentence when tron_hash is present", %{conn: conn} do
+      # Default @addr (0xfe00...0000) has a non-zero hex form, so
+      # from_eth_hex/1 returns a Base58 form. The note should render.
+      html = conn |> get("/address/#{@addr}/bridges") |> html_response(200)
+
+      assert html =~ ~s(<div class="address-page-header-note">)
+      assert html =~ "Both addresses point to the same account"
+    end
+
+    test "omits the note when tron_hash derivation fails (defensive branch)", %{conn: conn} do
+      # `parse_address/1` calls `Tron.Address.from_eth_hex(hash)` and
+      # threads the result into the template's `tron_hash` conditional.
+      # The fallback `from_eth_hex(_) -> nil` clause fires on malformed
+      # input; an upstream payload with a missing `hash` field exercises
+      # that path (`to_string(json["hash"] || "")` → `""` →
+      # `from_eth_hex("") = nil`). The URL still uses the valid request
+      # address (controller validates `eth_address?/1` before fetching),
+      # so we can decouple URL-validity from payload-shape.
+      put_addr_payload(@addr_payload_base |> Map.delete("hash"))
+
+      html = conn |> get("/address/#{@addr}/bridges") |> html_response(200)
+
+      refute html =~ ~s(<div class="address-page-header-note">)
+      refute html =~ "Both addresses point to the same account"
     end
   end
 end
