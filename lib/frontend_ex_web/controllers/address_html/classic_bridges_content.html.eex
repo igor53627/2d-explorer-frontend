@@ -104,45 +104,27 @@
             <div class="empty-state">No bridge mints for this address.</div>
         </div>
     <% else %>
-        <%!-- Table body duplicated from bridges_html/classic_content.html.eex.
-            No partial mechanism in this codebase; if a third bridges-table
-            consumer ever appears, extract a Phoenix.HTML helper. --%>
+        <%!-- Table body mirrors bridges_html/classic_content.html.eex —
+            6-column layout with a direction arrow between the source ETH
+            tx and the on-chain 2D bridge_lock. Event ID / HTLC hash live
+            on the row as `data-event-id` / `data-htlc-hash` attributes
+            (operator-only fields; surface as visible cells when TASK-47
+            detail page lands). --%>
         <div class="table-responsive">
             <table id="bridges-table" class="txs-table">
                 <thead>
                     <tr>
-                        <th>Event</th>
-                        <th>HTLC</th>
-                        <th>Amount</th>
-                        <th>Recipient</th>
                         <th>Source ETH Tx</th>
+                        <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
                         <th>2D Tx</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
                         <th>Age</th>
                     </tr>
                 </thead>
                 <tbody>
                     <%= for b <- @bridges do %>
-                    <tr>
-                        <td>
-                            <span class="hash" title="<%= b.eth_event_id %>"><%= b.eth_event_id_short %></span>
-                        </td>
-                        <td>
-                            <%= case b.htlc_hash do %>
-                            <% h when is_binary(h) -> %>
-                                <span class="hash" title="<%= h %>"><%= b.htlc_hash_short %></span>
-                            <% _ -> %>
-                                <span class="text-muted">—</span>
-                            <% end %>
-                        </td>
-                        <td><%= b.amount_formatted %></td>
-                        <td>
-                            <%= case b.recipient_hash do %>
-                            <% r when is_binary(r) -> %>
-                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
-                            <% _ -> %>
-                                <span class="text-muted">—</span>
-                            <% end %>
-                        </td>
+                    <tr data-event-id="<%= b.eth_event_id %>" data-htlc-hash="<%= b.htlc_hash || "" %>">
                         <td>
                             <%= case b.source_chain_explorer_url do %>
                             <% url when is_binary(url) -> %>
@@ -150,6 +132,11 @@
                             <% _ -> %>
                                 <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
                             <% end %>
+                        </td>
+                        <td class="dir-cell dir-col">
+                            <span class="dir-icon" aria-label="bridges into 2D">
+                                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                            </span>
                         </td>
                         <td>
                             <%= case b.tx_hash_2d do %>
@@ -159,6 +146,15 @@
                                 <span class="text-muted">—</span>
                             <% end %>
                         </td>
+                        <td>
+                            <%= case b.recipient_hash do %>
+                            <% r when is_binary(r) -> %>
+                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td><%= b.amount_formatted %></td>
                         <td>
                             <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
                         </td>

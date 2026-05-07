@@ -22,4 +22,44 @@
     stroke-linecap: round;
     stroke-linejoin: round;
 }
+
+/* Onboarding-style empty-state for /bridges first visit. The default
+   `.empty-state` is a single muted line; here we want a paragraph
+   block so a user landing cold understands what /bridges represents. */
+.bridges-empty-state {
+    text-align: left;
+    padding: 28px 32px;
+    max-width: 720px;
+    margin: 0 auto;
+    color: var(--text);
+}
+.bridges-empty-state h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    color: var(--text);
+}
+.bridges-empty-state p {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin: 0 0 10px;
+}
+.bridges-empty-state p:last-child {
+    margin-bottom: 0;
+}
+.bridges-empty-state code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+.bridges-empty-meta {
+    font-size: 12px !important;
+    color: var(--text-muted) !important;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 14px !important;
+}
 </style>

@@ -53,45 +53,33 @@
 
     <%= if Enum.empty?(@bridges) do %>
         <div class="card-body">
-            <div class="empty-state">No bridge mints found.</div>
+            <div class="empty-state bridges-empty-state">
+                <h3>No bridge mints yet</h3>
+                <p>Bridge mints record cross-chain USDC transfers from Ethereum into 2D. Users lock USDC on Ethereum via the <code>BridgeHTLC</code> contract; the operator settles the corresponding mint here. As soon as the first lock lands and is processed, this list fills in.</p>
+                <p class="bridges-empty-meta">Each row carries <code>source_tx_hash#log_index</code> on the Ethereum side and the on-chain 2D <code>bridge_lock</code> tx for verification. <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">Learn more in the 2D docs</a>.</p>
+            </div>
         </div>
     <% else %>
+        <%!-- 6-column layout: Source ETH → 2D Tx | Recipient | Amount | Age.
+            Event ID and HTLC hash are operator-only fields (returned by
+            the API, embedded as `data-event-id` / `data-htlc-hash` on
+            the row for power-user inspection). They come back as visible
+            cells on the per-event detail page when TASK-47 lands. --%>
         <div class="table-responsive">
             <table id="bridges-table" class="txs-table">
                 <thead>
                     <tr>
-                        <th>Event</th>
-                        <th>HTLC</th>
-                        <th>Amount</th>
-                        <th>Recipient</th>
                         <th>Source ETH Tx</th>
+                        <th class="dir-cell dir-col" data-csv-skip>&nbsp;</th>
                         <th>2D Tx</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
                         <th>Age</th>
                     </tr>
                 </thead>
                 <tbody>
                     <%= for b <- @bridges do %>
-                    <tr>
-                        <td>
-                            <span class="hash" title="<%= b.eth_event_id %>"><%= b.eth_event_id_short %></span>
-                        </td>
-                        <td>
-                            <%= case b.htlc_hash do %>
-                            <% h when is_binary(h) -> %>
-                                <span class="hash" title="<%= h %>"><%= b.htlc_hash_short %></span>
-                            <% _ -> %>
-                                <span class="text-muted">—</span>
-                            <% end %>
-                        </td>
-                        <td><%= b.amount_formatted %></td>
-                        <td>
-                            <%= case b.recipient_hash do %>
-                            <% r when is_binary(r) -> %>
-                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
-                            <% _ -> %>
-                                <span class="text-muted">—</span>
-                            <% end %>
-                        </td>
+                    <tr data-event-id="<%= b.eth_event_id %>" data-htlc-hash="<%= b.htlc_hash || "" %>">
                         <td>
                             <%= case b.source_chain_explorer_url do %>
                             <% url when is_binary(url) -> %>
@@ -99,6 +87,11 @@
                             <% _ -> %>
                                 <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
                             <% end %>
+                        </td>
+                        <td class="dir-cell dir-col">
+                            <span class="dir-icon" aria-label="bridges into 2D">
+                                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                            </span>
                         </td>
                         <td>
                             <%= case b.tx_hash_2d do %>
@@ -108,6 +101,15 @@
                                 <span class="text-muted">—</span>
                             <% end %>
                         </td>
+                        <td>
+                            <%= case b.recipient_hash do %>
+                            <% r when is_binary(r) -> %>
+                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td><%= b.amount_formatted %></td>
                         <td>
                             <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
                         </td>

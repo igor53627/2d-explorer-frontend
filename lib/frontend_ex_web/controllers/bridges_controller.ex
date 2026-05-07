@@ -303,7 +303,15 @@ defmodule FrontendExWeb.BridgesController do
       eth_event_id_short: Format.truncate_hash(eth_event_id),
       htlc_hash: htlc_hash,
       htlc_hash_short: if(htlc_hash, do: Format.truncate_hash(htlc_hash), else: nil),
-      amount_formatted: Format.format_native_amount(amount_raw) <> " " <> native_coin.symbol,
+      # `Format.format_native_amount/1` always emits 4 decimal places
+      # (e.g. "1.0000"). On a /bridges row that's most of the visual
+      # weight; trim trailing zeros so round amounts read as `1 USDC`
+      # and `0.5 USDC` instead of `1.0000 USDC` / `0.5000 USDC`. Local
+      # post-process here so the global formatter's golden-byte parity
+      # on /tx, /address etc. is unaffected.
+      amount_formatted:
+        trim_trailing_decimal_zeros(Format.format_native_amount(amount_raw)) <>
+          " " <> native_coin.symbol,
       recipient_hash: recipient_hash,
       recipient_short: if(recipient_hash, do: Format.truncate_hash(recipient_hash), else: nil),
       source_tx_hash: source_tx_hash,
@@ -334,6 +342,24 @@ defmodule FrontendExWeb.BridgesController do
   end
 
   defp source_chain_explorer_url(_, _), do: nil
+
+  # Drop trailing zeros from the decimal part of a `Format.format_native_amount`
+  # result, then drop the dot if nothing remains. Used to render bridge-mint
+  # amounts compactly (`1 USDC` instead of `1.0000 USDC`). Pure string-level
+  # post-process — keeps the global formatter unchanged so /tx and /address
+  # goldens stay byte-identical.
+  defp trim_trailing_decimal_zeros(s) when is_binary(s) do
+    case String.split(s, ".", parts: 2) do
+      [int_part, frac_part] ->
+        case String.trim_trailing(frac_part, "0") do
+          "" -> int_part
+          trimmed -> int_part <> "." <> trimmed
+        end
+
+      _ ->
+        s
+    end
+  end
 
   defp ensure_hex_prefix("0x" <> _ = v), do: v
   defp ensure_hex_prefix(v) when is_binary(v), do: "0x" <> v
