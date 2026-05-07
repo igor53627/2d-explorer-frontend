@@ -125,9 +125,11 @@ defmodule FrontendExWeb.BridgesRenderTest do
       html = conn |> get("/bridges") |> html_response(200)
 
       assert html =~ "Bridges"
-      assert html =~ "0xbeef...0000"
-      assert html =~ "0xc0de...0000"
-      assert html =~ "1.0000 USDC"
+      # Amount: trailing zeros trimmed (`1.0000` → `1`) since post-P1
+      # /bridges is a row-dense surface where round amounts read better
+      # without filler zeros.
+      assert html =~ "1 USDC"
+      refute html =~ "1.0000 USDC"
       assert html =~ ~s(<a href="/address/0xfe00000000000000000000000000000000000000")
       assert html =~ "0xfe00...0000"
 
@@ -135,6 +137,19 @@ defmodule FrontendExWeb.BridgesRenderTest do
                ~s(<a href="/tx/0xface000000000000000000000000000000000000000000000000000000000000")
 
       assert html =~ "0xface...0000"
+      # Event ID + HTLC are no longer surfaced as visible cells
+      # (operator-only, returned by API) but the row carries them as
+      # data-* attributes for power-user inspection / future CSV export.
+      assert html =~ ~s(data-event-id="0xbeef000000000000000000000000000000000000000000000000000000000000")
+      assert html =~ ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
+      refute html =~ "0xbeef...0000"
+      refute html =~ "0xc0de...0000"
+      # Direction arrow cell sits between Source ETH Tx and 2D Tx to
+      # cue the cross-chain narrative visually.
+      # Direction arrow cell sits between Source ETH Tx and 2D Tx; the
+      # `data-csv-skip` attribute mirrors what the `<th>` carries so CSV
+      # export skips this column consistently.
+      assert html =~ ~s(<td class="dir-cell dir-col" data-csv-skip>)
     end
 
     test "renders source-chain link to Etherscan when chain_id == 1", %{conn: conn} do
@@ -144,6 +159,43 @@ defmodule FrontendExWeb.BridgesRenderTest do
                ~s(href="https://etherscan.io/tx/0xabcd000000000000000000000000000000000000000000000000000000000000")
 
       assert html =~ "0xabcd...0000#7"
+    end
+  end
+
+  describe "GET /bridges amount formatting (trim_trailing_decimal_zeros)" do
+    # The local helper in BridgesController post-processes
+    # `Format.format_native_amount/1` so round amounts read as `1 USDC`
+    # instead of `1.0000 USDC`. Pin the three branches end-to-end so a
+    # future change to either the helper or the global formatter can't
+    # silently regress only one of them.
+
+    test "round 1 USDC: 4 trailing zeros stripped (`1.0000` → `1`)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "amount", "1000000")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+
+      assert html =~ "1 USDC"
+      refute html =~ "1.0000"
+    end
+
+    test "round 0.5 USDC: trailing zeros after decimal stripped (`0.5000` → `0.5`)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "amount", "500000")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+
+      assert html =~ "0.5 USDC"
+      refute html =~ "0.5000"
+    end
+
+    test "non-round 0.1068 USDC: precision preserved (no trim)", %{conn: conn} do
+      mint = Map.put(@bridge_default, "amount", "106800")
+      put_bridges_payload(%{"items" => [mint], "next_page_params" => nil})
+
+      html = conn |> get("/bridges") |> html_response(200)
+
+      assert html =~ "0.1068 USDC"
     end
   end
 
@@ -197,9 +249,16 @@ defmodule FrontendExWeb.BridgesRenderTest do
       :ok
     end
 
-    test "renders empty-state copy and 200, no error", %{conn: conn} do
+    test "renders onboarding empty-state and 200, no error", %{conn: conn} do
       html = conn |> get("/bridges") |> html_response(200)
-      assert html =~ "No bridge mints found."
+      # Post-P2: empty-state is an onboarding block, not a one-line
+      # "no records" stub. Pin the heading + the docs link so future
+      # template tweaks don't accidentally drop the orientation copy
+      # that helps a user landing on /bridges cold.
+      assert html =~ ~s(class="empty-state bridges-empty-state")
+      assert html =~ "No bridge mints yet"
+      assert html =~ "cross-chain USDC transfers from Ethereum into 2D"
+      assert html =~ ~s(href="https://igor53627.github.io/2d-docs/")
     end
   end
 

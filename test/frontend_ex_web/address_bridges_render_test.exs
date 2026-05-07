@@ -141,9 +141,9 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
     test "renders bridge-mints table with correct columns", %{conn: conn} do
       html = conn |> get("/address/#{@addr}/bridges") |> html_response(200)
 
-      assert html =~ "0xbeef...0000"
-      assert html =~ "0xc0de...0000"
-      assert html =~ "1.0000 USDC"
+      # Amount: trimmed trailing zeros (post-P1 row-density tweak).
+      assert html =~ "1 USDC"
+      refute html =~ "1.0000 USDC"
       assert html =~ ~s(<a href="/address/#{@addr}")
       assert html =~ "0xfe00...0000"
 
@@ -156,6 +156,17 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
                ~s(href="https://etherscan.io/tx/0xabcd000000000000000000000000000000000000000000000000000000000000")
 
       assert html =~ "0xabcd...0000#7"
+
+      # Event ID + HTLC: row data-* attributes (operator-only fields,
+      # surfaced via DevTools / future CSV export, not as visible cells).
+      assert html =~ ~s(data-event-id="0xbeef000000000000000000000000000000000000000000000000000000000000")
+      assert html =~ ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
+      refute html =~ "0xbeef...0000"
+      refute html =~ "0xc0de...0000"
+      # Direction arrow cell between Source ETH Tx and 2D Tx columns.
+      # Direction arrow cell + `data-csv-skip` to mirror the `<th>` for
+      # CSV-exporter consistency.
+      assert html =~ ~s(<td class="dir-cell dir-col" data-csv-skip>)
     end
 
     test "Bridges tab always renders as active here, even when count==0 (ultrareview bug_003)", %{

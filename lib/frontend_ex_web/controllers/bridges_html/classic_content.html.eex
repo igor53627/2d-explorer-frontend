@@ -9,6 +9,11 @@
     </div>
 </div>
 
+<div class="bridges-subtitle">
+    <p>Each row is a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC.</p>
+    <p>The source-chain reference links out to Etherscan; the 2D mint links to the on-chain <code>bridge_lock</code> extrinsic.</p>
+</div>
+
 <div class="card">
     <div class="card-header txs-card-header">
         <div class="table-toolbar">
@@ -53,45 +58,35 @@
 
     <%= if Enum.empty?(@bridges) do %>
         <div class="card-body">
-            <div class="empty-state">No bridge mints found.</div>
+            <div class="empty-state bridges-empty-state">
+                <h3>No bridge mints yet</h3>
+                <p>Bridge mints record cross-chain USDC transfers from Ethereum into 2D. Users lock USDC on Ethereum via the <code>BridgeHTLC</code> contract; the operator settles the corresponding mint here. As soon as the first lock lands and is processed, this list fills in.</p>
+                <p class="bridges-empty-meta">Each row carries <code>source_tx_hash#log_index</code> on the Ethereum side and the on-chain 2D <code>bridge_lock</code> tx for verification. <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">Learn more in the 2D docs</a>.</p>
+            </div>
         </div>
     <% else %>
+        <%!-- 6-column layout: Locked on Ethereum → Minted on 2D | Age | Recipient | Amount.
+            Event ID and HTLC hash are operator-only fields (returned by
+            the API, embedded as `data-event-id` / `data-htlc-hash` on
+            the row for power-user inspection). They come back as visible
+            cells on the per-event detail page when TASK-47 lands. --%>
         <div class="table-responsive">
             <table id="bridges-table" class="txs-table">
                 <thead>
                     <tr>
-                        <th>Event</th>
-                        <th>HTLC</th>
-                        <th>Amount</th>
-                        <th>Recipient</th>
-                        <th>Source ETH Tx</th>
-                        <th>2D Tx</th>
+                        <th>Locked on Ethereum</th>
+                        <th class="dir-cell dir-col" data-csv-skip>
+                            <span class="sr-only">Direction</span>
+                        </th>
+                        <th>Minted on 2D</th>
                         <th>Age</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <%= for b <- @bridges do %>
-                    <tr>
-                        <td>
-                            <span class="hash" title="<%= b.eth_event_id %>"><%= b.eth_event_id_short %></span>
-                        </td>
-                        <td>
-                            <%= case b.htlc_hash do %>
-                            <% h when is_binary(h) -> %>
-                                <span class="hash" title="<%= h %>"><%= b.htlc_hash_short %></span>
-                            <% _ -> %>
-                                <span class="text-muted">—</span>
-                            <% end %>
-                        </td>
-                        <td><%= b.amount_formatted %></td>
-                        <td>
-                            <%= case b.recipient_hash do %>
-                            <% r when is_binary(r) -> %>
-                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
-                            <% _ -> %>
-                                <span class="text-muted">—</span>
-                            <% end %>
-                        </td>
+                    <tr data-event-id="<%= b.eth_event_id %>" data-htlc-hash="<%= b.htlc_hash || "" %>">
                         <td>
                             <%= case b.source_chain_explorer_url do %>
                             <% url when is_binary(url) -> %>
@@ -99,6 +94,23 @@
                             <% _ -> %>
                                 <span class="hash" title="<%= b.source_tx_hash %><%= if b.source_log_index, do: " log index #{b.source_log_index}", else: "" %>"><%= b.source_tx_hash_short %><%= if b.source_log_index, do: "##{b.source_log_index}", else: "" %></span>
                             <% end %>
+                        </td>
+                        <td class="dir-cell dir-col" data-csv-skip>
+                            <%!-- Direction is currently always Ethereum→2D
+                                (bridge IN). Bridge OUT (2D→Ethereum) is not
+                                yet implemented on 2d (no `bridge_burns` table
+                                or analogous flow). When it lands, this arrow
+                                will need to flip per row, and "Locked on
+                                Ethereum"/"Minted on 2D" labels will need
+                                action variants ("Burned on 2D"/"Released on
+                                Ethereum"). Kept as a hardcoded right-arrow
+                                for now to avoid premature complexity. The
+                                arrow is decorative (`aria-hidden="true"`)
+                                because the column header carries the
+                                accessible "Direction" label already. --%>
+                            <span class="dir-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                            </span>
                         </td>
                         <td>
                             <%= case b.tx_hash_2d do %>
@@ -111,6 +123,15 @@
                         <td>
                             <span class="time-ago text-muted" title="<%= b.timestamp_readable %>"><%= b.time_ago %></span>
                         </td>
+                        <td>
+                            <%= case b.recipient_hash do %>
+                            <% r when is_binary(r) -> %>
+                                <a href="/address/<%= r %>" class="hash" title="<%= r %>"><%= b.recipient_short %></a>
+                            <% _ -> %>
+                                <span class="text-muted">—</span>
+                            <% end %>
+                        </td>
+                        <td><%= b.amount_formatted %></td>
                     </tr>
                     <% end %>
                 </tbody>
@@ -169,5 +190,5 @@
         <path d="M10 22h4"/>
         <path d="M12 2a7 7 0 0 0-4 12c.5.5 1 1.5 1 2v1h6v-1c0-.5.5-1.5 1-2a7 7 0 0 0-4-12z"/>
     </svg>
-    <span>A bridge mint records a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The Source ETH Tx links to Etherscan; the 2D Tx links to the on-chain `bridge_lock` extrinsic. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.</span>
+    <span>A bridge mint records a USDC transfer locked on Ethereum and minted into 2D via the bridge HTLC. The "Locked on Ethereum" cell links to Etherscan; the "Minted on 2D" cell links to the on-chain <code>bridge_lock</code> extrinsic. Learn more in the <a href="https://igor53627.github.io/2d-docs/" target="_blank" rel="noopener">2D docs</a>.</span>
 </p>
