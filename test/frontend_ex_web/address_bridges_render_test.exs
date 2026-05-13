@@ -163,10 +163,29 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
       assert html =~ ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
       refute html =~ "0xbeef...0000"
       refute html =~ "0xc0de...0000"
-      # Direction arrow cell between Source ETH Tx and 2D Tx columns.
       # Direction arrow cell + `data-csv-skip` to mirror the `<th>` for
       # CSV-exporter consistency.
       assert html =~ ~s(<td class="dir-cell dir-col" data-csv-skip>)
+
+      # Mirror the /bridges layout pinning — exact column sequence so a
+      # silent reorder is caught here too (this template was edited in
+      # lock-step with `bridges_html/classic_content.html.eex` and we
+      # want both to enforce the same convention).
+      assert html =~
+               ~r{<th>Locked on Ethereum</th>.*<th class="dir-cell dir-col" data-csv-skip>.*<th>Minted on 2D</th>.*<th>Age</th>.*<th>Recipient</th>.*<th>Amount</th>}s
+
+      # Footnote below the table replaces the global /bridges subtitle
+      # since the per-address page already has full address-card chrome;
+      # pin the new "Locked on Ethereum"/"Minted on 2D" wording so it
+      # doesn't drift back to the pre-PR-#6 labels.
+      assert html =~ "Bridge mints recorded for this address"
+      assert html =~ ~s(The "Locked on Ethereum" cell links to Etherscan)
+      assert html =~ ~s(the "Minted on 2D" cell links to the on-chain)
+
+      # Accessibility — direction column header + decorative SVG. Same
+      # rules as /bridges; mirrored here.
+      assert html =~ ~s(<span class="sr-only">Direction</span>)
+      assert html =~ ~s(<span class="dir-icon" aria-hidden="true">)
     end
 
     test "Bridges tab always renders as active here, even when count==0 (ultrareview bug_003)", %{

@@ -144,12 +144,31 @@ defmodule FrontendExWeb.BridgesRenderTest do
       assert html =~ ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
       refute html =~ "0xbeef...0000"
       refute html =~ "0xc0de...0000"
-      # Direction arrow cell sits between Source ETH Tx and 2D Tx to
-      # cue the cross-chain narrative visually.
       # Direction arrow cell sits between Source ETH Tx and 2D Tx; the
       # `data-csv-skip` attribute mirrors what the `<th>` carries so CSV
       # export skips this column consistently.
       assert html =~ ~s(<td class="dir-cell dir-col" data-csv-skip>)
+
+      # Subtitle: two-paragraph orientation block above the table. Pin
+      # both paragraphs so a future template tweak doesn't silently drop
+      # the docs link or merge the paragraphs back into a single line
+      # (which we discovered wraps mid-clause at standard widths).
+      assert html =~ "Each row is a USDC transfer locked on Ethereum and minted into 2D"
+      assert html =~ "The source-chain reference links out to Etherscan"
+      assert html =~ ~s(<code>bridge_lock</code>)
+
+      # Column header order is the convention we landed on after the UX
+      # review pass — Locked-on-Ethereum → Minted-on-2D as the cross-
+      # chain pair, then Age (mirrors /txs), then Recipient + Amount on
+      # the right. Pinning the exact sequence catches any silent
+      # reordering (we shuffled columns three times during PR #6).
+      assert html =~
+               ~r{<th>Locked on Ethereum</th>.*<th class="dir-cell dir-col" data-csv-skip>.*<th>Minted on 2D</th>.*<th>Age</th>.*<th>Recipient</th>.*<th>Amount</th>}s
+
+      # Direction column header has an accessible name for screen
+      # readers (the cell is otherwise an empty decorative arrow).
+      assert html =~ ~s(<span class="sr-only">Direction</span>)
+      assert html =~ ~s(<span class="dir-icon" aria-hidden="true">)
     end
 
     test "renders source-chain link to Etherscan when chain_id == 1", %{conn: conn} do
