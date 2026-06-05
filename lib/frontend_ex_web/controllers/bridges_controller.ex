@@ -1,13 +1,67 @@
 defmodule FrontendExWeb.BridgesController do
   use FrontendExWeb, :controller
 
-  alias FrontendEx.Blockscout.Client
+  alias FrontendEx.{Blockscout.Client, BridgeTx}
   alias FrontendEx.Blockscout.Cursor
   alias FrontendEx.Format
   alias FrontendExWeb.BridgesHTML
 
   @page_size_options [10, 25, 50, 100]
   @default_page_size 50
+
+  def show(conn, %{"eth_event_id" => raw}) when is_binary(raw) do
+    event_id = String.trim(raw)
+
+    if BridgeTx.valid_eth_event_id?(event_id) do
+      show_bridge(conn, event_id)
+    else
+      conn
+      |> put_resp_content_type("text/plain")
+      |> send_resp(404, "Bridge mint not found")
+    end
+  end
+
+  defp show_bridge(conn, event_id) do
+    api_path = "/api/v2/bridges/#{event_id}"
+
+    stats_task = Task.async(fn -> Client.get_json_cached("/api/v2/stats", :public) end)
+    bridge_task = Task.async(fn -> Client.get_json_cached(api_path, :public) end)
+
+    [stats_json, bridge_json] =
+      await_many_ok([{"stats", stats_task}, {"bridge", bridge_task}], "bridge_show")
+
+    if is_nil(bridge_json) do
+      conn
+      |> put_resp_content_type("text/plain")
+      |> send_resp(404, "Bridge mint not found")
+    else
+      native_coin = derive_native_coin(stats_json)
+      bridge = parse_bridge_show_response(bridge_json, native_coin)
+
+      if is_nil(bridge) do
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(404, "Bridge mint not found")
+      else
+        base_assigns =
+          base_assigns(%{
+            bridge: bridge,
+            eth_event_id: event_id,
+            eth_event_id_short: Format.truncate_hash(event_id),
+            native_coin: native_coin
+          })
+
+        styles = BridgesHTML.classic_show_styles(base_assigns)
+
+        render(conn, :classic_show_content, %{
+          base_assigns
+          | page_title: "Bridge mint | 2D",
+            nav_bridges: "active",
+            styles: styles
+        })
+      end
+    end
+  end
 
   def index(conn, params) when is_map(params) do
     page_size = normalize_page_size(params)
@@ -234,6 +288,15 @@ defmodule FrontendExWeb.BridgesController do
 
   def parse_bridges_response(_, _native_coin), do: {[], nil}
 
+  @doc "Decode `GET /api/v2/bridges/:eth_event_id` into display assigns, or `nil`."
+  def parse_bridge_show_response(nil, _native_coin), do: nil
+
+  def parse_bridge_show_response(%{"eth_event_id" => _} = json, native_coin) do
+    display_bridge(json, native_coin)
+  end
+
+  def parse_bridge_show_response(_, _native_coin), do: nil
+
   @doc """
   Public so `AddressController.bridges/2` (TASK-46) can reuse the same
   per-row view-model decoration. Mirror the column expectations from
@@ -306,21 +369,20 @@ defmodule FrontendExWeb.BridgesController do
     # visible header cells.
     %{
       eth_event_id: eth_event_id,
+      eth_event_id_short: Format.truncate_hash(eth_event_id),
+      bridge_detail_href: BridgeTx.bridge_detail_href(eth_event_id),
       htlc_hash: htlc_hash,
+      htlc_hash_short: if(htlc_hash, do: Format.truncate_hash(htlc_hash), else: nil),
       # Trim trailing zeros from the formatter's decimal output so round
       # amounts read as `1 USDC` / `0.5 USDC` instead of `1.0000 USDC` /
-      # `0.5000 USDC`. `Format.format_native_amount/1` is tiered: up to
-      # 4 dp for typical mint magnitudes, more for very small amounts
-      # (6 dp / 8 dp branches), and a bare `"0"` (no decimal point) for
-      # zero. The trim helper handles all four shapes — see
-      # `trim_trailing_decimal_zeros/1` below for the no-decimal
-      # passthrough. Local post-process here so the global formatter
-      # keeps its golden-byte parity on /tx, /address etc.
+      # `0.5000 USDC`. `Format.format_native_amount_trimmed/1` keeps the
+      # untrimmed `format_native_amount/1` intact so /tx, /address etc.
+      # retain their golden-byte parity. Shared with the tx bridge card.
       amount_formatted:
-        trim_trailing_decimal_zeros(Format.format_native_amount(amount_raw)) <>
-          " " <> native_coin.symbol,
+        Format.format_native_amount_trimmed(amount_raw) <> " " <> native_coin.symbol,
       recipient_hash: recipient_hash,
       recipient_short: if(recipient_hash, do: Format.truncate_hash(recipient_hash), else: nil),
+      source_chain_id: source_chain_id,
       source_tx_hash: source_tx_hash,
       source_tx_hash_short: Format.truncate_hash(source_tx_hash),
       source_log_index: source_log_index,
@@ -333,41 +395,6 @@ defmodule FrontendExWeb.BridgesController do
     }
   end
 
-  defp source_chain_explorer_url(1, hash) when is_binary(hash) and hash != "" do
-    # Defense in depth: only return a URL if `hash` is a clean 32-byte hex
-    # (with optional 0x prefix). The href= surface in the template
-    # interpolates whatever this returns; a malformed hash that injected
-    # a `javascript:` URI fragment would survive Phoenix.HTML escaping
-    # (which guards against angle-brackets/quotes, not URI schemes).
-    # The strict regex makes this path safe even if a future code change
-    # widens what gets passed in.
-    if Regex.match?(~r/^(0x)?[0-9a-fA-F]{64}$/, hash) do
-      "https://etherscan.io/tx/" <> ensure_hex_prefix(hash)
-    else
-      nil
-    end
-  end
-
-  defp source_chain_explorer_url(_, _), do: nil
-
-  # Drop trailing zeros from the decimal part of a `Format.format_native_amount`
-  # result, then drop the dot if nothing remains. Used to render bridge-mint
-  # amounts compactly (`1 USDC` instead of `1.0000 USDC`). Pure string-level
-  # post-process — keeps the global formatter unchanged so /tx and /address
-  # goldens stay byte-identical.
-  defp trim_trailing_decimal_zeros(s) when is_binary(s) do
-    case String.split(s, ".", parts: 2) do
-      [int_part, frac_part] ->
-        case String.trim_trailing(frac_part, "0") do
-          "" -> int_part
-          trimmed -> int_part <> "." <> trimmed
-        end
-
-      _ ->
-        s
-    end
-  end
-
-  defp ensure_hex_prefix("0x" <> _ = v), do: v
-  defp ensure_hex_prefix(v) when is_binary(v), do: "0x" <> v
+  defp source_chain_explorer_url(chain_id, hash),
+    do: FrontendEx.BridgeTx.source_chain_tx_url(chain_id, hash)
 end

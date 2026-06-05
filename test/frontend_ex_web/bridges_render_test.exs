@@ -140,8 +140,12 @@ defmodule FrontendExWeb.BridgesRenderTest do
       # Event ID + HTLC are no longer surfaced as visible cells
       # (operator-only, returned by API) but the row carries them as
       # data-* attributes for power-user inspection / future CSV export.
-      assert html =~ ~s(data-event-id="0xbeef000000000000000000000000000000000000000000000000000000000000")
-      assert html =~ ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
+      assert html =~
+               ~s(data-event-id="0xbeef000000000000000000000000000000000000000000000000000000000000")
+
+      assert html =~
+               ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
+
       refute html =~ "0xbeef...0000"
       refute html =~ "0xc0de...0000"
       # Direction arrow cell sits between Source ETH Tx and 2D Tx; the

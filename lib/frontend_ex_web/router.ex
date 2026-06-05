@@ -92,6 +92,8 @@ defmodule FrontendExWeb.Router do
     get "/blocks", BlocksController, :index
     get "/txs", TxsController, :index
     get "/bridges", BridgesController, :index
+    get "/bridges/:eth_event_id", BridgesController, :show
+    get "/bridge/intents/:intent_id", BridgeIntentController, :show
     get "/block/:id", BlockController, :show
     get "/block/:id/txs", BlockController, :txs
     get "/tx/:hash", TxController, :show

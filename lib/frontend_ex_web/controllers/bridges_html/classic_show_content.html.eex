@@ -1,0 +1,69 @@
+
+<div class="page-header">
+    <div class="page-header-title">
+        <h1 class="page-title">Bridge mint</h1>
+        <a class="btn btn-sm btn-outline" href="/bridges">← All bridges</a>
+    </div>
+</div>
+
+<div class="bridges-subtitle">
+    <p>USDC locked on Ethereum and minted on 2D for this <code>BridgeLocked</code> event.</p>
+</div>
+
+<div class="card bridge-detail-card">
+    <div class="card-body">
+        <div class="detail-row">
+            <div class="detail-label">ETH event ID</div>
+            <div class="detail-value">
+                <span class="hash" title="<%= @eth_event_id %>"><%= @eth_event_id_short %></span>
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Amount</div>
+            <div class="detail-value fw-medium"><%= @bridge.amount_formatted %></div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Recipient</div>
+            <div class="detail-value">
+                <%= if @bridge.recipient_hash do %>
+                    <a class="link hash" href="/address/<%= @bridge.recipient_hash %>" title="<%= @bridge.recipient_hash %>"><%= @bridge.recipient_short %></a>
+                <% else %>
+                    <span class="text-muted">—</span>
+                <% end %>
+            </div>
+        </div>
+        <%= if @bridge.htlc_hash do %>
+        <div class="detail-row">
+            <div class="detail-label">HTLC hash</div>
+            <div class="detail-value"><span class="hash" title="<%= @bridge.htlc_hash %>"><%= @bridge.htlc_hash_short %></span></div>
+        </div>
+        <% end %>
+        <div class="detail-row">
+            <div class="detail-label">Source (Ethereum)</div>
+            <div class="detail-value">
+                <%= if @bridge.source_chain_explorer_url do %>
+                    <a class="link hash" href="<%= @bridge.source_chain_explorer_url %>" target="_blank" rel="noopener" title="<%= @bridge.source_tx_hash %>"><%= @bridge.source_tx_hash_short %><%= if @bridge.source_log_index != nil, do: "##{@bridge.source_log_index}", else: "" %></a>
+                <% else %>
+                    <span class="hash" title="<%= @bridge.source_tx_hash %>"><%= @bridge.source_tx_hash_short %><%= if @bridge.source_log_index != nil, do: "##{@bridge.source_log_index}", else: "" %></span>
+                <% end %>
+                <%= if @bridge.source_chain_id do %><span class="text-muted" style="margin-left:8px;">chain <%= @bridge.source_chain_id %></span><% end %>
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Minted on 2D</div>
+            <div class="detail-value">
+                <%= if @bridge.tx_hash_2d do %>
+                    <a class="link hash" href="/tx/<%= @bridge.tx_hash_2d %>" title="<%= @bridge.tx_hash_2d %>"><%= @bridge.tx_hash_2d_short %></a>
+                <% else %>
+                    <span class="text-muted">—</span>
+                <% end %>
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Applied at</div>
+            <div class="detail-value">
+                <span class="time-ago text-muted" title="<%= @bridge.timestamp_readable %>"><%= @bridge.time_ago %></span>
+            </div>
+        </div>
+    </div>
+</div>

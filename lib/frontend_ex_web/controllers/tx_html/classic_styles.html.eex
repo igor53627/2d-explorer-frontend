@@ -296,4 +296,12 @@
     .more-details summary.detail-row { gap: 4px; }
     .more-details summary.detail-row .detail-value { padding-left: 0; }
 }
+
+.bridge-tx-card {
+    margin-top: 16px;
+    border-left: 3px solid var(--primary, #0784c3);
+}
+.bridge-tx-card .detail-label {
+    min-width: 140px;
+}
 </style>

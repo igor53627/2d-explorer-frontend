@@ -159,8 +159,12 @@ defmodule FrontendExWeb.AddressBridgesRenderTest do
 
       # Event ID + HTLC: row data-* attributes (operator-only fields,
       # surfaced via DevTools / future CSV export, not as visible cells).
-      assert html =~ ~s(data-event-id="0xbeef000000000000000000000000000000000000000000000000000000000000")
-      assert html =~ ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
+      assert html =~
+               ~s(data-event-id="0xbeef000000000000000000000000000000000000000000000000000000000000")
+
+      assert html =~
+               ~s(data-htlc-hash="0xc0de000000000000000000000000000000000000000000000000000000000000")
+
       refute html =~ "0xbeef...0000"
       refute html =~ "0xc0de...0000"
       # Direction arrow cell + `data-csv-skip` to mirror the `<th>` for

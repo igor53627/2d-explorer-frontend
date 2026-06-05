@@ -1,9 +1,8 @@
 defmodule FrontendExWeb.TxController do
   use FrontendExWeb, :controller
 
-  alias FrontendEx.Blockscout.Client
-  alias FrontendEx.Format
-  alias FrontendExWeb.TxHTML
+  alias FrontendEx.{Blockscout.Client, BridgeTx, Format}
+  alias FrontendExWeb.{TxBridgeCard, TxHTML}
 
   @task_timeout_ms 10_000
   # Rust treats transaction-by-hash and related tx tabs data as immutable (300s cache).
@@ -56,6 +55,21 @@ defmodule FrontendExWeb.TxController do
           |> parse_tx()
           |> maybe_format_method()
           |> with_confirmations(latest_block_height)
+
+        bridge_json =
+          if BridgeTx.bridge_candidate?(get_in(display_tx, [:to, :hash])) do
+            # NOT @immutable_ttl_ms: the card surfaces mutable HTLC swap state
+            # (locked → claimed → refunded), so use the short default TTL to
+            # avoid showing stale state for minutes after a claim/refund.
+            case Client.get_json_cached("/api/v2/transactions/#{hash}/bridge", :public) do
+              {:ok, json} -> json
+              {:error, _} -> nil
+            end
+          else
+            nil
+          end
+
+        bridge_card = TxBridgeCard.build(bridge_json, native_coin)
 
         {from_is_contract_like, from_is_verified, to_is_contract_like, to_is_verified} =
           address_flags(display_tx)
@@ -118,12 +132,16 @@ defmodule FrontendExWeb.TxController do
         head_meta = TxHTML.classic_head_meta(base_assigns)
         styles = TxHTML.classic_styles(base_assigns)
 
-        render(conn, :classic_content, %{
-          base_assigns
-          | page_title: "Transaction #{display_tx.hash} | 2D",
+        render(
+          conn,
+          :classic_content,
+          Map.merge(base_assigns, %{
+            bridge_card: bridge_card,
+            page_title: "Transaction #{display_tx.hash} | 2D",
             head_meta: head_meta,
             styles: styles
-        })
+          })
+        )
       end
     end
   end
