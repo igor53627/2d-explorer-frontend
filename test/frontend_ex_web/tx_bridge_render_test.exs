@@ -22,6 +22,22 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
   @tx_bridge_miss "0xface000000000000000000000000000000000000000000000000000000000005"
   @plain_to "0x0000000000000000000000000000000000000002"
 
+  @bridge_refill_payload %{
+    "kind" => "bridge_refill_mint",
+    "data" => %{
+      "amount" => "1000000",
+      "eth_event_id" => "0x8a26217d2693abf40185791db4ca9889b322f73e5645ab1c2842139185c1b66c",
+      "source_chain_id" => 1,
+      "source_log_index" => 7,
+      "source_tx_hash" => "0xabcd000000000000000000000000000000000000000000000000000000000000",
+      "bridge_mint" => %{
+        "tx_hash_2d" => @tx_bridge_lock,
+        "amount" => "1000000",
+        "eth_event_id" => "0x8a26217d2693abf40185791db4ca9889b322f73e5645ab1c2842139185c1b66c"
+      }
+    }
+  }
+
   @bridge_lock_payload %{
     "kind" => "bridge_lock",
     "data" => %{
@@ -132,7 +148,19 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
     :ok
   end
 
+  defp clear_api_caches do
+    _ = FrontendEx.Cache.clear(FrontendEx.ApiCache)
+    _ = FrontendEx.Cache.clear(FrontendEx.ApiSWRCache)
+  end
+
+  defp put_bridge_payload(payload) do
+    Application.put_env(:frontend_ex, :tx_bridge_test_bridge_payload, payload)
+    clear_api_caches()
+  end
+
   defp put_tx_payload(tx_hash, to_hash) do
+    clear_api_caches()
+
     Application.put_env(:frontend_ex, :tx_bridge_test_tx_payload, %{
       "hash" => tx_hash,
       "block_number" => 0,
@@ -147,14 +175,27 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
   end
 
   describe "GET /tx/:hash bridge card" do
+    test "renders bridge_refill_mint card", %{conn: conn} do
+      put_tx_payload(@tx_bridge_lock, @bridge_precompile)
+      put_bridge_payload(@bridge_refill_payload)
+
+      html = conn |> get("/tx/#{@tx_bridge_lock}") |> html_response(200)
+
+      assert html =~ ~s(data-bridge-kind="bridge_refill_mint")
+      assert html =~ "Bridge refill mint"
+      assert html =~ "/bridges/0x8a26217d2693abf40185791db4ca9889b322f73e5645ab1c2842139185c1b66c"
+    end
+
     test "renders bridge_lock card for bridge precompile tx", %{conn: conn} do
       put_tx_payload(@tx_bridge_lock, @bridge_precompile)
-      Application.put_env(:frontend_ex, :tx_bridge_test_bridge_payload, @bridge_lock_payload)
+      put_bridge_payload(@bridge_lock_payload)
 
       html = conn |> get("/tx/#{@tx_bridge_lock}") |> html_response(200)
 
       assert html =~ ~s(id="bridge-tx-card")
+      assert html =~ ~s(data-bridge-kind="bridge_lock")
       assert html =~ "Bridge lock"
+      refute html =~ "Bridge refill mint"
       assert html =~ "HTLC hash"
       assert html =~ "etherscan.io/tx/"
       assert html =~ "/bridges/0x8a26217d2693abf40185791db4ca9889b322f73e5645ab1c2842139185c1b66c"
@@ -162,7 +203,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
 
     test "renders htlc_settle card", %{conn: conn} do
       put_tx_payload(@tx_htlc_settle, @htlc_precompile)
-      Application.put_env(:frontend_ex, :tx_bridge_test_bridge_payload, @htlc_settle_payload)
+      put_bridge_payload(@htlc_settle_payload)
 
       html = conn |> get("/tx/#{@tx_htlc_settle}") |> html_response(200)
 
@@ -173,7 +214,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
 
     test "renders htlc_refund card", %{conn: conn} do
       put_tx_payload(@tx_htlc_refund, @htlc_precompile)
-      Application.put_env(:frontend_ex, :tx_bridge_test_bridge_payload, @htlc_refund_payload)
+      put_bridge_payload(@htlc_refund_payload)
 
       html = conn |> get("/tx/#{@tx_htlc_refund}") |> html_response(200)
 
@@ -191,7 +232,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
 
     test "bridge candidate but bridge endpoint 404 — no card, page still 200", %{conn: conn} do
       put_tx_payload(@tx_bridge_miss, @bridge_precompile)
-      Application.put_env(:frontend_ex, :tx_bridge_test_bridge_payload, nil)
+      put_bridge_payload(nil)
 
       html = conn |> get("/tx/#{@tx_bridge_miss}") |> html_response(200)
 

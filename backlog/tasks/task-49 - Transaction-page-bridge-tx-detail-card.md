@@ -1,11 +1,11 @@
 ---
 id: TASK-49
 title: 'Transaction page: bridge-tx detail card'
-status: Done
+status: In Progress
 assignee:
   - '@agent'
 created_date: '2026-05-12 20:15'
-updated_date: '2026-06-05 14:04'
+updated_date: '2026-06-05 14:18'
 labels:
   - pages
   - bridge

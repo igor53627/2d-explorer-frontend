@@ -1,0 +1,50 @@
+
+<div class="page-header">
+    <div class="page-header-title">
+        <h1 class="page-title">Bridge intent</h1>
+        <a class="btn btn-sm btn-outline" href="/bridges">← Bridges</a>
+    </div>
+</div>
+
+<div class="bridges-subtitle">
+    <p>Lifecycle status for a single bridge-in intent (quoted via the operator API).</p>
+</div>
+
+<div class="card bridge-intent-card">
+    <div class="card-body">
+        <div class="detail-row">
+            <div class="detail-label">Intent ID</div>
+            <div class="detail-value">
+                <span class="hash" title="<%= @intent.intent_id %>"><%= @intent.intent_id %></span>
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">State</div>
+            <div class="detail-value">
+                <span class="badge <%= @intent.badge_class %>"><%= @intent.state_label %></span>
+            </div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Gas bump attempts</div>
+            <div class="detail-value"><%= @intent.bump_count %></div>
+        </div>
+        <%= if @intent.claim_status do %>
+        <div class="detail-row">
+            <div class="detail-label">Claim status</div>
+            <div class="detail-value"><%= @intent.claim_status %></div>
+        </div>
+        <% end %>
+        <%= if @intent.last_error do %>
+        <div class="detail-row">
+            <div class="detail-label">Last error</div>
+            <div class="detail-value text-danger"><%= @intent.last_error %></div>
+        </div>
+        <% end %>
+        <%= if @intent.state_updated_at do %>
+        <div class="detail-row">
+            <div class="detail-label">Updated at</div>
+            <div class="detail-value text-muted"><%= @intent.state_updated_at %></div>
+        </div>
+        <% end %>
+    </div>
+</div>

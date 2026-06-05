@@ -17,6 +17,7 @@ defmodule FrontendExWeb.TxBridgeCard do
     kind = normalize_kind(kind)
 
     case kind do
+      "bridge_refill_mint" -> build_bridge_refill_mint(data, native_coin)
       "bridge_lock" -> build_bridge_lock(data, native_coin)
       "htlc_settle" -> build_htlc_settle(data, native_coin)
       "htlc_refund" -> build_htlc_refund(data, native_coin)
@@ -26,9 +27,45 @@ defmodule FrontendExWeb.TxBridgeCard do
 
   def build(_, _), do: nil
 
-  defp normalize_kind("bridge_refill_mint"), do: "bridge_lock"
+  @doc "Render the bridge card partial to HTML (used by golden snapshot tests)."
+  @spec render_html(map()) :: binary()
+  def render_html(%{} = card) do
+    card
+    |> then(&FrontendExWeb.TxHTML.bridge_card(%{card: &1}))
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
+  end
+
   defp normalize_kind(kind) when is_binary(kind), do: kind
   defp normalize_kind(_), do: nil
+
+  defp build_bridge_refill_mint(data, native_coin) do
+    mint = Map.get(data, "bridge_mint") || %{}
+
+    eth_event_id = to_string(data["eth_event_id"] || mint["eth_event_id"] || "")
+    source_chain_id = data["source_chain_id"] || mint["source_chain_id"]
+    source_tx_hash = to_string(data["source_tx_hash"] || mint["source_tx_hash"] || "")
+    source_log_index = data["source_log_index"] || mint["source_log_index"]
+    amount_raw = to_string(data["amount"] || mint["amount"] || "0")
+    tx_hash_2d = to_string(mint["tx_hash_2d"] || data["tx_hash_2d"] || "")
+
+    %{
+      kind: "bridge_refill_mint",
+      title: "Bridge refill mint",
+      eth_event_id: eth_event_id,
+      eth_event_id_short: Format.truncate_hash(eth_event_id),
+      bridges_detail_href: BridgeTx.bridge_detail_href(eth_event_id),
+      source_chain_id: source_chain_id,
+      source_tx_hash: source_tx_hash,
+      source_tx_hash_short: Format.truncate_hash(source_tx_hash),
+      source_log_index: source_log_index,
+      source_explorer_url: BridgeTx.source_chain_tx_url(source_chain_id, source_tx_hash),
+      amount_display: amount_display(amount_raw, native_coin),
+      tx_hash_2d: tx_hash_2d,
+      tx_hash_2d_short: if(tx_hash_2d != "", do: Format.truncate_hash(tx_hash_2d), else: nil),
+      tx_hash_2d_href: if(tx_hash_2d != "", do: "/tx/#{tx_hash_2d}")
+    }
+  end
 
   defp build_bridge_lock(data, native_coin) do
     mint = Map.get(data, "bridge_mint") || %{}
@@ -48,7 +85,7 @@ defmodule FrontendExWeb.TxBridgeCard do
 
     %{
       kind: "bridge_lock",
-      title: "Bridge lock (refill mint)",
+      title: "Bridge lock",
       eth_event_id: eth_event_id,
       eth_event_id_short: Format.truncate_hash(eth_event_id),
       bridges_detail_href: BridgeTx.bridge_detail_href(eth_event_id),

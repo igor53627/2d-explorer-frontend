@@ -7,6 +7,37 @@
     </div>
 
     <%= case @card.kind do %>
+        <% "bridge_refill_mint" -> %>
+            <div class="detail-row">
+                <div class="detail-label">Amount</div>
+                <div class="detail-value fw-medium"><%= @card.amount_display %></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">ETH event</div>
+                <div class="detail-value">
+                    <a class="link hash" href="<%= @card.bridges_detail_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Source (Ethereum)</div>
+                <div class="detail-value">
+                    <%= if @card.source_explorer_url do %>
+                        <a class="link hash" href="<%= @card.source_explorer_url %>" target="_blank" rel="noopener" title="<%= @card.source_tx_hash %>"><%= @card.source_tx_hash_short %><%= if @card.source_log_index != nil, do: "##{@card.source_log_index}", else: "" %></a>
+                    <% else %>
+                        <span class="hash" title="<%= @card.source_tx_hash %>"><%= @card.source_tx_hash_short %><%= if @card.source_log_index != nil, do: "##{@card.source_log_index}", else: "" %></span>
+                    <% end %>
+                    <span class="text-muted" style="margin-left:8px;">chain <%= @card.source_chain_id %></span>
+                </div>
+            </div>
+            <%= if @card.tx_hash_2d_href do %>
+            <div class="detail-row">
+                <div class="detail-label">2D mint tx</div>
+                <div class="detail-value">
+                    <a class="link hash" href="<%= @card.tx_hash_2d_href %>" title="<%= @card.tx_hash_2d %>"><%= @card.tx_hash_2d_short %></a>
+                </div>
+            </div>
+            <% end %>
+
         <% "bridge_lock" -> %>
             <div class="detail-row">
                 <div class="detail-label">Amount</div>
