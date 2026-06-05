@@ -3,7 +3,7 @@ defmodule FrontendExWeb.BlockController do
 
   alias FrontendEx.Blockscout.Client
   alias FrontendEx.Format
-  alias FrontendExWeb.BlockHTML
+  alias FrontendExWeb.{BlockHTML, BridgeDetect}
 
   @txs_preview_limit 20
 
@@ -44,13 +44,14 @@ defmodule FrontendExWeb.BlockController do
       {coin_price, gas_price} = derive_coin_gas(stats_json)
       native_coin = derive_native_coin(stats_json)
 
-      {block, txs_preview} =
+      {block, txs_preview, bridge_ops} =
         parse_block_and_preview_txs(block_json, txs_json, explorer_url)
 
       base_assigns =
         base_assigns(%{
           block: block,
           transactions: txs_preview,
+          bridge_ops: bridge_ops,
           coin_price: coin_price,
           gas_price: gas_price,
           native_coin: native_coin
@@ -142,6 +143,7 @@ defmodule FrontendExWeb.BlockController do
 
     all_txs = parse_transactions(txs_json)
     txs_preview = Enum.take(all_txs, @txs_preview_limit)
+    bridge_ops = bridge_ops_summary(height, all_txs)
 
     miner_hash =
       case get_in(block_json, ["miner", "hash"]) do
@@ -174,7 +176,21 @@ defmodule FrontendExWeb.BlockController do
       explorer_url: explorer_url
     }
 
-    {display_block, txs_preview}
+    {display_block, txs_preview, bridge_ops}
+  end
+
+  defp bridge_ops_summary(height, all_txs) do
+    case BridgeDetect.count_bridge_ops(all_txs) do
+      0 ->
+        nil
+
+      count ->
+        %{
+          count: count,
+          block_height: height,
+          bridges_href: "/bridges"
+        }
+    end
   end
 
   defp parse_height(%{} = block_json) do

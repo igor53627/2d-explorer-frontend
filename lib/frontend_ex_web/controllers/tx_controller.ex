@@ -1,7 +1,8 @@
 defmodule FrontendExWeb.TxController do
   use FrontendExWeb, :controller
 
-  alias FrontendEx.{Blockscout.Client, BridgeTx, Format}
+  alias FrontendEx.{Blockscout.Client, Format}
+  alias FrontendExWeb.BridgeDetect
   alias FrontendExWeb.{TxBridgeCard, TxHTML}
 
   @task_timeout_ms 10_000
@@ -57,7 +58,7 @@ defmodule FrontendExWeb.TxController do
           |> with_confirmations(latest_block_height)
 
         bridge_json =
-          if BridgeTx.bridge_candidate?(get_in(display_tx, [:to, :hash])) do
+          if BridgeDetect.bridge_candidate?(get_in(display_tx, [:to, :hash])) do
             # NOT @immutable_ttl_ms: the card surfaces mutable HTLC swap state
             # (locked → claimed → refunded), so use the short default TTL to
             # avoid showing stale state for minutes after a claim/refund.

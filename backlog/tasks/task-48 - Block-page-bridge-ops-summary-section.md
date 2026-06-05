@@ -1,10 +1,11 @@
 ---
 id: TASK-48
 title: 'Block page: bridge-ops summary section'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@agent'
 created_date: '2026-05-12 20:14'
-updated_date: '2026-05-12 20:15'
+updated_date: '2026-06-05 17:14'
 labels:
   - pages
   - bridge
