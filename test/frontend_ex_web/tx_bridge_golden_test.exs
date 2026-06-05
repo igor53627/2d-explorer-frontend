@@ -56,6 +56,7 @@ defmodule FrontendExWeb.TxBridgeGoldenTest do
     "kind" => "htlc_settle",
     "data" => %{
       "lock_id" => "0xee00000000000000000000000000000000000000000000000000000000000000",
+      "lock_tx_hash" => "0xface000000000000000000000000000000000000000000000000000000000000",
       "preimage" => "0xbe00000000000000000000000000000000000000000000000000000000000000",
       "htlc_swap" => %{
         "status" => "claimed",
@@ -69,6 +70,7 @@ defmodule FrontendExWeb.TxBridgeGoldenTest do
     "kind" => "htlc_refund",
     "data" => %{
       "lock_id" => "0xee00000000000000000000000000000000000000000000000000000000000000",
+      "lock_tx_hash" => "0xface000000000000000000000000000000000000000000000000000000000000",
       "htlc_swap" => %{
         "status" => "refunded",
         "amount" => "1000000",

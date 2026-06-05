@@ -1,4 +1,5 @@
 defmodule FrontendExWeb.BridgesShowRenderTest do
+  alias FrontendEx.TestSupport.Golden
   @moduledoc """
   Render tests for `/bridges/:eth_event_id` (TASK-47).
   """
@@ -104,6 +105,9 @@ defmodule FrontendExWeb.BridgesShowRenderTest do
       conn
       |> get("/bridges/#{@event_id}")
       |> html_response(200)
+
+    golden_path = Path.expand("../golden/bridges_show.classic.html", __DIR__)
+    Golden.assert_golden!(golden_path, html)
 
     assert html =~ "Bridge mint"
     assert html =~ @event_id

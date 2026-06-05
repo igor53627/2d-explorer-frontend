@@ -117,6 +117,7 @@ defmodule FrontendExWeb.TxBridgeCard do
     lock_id = to_string(data["lock_id"] || "")
     preimage = to_string(data["preimage"] || "")
     recipient = to_string(swap["receiver"] || "")
+    lock_tx_hash = to_string(data["lock_tx_hash"] || "")
 
     %{
       kind: "htlc_settle",
@@ -125,6 +126,9 @@ defmodule FrontendExWeb.TxBridgeCard do
       lock_id_short: Format.truncate_hash(lock_id),
       preimage: preimage,
       preimage_short: Format.truncate_hash(preimage),
+      lock_tx_hash: lock_tx_hash,
+      lock_tx_hash_short: if(lock_tx_hash != "", do: Format.truncate_hash(lock_tx_hash), else: nil),
+      lock_tx_href: if(lock_tx_hash != "", do: "/tx/#{lock_tx_hash}"),
       amount_display: amount_display(to_string(swap["amount"] || "0"), native_coin),
       htlc_status: swap["status"],
       recipient: recipient,
@@ -137,12 +141,16 @@ defmodule FrontendExWeb.TxBridgeCard do
     swap = Map.get(data, "htlc_swap") || %{}
     lock_id = to_string(data["lock_id"] || "")
     recipient = to_string(swap["receiver"] || "")
+    lock_tx_hash = to_string(data["lock_tx_hash"] || "")
 
     %{
       kind: "htlc_refund",
       title: "HTLC refund",
       lock_id: lock_id,
       lock_id_short: Format.truncate_hash(lock_id),
+      lock_tx_hash: lock_tx_hash,
+      lock_tx_hash_short: if(lock_tx_hash != "", do: Format.truncate_hash(lock_tx_hash), else: nil),
+      lock_tx_href: if(lock_tx_hash != "", do: "/tx/#{lock_tx_hash}"),
       amount_display: amount_display(to_string(swap["amount"] || "0"), native_coin),
       htlc_status: swap["status"],
       recipient: recipient,

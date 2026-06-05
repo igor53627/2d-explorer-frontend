@@ -63,10 +63,13 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
     }
   }
 
+  @lock_tx_hash "0xface000000000000000000000000000000000000000000000000000000000001"
+
   @htlc_settle_payload %{
     "kind" => "htlc_settle",
     "data" => %{
       "lock_id" => "0xee00000000000000000000000000000000000000000000000000000000000000",
+      "lock_tx_hash" => @lock_tx_hash,
       "preimage" => "0xbe00000000000000000000000000000000000000000000000000000000000000",
       "htlc_swap" => %{
         "status" => "claimed",
@@ -80,6 +83,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
     "kind" => "htlc_refund",
     "data" => %{
       "lock_id" => "0xee00000000000000000000000000000000000000000000000000000000000000",
+      "lock_tx_hash" => @lock_tx_hash,
       "htlc_swap" => %{
         "status" => "refunded",
         "amount" => "1000000",
@@ -210,6 +214,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
       assert html =~ ~s(data-bridge-kind="htlc_settle")
       assert html =~ "HTLC settle"
       assert html =~ "Preimage"
+      assert html =~ "/tx/#{@lock_tx_hash}"
     end
 
     test "renders htlc_refund card", %{conn: conn} do
@@ -220,6 +225,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
 
       assert html =~ ~s(data-bridge-kind="htlc_refund")
       assert html =~ "HTLC refund"
+      assert html =~ "/tx/#{@lock_tx_hash}"
     end
 
     test "no bridge card for non-bridge tx", %{conn: conn} do
