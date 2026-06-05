@@ -193,6 +193,8 @@
     <% end %>
 </div>
 
+<%= bridge_ops_summary(%{bridge_ops: @bridge_ops}) %>
+
 <div class="block-footnote">
     <svg class="block-footnote-icon" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10"></circle>

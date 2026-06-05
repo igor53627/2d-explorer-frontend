@@ -1,0 +1,16 @@
+<%= if @bridge_ops do %>
+<section class="bridge-ops-summary detail-card" data-bridge-ops-count="<%= @bridge_ops.count %>" aria-label="Bridge activity in this block">
+    <div class="bridge-ops-summary-body">
+        <div class="bridge-ops-summary-title">Bridge activity</div>
+        <p class="bridge-ops-summary-count">
+            <strong><%= @bridge_ops.count %></strong>
+            <%= if @bridge_ops.count == 1, do: "bridge op", else: "bridge ops" %>
+            in this block
+        </p>
+        <p class="bridge-ops-summary-link">
+            <a href="<%= @bridge_ops.bridges_href %>">View bridge mints</a>
+            <span class="text-muted">(block #<%= @bridge_ops.block_height %>)</span>
+        </p>
+    </div>
+</section>
+<% end %>

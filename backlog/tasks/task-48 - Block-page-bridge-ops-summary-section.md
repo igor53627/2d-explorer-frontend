@@ -1,10 +1,11 @@
 ---
 id: TASK-48
 title: 'Block page: bridge-ops summary section'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@agent'
 created_date: '2026-05-12 20:14'
-updated_date: '2026-05-12 20:15'
+updated_date: '2026-06-05 17:16'
 labels:
   - pages
   - bridge
@@ -28,10 +29,36 @@ References: TASK-45 (`/bridges` list), TASK-12 (block page), TASK-13 (transactio
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Block page detects bridge transactions in the per-block tx list by to ∈ {0x2D00…0001, 0x2D00…0003}
-- [ ] #2 Renders a 'N bridge ops in this block' counter / summary panel only when N > 0; absent for blocks with no bridge activity (no empty-state clutter)
-- [ ] #3 Counter links to /bridges (filtered by block height if the API supports it; otherwise to the global list with the block height visible as a breadcrumb)
-- [ ] #4 Pure SSR — no JS required for this slice (matches the existing block page posture)
-- [ ] #5 Golden HTML snapshot covers blocks with zero / one / multiple bridge ops
-- [ ] #6 Bridge tx detection lives in a small reusable helper module (e.g. FrontendExWeb.BridgeDetect) — the sibling transaction-page task reuses it
+- [x] #1 Block page detects bridge transactions in the per-block tx list by to ∈ {0x2D00…0001, 0x2D00…0003}
+- [x] #2 Renders a 'N bridge ops in this block' counter / summary panel only when N > 0; absent for blocks with no bridge activity (no empty-state clutter)
+- [x] #3 Counter links to /bridges (filtered by block height if the API supports it; otherwise to the global list with the block height visible as a breadcrumb)
+- [x] #4 Pure SSR — no JS required for this slice (matches the existing block page posture)
+- [x] #5 Golden HTML snapshot covers blocks with zero / one / multiple bridge ops
+- [x] #6 Bridge tx detection lives in a small reusable helper module (e.g. FrontendExWeb.BridgeDetect) — the sibling transaction-page task reuses it
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. BridgeDetect helper + count on full block tx list
+2. bridge_ops_summary partial on block overview
+3. Golden + integration tests
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented block bridge ops summary panel (TASK-48).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Block overview shows a bridge-ops summary when the per-block tx list includes calls to HTLC (0x2D…0001) or BridgeRefillMint (0x2D…0003).
+
+- `FrontendExWeb.BridgeDetect` (reused from tx card path via `BridgeTx`)
+- Panel: count + link to `/bridges` with block # breadcrumb (no API filter yet)
+- Golden: zero/one/many partial HTML; integration tests on `/block/:id`
+
+Branch: feat/task-48-block-bridge-summary
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -35,6 +35,29 @@
     border-radius: 8px;
     overflow: hidden;
 }
+.bridge-ops-summary {
+    margin-top: 16px;
+}
+.bridge-ops-summary-body {
+    padding: 16px 20px;
+}
+.bridge-ops-summary-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+}
+.bridge-ops-summary-count {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: var(--text);
+}
+.bridge-ops-summary-link {
+    margin: 0;
+    font-size: 14px;
+}
 .detail-banner {
     padding: 12px 20px;
     border-bottom: 1px solid var(--border);
