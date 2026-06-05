@@ -1,10 +1,11 @@
 ---
 id: TASK-49
 title: 'Transaction page: bridge-tx detail card'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@agent'
 created_date: '2026-05-12 20:15'
-updated_date: '2026-05-12 20:15'
+updated_date: '2026-06-05 14:04'
 labels:
   - pages
   - bridge
@@ -39,14 +40,20 @@ References: TASK-13 (transaction page foundation), TASK-45/46/47 (existing bridg
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tx page detects bridge candidates via the shared helper from TASK-48 (to ∈ {0x2D00…0001, 0x2D00…0003})
-- [ ] #2 When the tx is bridge-related, fetches /api/v2/transactions/:hash/bridge and renders a kind-specific SSR card above the input/calldata section; non-bridge txs render unchanged
-- [ ] #3 bridge_refill_mint card: shows source chain id + tx_hash + log_index + amount + eth_event_id, links eth_event_id to /bridges/:eth_event_id, links source tx_hash to the configured Etherscan host
-- [ ] #4 bridge_lock card: shows htlc_hash, recipient, preimage_hash, amount, deadline, current state (pending / claimed / refunded), links to /bridges/:eth_event_id and to recipient address page
-- [ ] #5 htlc_settle card: shows the lock id it settles, the revealed preimage, link back to the originating bridge_lock tx
-- [ ] #6 htlc_refund card: shows the lock id it refunds, link back to the originating bridge_lock tx
-- [ ] #7 Endpoint 404 (tx not bridge-related): card is not rendered, page falls back to generic shape — no error toast / banner
-- [ ] #8 Endpoint 404 (tx unknown): page returns its own 404 — does not depend on the bridge endpoint succeeding
-- [ ] #9 Etherscan host is read from runtime config so staging / mainnet point at the right host
+- [x] #1 Tx page detects bridge candidates via the shared helper from TASK-48 (to ∈ {0x2D00…0001, 0x2D00…0003})
+- [x] #2 When the tx is bridge-related, fetches /api/v2/transactions/:hash/bridge and renders a kind-specific SSR card above the input/calldata section; non-bridge txs render unchanged
+- [x] #3 bridge_refill_mint card: shows source chain id + tx_hash + log_index + amount + eth_event_id, links eth_event_id to /bridges/:eth_event_id, links source tx_hash to the configured Etherscan host
+- [x] #4 bridge_lock card: shows htlc_hash, recipient, preimage_hash, amount, deadline, current state (pending / claimed / refunded), links to /bridges/:eth_event_id and to recipient address page
+- [x] #5 htlc_settle card: shows the lock id it settles, the revealed preimage, link back to the originating bridge_lock tx
+- [x] #6 htlc_refund card: shows the lock id it refunds, link back to the originating bridge_lock tx
+- [x] #7 Endpoint 404 (tx not bridge-related): card is not rendered, page falls back to generic shape — no error toast / banner
+- [x] #8 Endpoint 404 (tx unknown): page returns its own 404 — does not depend on the bridge endpoint succeeding
+- [x] #9 Etherscan host is read from runtime config so staging / mainnet point at the right host
 - [ ] #10 Golden HTML snapshots for each of the four card kinds plus the bridge-detect-but-endpoint-404 case
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Bridge SSR card on /tx/:hash — consumes 2d TASK-69 endpoint.
+<!-- SECTION:FINAL_SUMMARY:END -->

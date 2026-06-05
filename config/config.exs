@@ -8,7 +8,9 @@
 import Config
 
 config :frontend_ex,
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  # Ethereum source-tx links on bridge surfaces (TASK-49 AC#9).
+  ethereum_tx_explorer_base: "https://etherscan.io/tx"
 
 # Configure the endpoint
 #

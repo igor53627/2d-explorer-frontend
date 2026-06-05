@@ -333,22 +333,8 @@ defmodule FrontendExWeb.BridgesController do
     }
   end
 
-  defp source_chain_explorer_url(1, hash) when is_binary(hash) and hash != "" do
-    # Defense in depth: only return a URL if `hash` is a clean 32-byte hex
-    # (with optional 0x prefix). The href= surface in the template
-    # interpolates whatever this returns; a malformed hash that injected
-    # a `javascript:` URI fragment would survive Phoenix.HTML escaping
-    # (which guards against angle-brackets/quotes, not URI schemes).
-    # The strict regex makes this path safe even if a future code change
-    # widens what gets passed in.
-    if Regex.match?(~r/^(0x)?[0-9a-fA-F]{64}$/, hash) do
-      "https://etherscan.io/tx/" <> ensure_hex_prefix(hash)
-    else
-      nil
-    end
-  end
-
-  defp source_chain_explorer_url(_, _), do: nil
+  defp source_chain_explorer_url(chain_id, hash),
+    do: FrontendEx.BridgeTx.source_chain_tx_url(chain_id, hash)
 
   # Drop trailing zeros from the decimal part of a `Format.format_native_amount`
   # result, then drop the dot if nothing remains. Used to render bridge-mint
@@ -367,7 +353,4 @@ defmodule FrontendExWeb.BridgesController do
         s
     end
   end
-
-  defp ensure_hex_prefix("0x" <> _ = v), do: v
-  defp ensure_hex_prefix(v) when is_binary(v), do: "0x" <> v
 end

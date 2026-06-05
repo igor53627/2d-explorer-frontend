@@ -243,6 +243,10 @@
     </div>
     <% end %>
 
+    <%= if @bridge_card do %>
+        <%= bridge_card(%{card: @bridge_card}) %>
+    <% end %>
+
     <%= if @gas_display || @base_fee_native || @max_fee_native || @max_priority_fee_native || @method_id do %>
     <details class="more-details">
         <summary class="detail-row">

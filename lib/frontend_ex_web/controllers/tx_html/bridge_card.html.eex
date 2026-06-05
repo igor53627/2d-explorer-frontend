@@ -1,0 +1,124 @@
+<div class="detail-card bridge-tx-card" id="bridge-tx-card" data-bridge-kind="<%= @card.kind %>">
+    <div class="detail-row">
+        <div class="detail-label">Bridge</div>
+        <div class="detail-value">
+            <span class="badge badge-secondary"><%= @card.title %></span>
+        </div>
+    </div>
+
+    <%= case @card.kind do %>
+        <% "bridge_lock" -> %>
+            <div class="detail-row">
+                <div class="detail-label">Amount</div>
+                <div class="detail-value fw-medium"><%= @card.amount_display %></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">ETH event</div>
+                <div class="detail-value">
+                    <a class="link hash" href="<%= @card.bridges_list_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
+                    <span class="text-muted" style="font-size:12px;margin-left:6px;">(see <a class="link" href="<%= @card.bridges_list_href %>">/bridges</a>)</span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Source (Ethereum)</div>
+                <div class="detail-value">
+                    <%= if @card.source_explorer_url do %>
+                        <a class="link hash" href="<%= @card.source_explorer_url %>" target="_blank" rel="noopener" title="<%= @card.source_tx_hash %>"><%= @card.source_tx_hash_short %><%= if @card.source_log_index != nil, do: "##{@card.source_log_index}", else: "" %></a>
+                    <% else %>
+                        <span class="hash" title="<%= @card.source_tx_hash %>"><%= @card.source_tx_hash_short %><%= if @card.source_log_index != nil, do: "##{@card.source_log_index}", else: "" %></span>
+                    <% end %>
+                    <span class="text-muted" style="margin-left:8px;">chain <%= @card.source_chain_id %></span>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">HTLC hash</div>
+                <div class="detail-value"><span class="hash" title="<%= @card.htlc_hash %>"><%= @card.htlc_hash_short %></span></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Recipient</div>
+                <div class="detail-value">
+                    <%= if @card.recipient_href do %>
+                        <a class="link hash" href="<%= @card.recipient_href %>" title="<%= @card.recipient %>"><%= @card.recipient_short %></a>
+                    <% else %>
+                        <span class="hash"><%= @card.recipient_short %></span>
+                    <% end %>
+                </div>
+            </div>
+            <%= if @card.deadline_readable do %>
+            <div class="detail-row">
+                <div class="detail-label">Deadline</div>
+                <div class="detail-value"><%= @card.deadline_readable %></div>
+            </div>
+            <% end %>
+            <%= if @card.htlc_status do %>
+            <div class="detail-row">
+                <div class="detail-label">HTLC state</div>
+                <div class="detail-value"><%= @card.htlc_status %></div>
+            </div>
+            <% end %>
+            <%= if @card.tx_hash_2d_href do %>
+            <div class="detail-row">
+                <div class="detail-label">2D lock tx</div>
+                <div class="detail-value">
+                    <a class="link hash" href="<%= @card.tx_hash_2d_href %>" title="<%= @card.tx_hash_2d %>"><%= @card.tx_hash_2d_short %></a>
+                </div>
+            </div>
+            <% end %>
+
+        <% "htlc_settle" -> %>
+            <div class="detail-row">
+                <div class="detail-label">Lock ID</div>
+                <div class="detail-value"><span class="hash" title="<%= @card.lock_id %>"><%= @card.lock_id_short %></span></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Preimage</div>
+                <div class="detail-value"><span class="hash" title="<%= @card.preimage %>"><%= @card.preimage_short %></span></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Amount</div>
+                <div class="detail-value fw-medium"><%= @card.amount_display %></div>
+            </div>
+            <%= if @card.htlc_status do %>
+            <div class="detail-row">
+                <div class="detail-label">HTLC state</div>
+                <div class="detail-value"><%= @card.htlc_status %></div>
+            </div>
+            <% end %>
+            <%= if @card.recipient_href do %>
+            <div class="detail-row">
+                <div class="detail-label">Receiver</div>
+                <div class="detail-value">
+                    <a class="link hash" href="<%= @card.recipient_href %>"><%= @card.recipient_short %></a>
+                    <span class="text-muted" style="margin-left:8px;"><a class="link" href="<%= @card.recipient_href %>/bridges">Bridge mints</a></span>
+                </div>
+            </div>
+            <% end %>
+
+        <% "htlc_refund" -> %>
+            <div class="detail-row">
+                <div class="detail-label">Lock ID</div>
+                <div class="detail-value"><span class="hash" title="<%= @card.lock_id %>"><%= @card.lock_id_short %></span></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Amount</div>
+                <div class="detail-value fw-medium"><%= @card.amount_display %></div>
+            </div>
+            <%= if @card.htlc_status do %>
+            <div class="detail-row">
+                <div class="detail-label">HTLC state</div>
+                <div class="detail-value"><%= @card.htlc_status %></div>
+            </div>
+            <% end %>
+            <%= if @card.recipient_href do %>
+            <div class="detail-row">
+                <div class="detail-label">Receiver</div>
+                <div class="detail-value">
+                    <a class="link hash" href="<%= @card.recipient_href %>"><%= @card.recipient_short %></a>
+                    <span class="text-muted" style="margin-left:8px;"><a class="link" href="<%= @card.recipient_href %>/bridges">Bridge mints</a></span>
+                </div>
+            </div>
+            <% end %>
+
+        <% _ -> %>
+    <% end %>
+</div>
