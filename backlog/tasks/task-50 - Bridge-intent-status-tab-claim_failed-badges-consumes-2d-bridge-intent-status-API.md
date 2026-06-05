@@ -3,11 +3,11 @@ id: TASK-50
 title: >-
   Bridge intent status tab + claim_failed badges (consumes 2d bridge-intent
   status API)
-status: In Progress
+status: Done
 assignee:
   - '@agent'
 created_date: '2026-05-29 18:02'
-updated_date: '2026-06-05 14:18'
+updated_date: '2026-06-05 14:20'
 labels:
   - bridge
   - explorer
@@ -25,8 +25,14 @@ Render bridge intent lifecycle visibility in the explorer (carved out of 2d TASK
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Bridge intent status badge: green=consumed, red=claim_failed, yellow=in-progress
-- [ ] #2 Badge/row shows the gas-bump attempt count (bump_count)
-- [ ] #3 claim_failed intents surface the terminal reason from the 2d API (state_eth_claim_last_error)
-- [ ] #4 Data is fetched from the 2d backend endpoint (GET /api/v2/bridge/intents/:intent_id), not a direct DB query
+- [x] #1 Bridge intent status badge: green=consumed, red=claim_failed, yellow=in-progress
+- [x] #2 Badge/row shows the gas-bump attempt count (bump_count)
+- [x] #3 claim_failed intents surface the terminal reason from the 2d API (state_eth_claim_last_error)
+- [x] #4 Data is fetched from the 2d backend endpoint (GET /api/v2/bridge/intents/:intent_id), not a direct DB query
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SSR /bridge/intents/:intent_id with status badges (green/yellow/red), bump_count, claim_failed last_error. Consumes GET /api/v2/bridge/intents/:intent_id.
+<!-- SECTION:FINAL_SUMMARY:END -->
