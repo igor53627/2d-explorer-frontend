@@ -135,11 +135,12 @@ defmodule FrontendExWeb.TxController do
         render(
           conn,
           :classic_content,
-          base_assigns
-          |> Map.put(:bridge_card, bridge_card)
-          |> Map.put(:page_title, "Transaction #{display_tx.hash} | 2D")
-          |> Map.put(:head_meta, head_meta)
-          |> Map.put(:styles, styles)
+          Map.merge(base_assigns, %{
+            bridge_card: bridge_card,
+            page_title: "Transaction #{display_tx.hash} | 2D",
+            head_meta: head_meta,
+            styles: styles
+          })
         )
       end
     end

@@ -1,5 +1,6 @@
 defmodule FrontendExWeb.BridgesShowRenderTest do
   alias FrontendEx.TestSupport.Golden
+
   @moduledoc """
   Render tests for `/bridges/:eth_event_id` (TASK-47).
   """

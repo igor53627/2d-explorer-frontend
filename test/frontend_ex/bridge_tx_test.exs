@@ -1,5 +1,5 @@
 defmodule FrontendEx.BridgeTxTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias FrontendEx.BridgeTx
 

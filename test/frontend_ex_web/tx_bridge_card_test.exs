@@ -73,7 +73,11 @@ defmodule FrontendExWeb.TxBridgeCardTest do
   end
 
   test "missing htlc_swap omits the amount and receiver rows (no misleading 0 USDC)" do
-    card = TxBridgeCard.build(%{"kind" => "htlc_settle", "data" => %{"lock_id" => "0xee"}}, @native_coin)
+    card =
+      TxBridgeCard.build(
+        %{"kind" => "htlc_settle", "data" => %{"lock_id" => "0xee"}},
+        @native_coin
+      )
 
     assert card.amount_display == nil
     assert card.recipient_href == nil
@@ -102,7 +106,10 @@ defmodule FrontendExWeb.TxBridgeCardTest do
   test "invalid eth_event_id produces no /bridges cross-link" do
     card =
       TxBridgeCard.build(
-        %{"kind" => "bridge_refill_mint", "data" => %{"eth_event_id" => "0xabc", "amount" => "1"}},
+        %{
+          "kind" => "bridge_refill_mint",
+          "data" => %{"eth_event_id" => "0xabc", "amount" => "1"}
+        },
         @native_coin
       )
 
