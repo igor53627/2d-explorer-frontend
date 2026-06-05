@@ -50,6 +50,29 @@ defmodule FrontendEx.Format do
     end
   end
 
+  @doc """
+  Like `format_native_amount/1` but with trailing decimal zeros dropped, so
+  round bridge amounts read as `1` / `0.5` instead of `1.0000` / `0.5000`.
+  The bare `"0"` (no decimal point) shape is passed through unchanged.
+  """
+  @spec format_native_amount_trimmed(binary()) :: binary()
+  def format_native_amount_trimmed(amount_str) when is_binary(amount_str) do
+    trim_trailing_decimal_zeros(format_native_amount(amount_str))
+  end
+
+  defp trim_trailing_decimal_zeros(s) when is_binary(s) do
+    case String.split(s, ".", parts: 2) do
+      [int_part, frac_part] ->
+        case String.trim_trailing(frac_part, "0") do
+          "" -> int_part
+          trimmed -> int_part <> "." <> trimmed
+        end
+
+      _ ->
+        s
+    end
+  end
+
   # Exact decimal representation — no rounding.
   @spec format_native_amount_exact(binary()) :: binary()
   def format_native_amount_exact(amount_str),

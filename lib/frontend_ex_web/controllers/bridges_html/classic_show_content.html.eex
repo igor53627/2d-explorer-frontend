@@ -46,7 +46,7 @@
                 <% else %>
                     <span class="hash" title="<%= @bridge.source_tx_hash %>"><%= @bridge.source_tx_hash_short %><%= if @bridge.source_log_index != nil, do: "##{@bridge.source_log_index}", else: "" %></span>
                 <% end %>
-                <span class="text-muted" style="margin-left:8px;">chain <%= @bridge.source_chain_id %></span>
+                <%= if @bridge.source_chain_id do %><span class="text-muted" style="margin-left:8px;">chain <%= @bridge.source_chain_id %></span><% end %>
             </div>
         </div>
         <div class="detail-row">

@@ -9,7 +9,9 @@ import Config
 
 config :frontend_ex,
   generators: [timestamp_type: :utc_datetime],
-  # Ethereum source-tx links on bridge surfaces (TASK-49 AC#9).
+  # Ethereum source-tx links on bridge surfaces (TASK-49 AC#9). Compile-time
+  # default; overridden at boot from ETHEREUM_TX_EXPLORER_BASE in runtime.exs
+  # so staging / testnet deploys can point at the right host.
   ethereum_tx_explorer_base: "https://etherscan.io/tx"
 
 # Configure the endpoint

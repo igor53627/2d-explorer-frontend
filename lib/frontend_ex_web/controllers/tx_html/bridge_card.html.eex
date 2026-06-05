@@ -8,14 +8,20 @@
 
     <%= case @card.kind do %>
         <% "bridge_refill_mint" -> %>
+            <%= if @card.amount_display do %>
             <div class="detail-row">
                 <div class="detail-label">Amount</div>
                 <div class="detail-value fw-medium"><%= @card.amount_display %></div>
             </div>
+            <% end %>
             <div class="detail-row">
                 <div class="detail-label">ETH event</div>
                 <div class="detail-value">
-                    <a class="link hash" href="<%= @card.bridges_detail_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
+                    <%= if @card.bridges_detail_href do %>
+                        <a class="link hash" href="<%= @card.bridges_detail_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
+                    <% else %>
+                        <span class="hash" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></span>
+                    <% end %>
                 </div>
             </div>
             <div class="detail-row">
@@ -26,7 +32,7 @@
                     <% else %>
                         <span class="hash" title="<%= @card.source_tx_hash %>"><%= @card.source_tx_hash_short %><%= if @card.source_log_index != nil, do: "##{@card.source_log_index}", else: "" %></span>
                     <% end %>
-                    <span class="text-muted" style="margin-left:8px;">chain <%= @card.source_chain_id %></span>
+                    <%= if @card.source_chain_id do %><span class="text-muted" style="margin-left:8px;">chain <%= @card.source_chain_id %></span><% end %>
                 </div>
             </div>
             <%= if @card.tx_hash_2d_href do %>
@@ -39,14 +45,20 @@
             <% end %>
 
         <% "bridge_lock" -> %>
+            <%= if @card.amount_display do %>
             <div class="detail-row">
                 <div class="detail-label">Amount</div>
                 <div class="detail-value fw-medium"><%= @card.amount_display %></div>
             </div>
+            <% end %>
             <div class="detail-row">
                 <div class="detail-label">ETH event</div>
                 <div class="detail-value">
-                    <a class="link hash" href="<%= @card.bridges_detail_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
+                    <%= if @card.bridges_detail_href do %>
+                        <a class="link hash" href="<%= @card.bridges_detail_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
+                    <% else %>
+                        <span class="hash" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></span>
+                    <% end %>
                 </div>
             </div>
             <div class="detail-row">
@@ -57,13 +69,15 @@
                     <% else %>
                         <span class="hash" title="<%= @card.source_tx_hash %>"><%= @card.source_tx_hash_short %><%= if @card.source_log_index != nil, do: "##{@card.source_log_index}", else: "" %></span>
                     <% end %>
-                    <span class="text-muted" style="margin-left:8px;">chain <%= @card.source_chain_id %></span>
+                    <%= if @card.source_chain_id do %><span class="text-muted" style="margin-left:8px;">chain <%= @card.source_chain_id %></span><% end %>
                 </div>
             </div>
+            <%= if @card.htlc_hash != "" do %>
             <div class="detail-row">
                 <div class="detail-label">HTLC hash</div>
                 <div class="detail-value"><span class="hash" title="<%= @card.htlc_hash %>"><%= @card.htlc_hash_short %></span></div>
             </div>
+            <% end %>
             <%= if @card.preimage_hash != "" do %>
             <div class="detail-row">
                 <div class="detail-label">Preimage hash</div>
@@ -118,10 +132,12 @@
                 <div class="detail-label">Preimage</div>
                 <div class="detail-value"><span class="hash" title="<%= @card.preimage %>"><%= @card.preimage_short %></span></div>
             </div>
+            <%= if @card.amount_display do %>
             <div class="detail-row">
                 <div class="detail-label">Amount</div>
                 <div class="detail-value fw-medium"><%= @card.amount_display %></div>
             </div>
+            <% end %>
             <%= if @card.htlc_status do %>
             <div class="detail-row">
                 <div class="detail-label">HTLC state</div>
@@ -151,10 +167,12 @@
                 </div>
             </div>
             <% end %>
+            <%= if @card.amount_display do %>
             <div class="detail-row">
                 <div class="detail-label">Amount</div>
                 <div class="detail-value fw-medium"><%= @card.amount_display %></div>
             </div>
+            <% end %>
             <%= if @card.htlc_status do %>
             <div class="detail-row">
                 <div class="detail-label">HTLC state</div>

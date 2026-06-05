@@ -17,6 +17,7 @@ defmodule FrontendExWeb.BridgeIntentStatus do
     bump_count =
       case json["bump_count"] do
         n when is_integer(n) and n >= 0 -> n
+        s when is_binary(s) -> parse_bump_count(s)
         _ -> 0
       end
 
@@ -32,19 +33,38 @@ defmodule FrontendExWeb.BridgeIntentStatus do
         _ -> nil
       end
 
+    state_updated_at =
+      case json["state_updated_at"] do
+        v when is_binary(v) and v != "" -> v
+        _ -> nil
+      end
+
     %{
-      intent_id: to_string(json["intent_id"]),
+      intent_id: as_string(json["intent_id"]),
       state: state,
       state_label: state_label(state),
       badge_class: badge_class(state),
       bump_count: bump_count,
       claim_status: claim_status,
       last_error: last_error,
-      state_updated_at: json["state_updated_at"]
+      state_updated_at: state_updated_at
     }
   end
 
   def build(_), do: nil
+
+  defp parse_bump_count(s) do
+    case Integer.parse(String.trim(s)) do
+      {n, ""} when n >= 0 -> n
+      _ -> 0
+    end
+  end
+
+  # Coerce to a string without raising on objects/arrays (which `to_string/1`
+  # cannot handle); non-stringable values degrade to "".
+  defp as_string(v) when is_binary(v), do: v
+  defp as_string(v) when is_integer(v), do: Integer.to_string(v)
+  defp as_string(_), do: ""
 
   defp state_label("consumed"), do: "Consumed"
   defp state_label("claim_failed"), do: "Claim failed"

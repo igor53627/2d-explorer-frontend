@@ -375,16 +375,11 @@ defmodule FrontendExWeb.BridgesController do
       htlc_hash_short: if(htlc_hash, do: Format.truncate_hash(htlc_hash), else: nil),
       # Trim trailing zeros from the formatter's decimal output so round
       # amounts read as `1 USDC` / `0.5 USDC` instead of `1.0000 USDC` /
-      # `0.5000 USDC`. `Format.format_native_amount/1` is tiered: up to
-      # 4 dp for typical mint magnitudes, more for very small amounts
-      # (6 dp / 8 dp branches), and a bare `"0"` (no decimal point) for
-      # zero. The trim helper handles all four shapes — see
-      # `trim_trailing_decimal_zeros/1` below for the no-decimal
-      # passthrough. Local post-process here so the global formatter
-      # keeps its golden-byte parity on /tx, /address etc.
+      # `0.5000 USDC`. `Format.format_native_amount_trimmed/1` keeps the
+      # untrimmed `format_native_amount/1` intact so /tx, /address etc.
+      # retain their golden-byte parity. Shared with the tx bridge card.
       amount_formatted:
-        trim_trailing_decimal_zeros(Format.format_native_amount(amount_raw)) <>
-          " " <> native_coin.symbol,
+        Format.format_native_amount_trimmed(amount_raw) <> " " <> native_coin.symbol,
       recipient_hash: recipient_hash,
       recipient_short: if(recipient_hash, do: Format.truncate_hash(recipient_hash), else: nil),
       source_chain_id: source_chain_id,
@@ -402,22 +397,4 @@ defmodule FrontendExWeb.BridgesController do
 
   defp source_chain_explorer_url(chain_id, hash),
     do: FrontendEx.BridgeTx.source_chain_tx_url(chain_id, hash)
-
-  # Drop trailing zeros from the decimal part of a `Format.format_native_amount`
-  # result, then drop the dot if nothing remains. Used to render bridge-mint
-  # amounts compactly (`1 USDC` instead of `1.0000 USDC`). Pure string-level
-  # post-process — keeps the global formatter unchanged so /tx and /address
-  # goldens stay byte-identical.
-  defp trim_trailing_decimal_zeros(s) when is_binary(s) do
-    case String.split(s, ".", parts: 2) do
-      [int_part, frac_part] ->
-        case String.trim_trailing(frac_part, "0") do
-          "" -> int_part
-          trimmed -> int_part <> "." <> trimmed
-        end
-
-      _ ->
-        s
-    end
-  end
 end

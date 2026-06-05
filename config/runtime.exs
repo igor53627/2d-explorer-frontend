@@ -190,6 +190,14 @@ base_url =
   |> String.trim()
   |> String.trim_trailing("/")
 
+# Source-chain (Ethereum) tx explorer host for bridge surfaces (TASK-49 AC#9).
+# Runtime so a staging / testnet deploy can point at e.g.
+# https://sepolia.etherscan.io/tx instead of mainnet etherscan.
+ethereum_tx_explorer_base =
+  System.get_env("ETHEREUM_TX_EXPLORER_BASE", "https://etherscan.io/tx")
+  |> String.trim()
+  |> String.trim_trailing("/")
+
 # 2d-fork: FF_SKIN env var removed — `Skin.current/0` always returns
 # `:classic` (the 53627 skin templates were deleted). Setting `FF_SKIN`
 # in deployments has no effect; remove it from your env file to avoid
@@ -200,7 +208,8 @@ config :frontend_ex,
   blockscout_txs_api_url: blockscout_txs_api_url,
   blockscout_url: blockscout_url,
   blockscout_ws_url: blockscout_ws_url,
-  base_url: base_url
+  base_url: base_url,
+  ethereum_tx_explorer_base: ethereum_tx_explorer_base
 
 metrics_enabled =
   case System.get_env("FF_METRICS_ENABLED") |> Kernel.||("") |> String.trim() do

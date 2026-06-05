@@ -110,14 +110,15 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
               String.ends_with?(path, "/bridge") ->
             Application.get_env(:frontend_ex, :tx_bridge_test_bridge_payload)
 
+          String.starts_with?(path, "/api/v2/transactions/") and
+              String.ends_with?(path, "/logs") ->
+            %{"items" => []}
+
           String.starts_with?(path, "/api/v2/transactions/") ->
             Application.get_env(:frontend_ex, :tx_bridge_test_tx_payload)
 
           path == "/api/v2/blocks" ->
             %{"items" => [%{"height" => 0}]}
-
-          String.starts_with?(path, "/api/v2/transactions/") and String.ends_with?(path, "/logs") ->
-            %{"items" => []}
 
           true ->
             nil
@@ -139,11 +140,13 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
   end
 
   setup do
+    prev_adapter = Application.get_env(:frontend_ex, :blockscout_request_adapter)
+
     Application.put_env(:frontend_ex, :blockscout_request_adapter, Adapter)
     Application.put_env(:frontend_ex, :tx_bridge_test_stats, @stats)
 
     on_exit(fn ->
-      Application.delete_env(:frontend_ex, :blockscout_request_adapter)
+      Application.put_env(:frontend_ex, :blockscout_request_adapter, prev_adapter)
       Application.delete_env(:frontend_ex, :tx_bridge_test_stats)
       Application.delete_env(:frontend_ex, :tx_bridge_test_tx_payload)
       Application.delete_env(:frontend_ex, :tx_bridge_test_bridge_payload)

@@ -58,11 +58,10 @@ defmodule FrontendExWeb.TxController do
 
         bridge_json =
           if BridgeTx.bridge_candidate?(get_in(display_tx, [:to, :hash])) do
-            case Client.get_json_cached(
-                   "/api/v2/transactions/#{hash}/bridge",
-                   :public,
-                   @immutable_ttl_ms
-                 ) do
+            # NOT @immutable_ttl_ms: the card surfaces mutable HTLC swap state
+            # (locked → claimed → refunded), so use the short default TTL to
+            # avoid showing stale state for minutes after a claim/refund.
+            case Client.get_json_cached("/api/v2/transactions/#{hash}/bridge", :public) do
               {:ok, json} -> json
               {:error, _} -> nil
             end
