@@ -41,6 +41,19 @@ defmodule FrontendEx.BridgeTx do
 
   def source_chain_tx_url(_, _), do: nil
 
+  @doc "SSR path for a single bridge mint detail page (TASK-47)."
+  @spec bridge_detail_href(binary()) :: binary()
+  def bridge_detail_href(eth_event_id) when is_binary(eth_event_id) do
+    "/bridges/" <> String.trim(eth_event_id)
+  end
+
+  @event_id_re ~r/^0x[0-9a-fA-F]{64}$/
+
+  @doc "True when `id` is a 32-byte `0x`-prefixed event id."
+  @spec valid_eth_event_id?(binary()) :: boolean()
+  def valid_eth_event_id?(id) when is_binary(id), do: Regex.match?(@event_id_re, String.trim(id))
+  def valid_eth_event_id?(_), do: false
+
   defp ensure_hex_prefix("0x" <> _ = h), do: h
   defp ensure_hex_prefix(h), do: "0x" <> h
 end

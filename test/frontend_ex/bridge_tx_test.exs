@@ -27,4 +27,13 @@ defmodule FrontendEx.BridgeTxTest do
     assert BridgeTx.source_chain_tx_url(1, hash) ==
              "https://sepolia.etherscan.io/tx/" <> hash
   end
+
+  test "bridge_detail_href and valid_eth_event_id?" do
+    id = "0x" <> String.duplicate("a", 64)
+
+    assert BridgeTx.bridge_detail_href(id) == "/bridges/" <> id
+    assert BridgeTx.valid_eth_event_id?(id)
+    refute BridgeTx.valid_eth_event_id?("0xabc")
+    refute BridgeTx.valid_eth_event_id?("not-a-hash")
+  end
 end

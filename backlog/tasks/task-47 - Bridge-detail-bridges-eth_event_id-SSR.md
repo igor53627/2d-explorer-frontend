@@ -1,9 +1,11 @@
 ---
 id: TASK-47
 title: 'Bridge detail: /bridges/:eth_event_id (SSR)'
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@agent'
 created_date: '2026-05-06 13:50'
+updated_date: '2026-06-05 14:14'
 labels:
   - pages
   - bridge
@@ -26,8 +28,14 @@ Low priority: the list views cover the primary UX; detail page is mostly for sha
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 GET /bridges/:eth_event_id renders SSR (classic skin) with full bridge_mint detail
-- [ ] #2 Returns 404 when event_id is unknown (proxy from API 404)
-- [ ] #3 Source-chain tx_hash and 2d tx_hash are linked out to the appropriate explorers
-- [ ] #4 Golden HTML snapshot test
+- [x] #1 GET /bridges/:eth_event_id renders SSR (classic skin) with full bridge_mint detail
+- [x] #2 Returns 404 when event_id is unknown (proxy from API 404)
+- [x] #3 Source-chain tx_hash and 2d tx_hash are linked out to the appropriate explorers
+- [x] #4 Golden HTML snapshot test
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SSR /bridges/:eth_event_id consumes GET /api/v2/bridges/:eth_event_id. Tx bridge card links to detail page. Tests in bridges_show_render_test.exs.
+<!-- SECTION:FINAL_SUMMARY:END -->

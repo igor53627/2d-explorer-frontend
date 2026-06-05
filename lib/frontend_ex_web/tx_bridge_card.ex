@@ -51,6 +51,7 @@ defmodule FrontendExWeb.TxBridgeCard do
       title: "Bridge lock (refill mint)",
       eth_event_id: eth_event_id,
       eth_event_id_short: Format.truncate_hash(eth_event_id),
+      bridges_detail_href: BridgeTx.bridge_detail_href(eth_event_id),
       bridges_list_href: "/bridges",
       source_chain_id: source_chain_id,
       source_tx_hash: source_tx_hash,

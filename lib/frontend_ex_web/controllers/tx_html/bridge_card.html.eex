@@ -15,8 +15,7 @@
             <div class="detail-row">
                 <div class="detail-label">ETH event</div>
                 <div class="detail-value">
-                    <a class="link hash" href="<%= @card.bridges_list_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
-                    <span class="text-muted" style="font-size:12px;margin-left:6px;">(see <a class="link" href="<%= @card.bridges_list_href %>">/bridges</a>)</span>
+                    <a class="link hash" href="<%= @card.bridges_detail_href %>" title="<%= @card.eth_event_id %>"><%= @card.eth_event_id_short %></a>
                 </div>
             </div>
             <div class="detail-row">

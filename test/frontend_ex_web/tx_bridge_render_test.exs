@@ -157,7 +157,7 @@ defmodule FrontendExWeb.TxBridgeRenderTest do
       assert html =~ "Bridge lock"
       assert html =~ "HTLC hash"
       assert html =~ "etherscan.io/tx/"
-      assert html =~ "/bridges"
+      assert html =~ "/bridges/0x8a26217d2693abf40185791db4ca9889b322f73e5645ab1c2842139185c1b66c"
     end
 
     test "renders htlc_settle card", %{conn: conn} do
